@@ -1,0 +1,2 @@
+recorded,label,session,models,messages,input,cache_read,cache_write,output,total
+2026-11-08T14:29:35-06:00,"setup session, checkpoint 0",6615eff2-bd58-433f-bd3d-67fc94571781,claude-opus-5-5,187,374,60746612,530622,360980,61638588

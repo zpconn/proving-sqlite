@@ -1,4 +1,4 @@
-selftest fixture: /tmp/campaign-selftest-yvkqumcv
+selftest fixture: /tmp/campaign-selftest-5r9imvuu
 ok   start: primary checkout moves to orch, main gets its own checkout
 ok   phase A settles (every card merged, in triage, or waiting)
 ok   C-01 approved and merged
