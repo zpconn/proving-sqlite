@@ -4,8 +4,12 @@ puts tools/fakecli/ first on PATH. Reads the prompt on stdin, works out card, ro
 behavior FAKECLI_CONTROL names for that (card/role/round, attempt), emitting each vendor's event format:
 codex --json events plus a rollout log under $HOME/.codex/sessions (running token counts), or claude stream-json.
 
-Behaviors: done, approve, reject, needs-zach, finding, stuck, crash, limit, outside, commit-outside, own-review,
-touch-tracked, burn, slow:<seconds>, answer-review, missing (exit 0, no report).
+Behaviors: done, approve, reject, needs-zach, finding, stuck, crash, limit, auth (the login has expired), outside,
+commit-outside, own-review, symlink (a May change path left as a symlink), exec-mode (an executable harness.c),
+touch-tracked, probe (a reviewer records what its sandbox lets it see, then approves), burn, slow:<seconds>,
+answer-review, missing (exit 0, no report). `codex login status` and `claude auth status` report logged in unless
+$HOME/.fakecli-logged-out exists. State and the log live in $FAKECLI_STATE (a directory a sandboxed reviewer can
+write: the fixture's ~/.claude).
 """
 import fcntl
 import json
@@ -18,10 +22,18 @@ import uuid
 
 vendor = sys.argv[1]
 argv = sys.argv[2:]
+if argv[:2] in (['login', 'status'], ['auth', 'status']):
+    if os.path.exists(os.path.join(os.path.expanduser('~'), '.fakecli-logged-out')):
+        print('Not logged in' if vendor == 'codex' else '{"loggedIn": false}')
+        sys.exit(1)
+    print('Logged in using ChatGPT' if vendor == 'codex' else '{"loggedIn": true, "authMethod": "claude.ai"}')
+    sys.exit(0)
 CTRL = os.environ.get('FAKECLI_CONTROL')
 ctrl = json.load(open(CTRL)) if CTRL and os.path.exists(CTRL) else {}
-STATE = (CTRL or '/tmp/fakecli') + '.state'
-LOG = (CTRL or '/tmp/fakecli') + '.log'
+SDIR = os.environ.get('FAKECLI_STATE') or os.path.dirname(CTRL or '/tmp/fakecli')
+os.makedirs(SDIR, exist_ok=True)
+STATE = os.path.join(SDIR, 'fakecli.state')
+LOG = os.path.join(SDIR, 'fakecli.log')
 prompt = sys.stdin.read()
 cwd = os.getcwd()
 resume = (vendor == 'codex' and argv[:2] == ['exec', 'resume']) or (vendor == 'claude' and '--resume' in argv)
@@ -144,6 +156,12 @@ if beh == 'limit':
     else:
         emit({'type': 'result', 'is_error': True, 'result': 'Claude AI usage limit reached|%d' % reset})
     sys.exit(1)
+if beh == 'auth':
+    if vendor == 'codex':
+        emit({'type': 'error', 'message': 'Your access token could not be refreshed. Please log out and sign in again.'})
+    else:
+        emit({'type': 'result', 'is_error': True, 'result': 'Failed to authenticate: OAuth token revoked. Please log in again.'})
+    sys.exit(1)
 if beh == 'burn':
     for _ in range(400):
         spend(150000, 1000)
@@ -158,6 +176,13 @@ if role == 'builder':
         subprocess.run(['git', 'add', 'tools/evil2.py'], cwd=cwd)
         subprocess.run(['git', '-c', 'user.name=fake', '-c', 'user.email=f@f', 'commit', '-qm', 'sneaky'], cwd=cwd)
         builder_files('DONE')
+    elif beh == 'symlink':
+        builder_files('DONE')
+        os.remove(os.path.join(cwd, 'proofs', card, 'NOTES.md'))
+        os.symlink('/etc/hostname', os.path.join(cwd, 'proofs', card, 'NOTES.md'))
+    elif beh == 'exec-mode':
+        builder_files('DONE')
+        os.chmod(os.path.join(cwd, 'proofs', card, 'harness.c'), 0o755)
     elif beh == 'own-review':
         builder_files('DONE')
         write('reviews/%s-r%s.md' % (card, rnd), 'APPROVE\nI approve my own work\n')
@@ -171,6 +196,18 @@ if role == 'builder':
         builder_files('DONE')
 else:
     verdict = {'approve': 'APPROVE', 'reject': 'REJECT', 'needs-zach': 'NEEDS-ZACH', 'touch-tracked': 'APPROVE'}.get(beh, 'APPROVE')
+    if beh == 'probe':
+        seen = {}
+        for name, path in json.loads(os.environ.get('FAKECLI_PROBE') or '{}').items():
+            seen[name] = os.path.exists(path)
+        try:
+            open(os.path.join(cwd, '.probe-write'), 'w').write('x')
+            seen['own worktree writable'] = True
+        except OSError:
+            seen['own worktree writable'] = False
+        with open(LOG, 'a') as f:
+            f.write(json.dumps({'t': time.time(), 'vendor': vendor, 'key': key, 'probe': seen, 'cwd': cwd}) + '\n')
+        os.remove(os.path.join(cwd, '.probe-write'))
     if beh == 'touch-tracked':
         with open(os.path.join(cwd, 'cards', '%s.md' % card), 'a') as f:
             f.write('\nreviewer was here\n')

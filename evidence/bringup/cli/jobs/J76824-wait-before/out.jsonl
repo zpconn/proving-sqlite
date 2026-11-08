@@ -1,0 +1,25 @@
+{"type":"thread.started","thread_id":"01a1bd45-b251-73a0-b9b1-8c6dbc3c4ed8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll run the command in the foreground, wait for its final line, and then write that line to `long.txt`.\n"}}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'sleep 900; echo LONG-RUN-FINISHED'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"The command is still running; it has produced no output yet.\n"}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"I’m continuing to wait for the command’s final output.\n"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"The command remains active with no output yet.\n"}}
+{"type":"item.completed","item":{"id":"item_5","type":"agent_message","text":"I’m still waiting for the 900-second command to finish.\n"}}
+{"type":"item.completed","item":{"id":"item_6","type":"agent_message","text":"The command is still running. Its final line has not appeared.\n"}}
+{"type":"item.completed","item":{"id":"item_7","type":"agent_message","text":"I’m continuing to wait; the command has produced no output.\n"}}
+{"type":"item.completed","item":{"id":"item_8","type":"agent_message","text":"The command remains active. I’ll write `long.txt` once it finishes.\n"}}
+{"type":"item.completed","item":{"id":"item_9","type":"agent_message","text":"I’m still waiting for the final output from the running command.\n"}}
+{"type":"item.completed","item":{"id":"item_10","type":"agent_message","text":"The command is still running and has not printed its completion line.\n"}}
+{"type":"item.completed","item":{"id":"item_11","type":"agent_message","text":"I’m continuing to wait for the command to complete.\n"}}
+{"type":"item.completed","item":{"id":"item_12","type":"agent_message","text":"The command remains active with no output yet.\n"}}
+{"type":"item.completed","item":{"id":"item_13","type":"agent_message","text":"I’m still waiting for its final line before creating `long.txt`.\n"}}
+{"type":"item.completed","item":{"id":"item_14","type":"agent_message","text":"The command is still running; no completion output has appeared.\n"}}
+{"type":"item.completed","item":{"id":"item_15","type":"agent_message","text":"I’m continuing to wait for the running command to finish.\n"}}
+{"type":"item.completed","item":{"id":"item_16","type":"agent_message","text":"The command remains active. I’m waiting for its completion line.\n"}}
+{"type":"item.completed","item":{"id":"item_17","type":"agent_message","text":"I’m still waiting; the command has not produced its final output.\n"}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'sleep 900; echo LONG-RUN-FINISHED'","aggregated_output":"LONG-RUN-FINISHED\n","exit_code":0,"status":"completed"}}
+{"type":"item.started","item":{"id":"item_18","type":"command_execution","command":"/bin/bash -lc \"printf '%s\\\\n' 'LONG-RUN-FINISHED' > long.txt\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_18","type":"command_execution","command":"/bin/bash -lc \"printf '%s\\\\n' 'LONG-RUN-FINISHED' > long.txt\"","aggregated_output":"","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_19","type":"agent_message","text":"done"}}
+{"type":"turn.completed","usage":{"input_tokens":746226,"cached_input_tokens":722816,"cache_write_input_tokens":0,"output_tokens":1852,"reasoning_output_tokens":193}}

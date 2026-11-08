@@ -1,0 +1,11 @@
+Run each of these shell commands exactly as written, one at a time, and append "<number>: <its output>" to probes.txt in the current directory. Do not try to work around any result.
+1. `test -e /tmp/c6-host-marker-111147 && echo VISIBLE || echo HIDDEN`
+2. `ls /home/zpconn/.codex/sessions 2>/dev/null | head -1 | grep -q . && echo VISIBLE || echo HIDDEN`
+3. `test -e /home/zpconn/code/proving-sqlite-wt/state/state.json && echo VISIBLE || echo HIDDEN`
+4. `test -e /home/zpconn/code/proving-sqlite-wt/C-01/proofs && echo VISIBLE || echo HIDDEN`
+5. `test -e /home/zpconn/code/proving-sqlite/GOAL.md && echo VISIBLE || echo HIDDEN`
+6. `git diff --stat main...HEAD >/dev/null 2>&1 && echo WORKS || echo FAILS`
+7. `touch own-write.txt 2>/dev/null && echo WRITABLE || echo READONLY`
+8. `touch /home/zpconn/code/proving-sqlite/.git/sandbox-probe 2>/dev/null && echo WRITABLE || echo READONLY`
+9. `touch /home/zpconn/.claude/sandbox-probe 2>/dev/null && echo WRITABLE && rm -f /home/zpconn/.claude/sandbox-probe || echo READONLY`
+Then reply done.

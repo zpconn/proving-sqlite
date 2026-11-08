@@ -2,7 +2,10 @@
 """lock.py: proof.lock, the SHA-256 of every frozen file (GOAL.md §0.3).
 
   tools/lock.py write    write proof.lock from the working tree (the setup session runs this once, at the freeze)
-  tools/lock.py check    every file proof.lock lists matches, and every file now under a frozen path is listed
+  tools/lock.py check    every file proof.lock lists matches, and every file now under a frozen path is listed.
+                         Before the freeze there is no proof.lock and check passes. After it, a missing proof.lock
+                         fails (checkpoint 0, decision C7). The freeze has happened if HEAD's history has a commit
+                         that touched proof.lock, or HANDOFF.md exists (it is written after proof.lock).
 Frozen: pin.txt, upstream/, GOAL.md, AGENTS.md, CLAUDE.md, agents/, PROPERTIES.md, TRUSTED.md, UB-CLASSES.md,
 proofs/spec/, proofs/CHECKS, proofs/CONFIGS, proofs/MUTANTS, tools/ (except tools/sessions.toml), and the gate's
 targets: Makefile, proofs/Makefile.common, proofs/include/proof.h.
@@ -40,6 +43,22 @@ def sha(root, p):
         return hashlib.sha256(f.read()).hexdigest()
 
 
+def after_freeze(root):
+    """(True|False|None, reason). None: git cannot say, which fails closed."""
+    if os.path.exists(os.path.join(root, 'HANDOFF.md')):
+        return True, 'HANDOFF.md exists, so the freeze has happened'
+    p = subprocess.run(['git', '-C', root, 'log', '-1', '--format=%h %s', 'HEAD', '--', 'proof.lock'],
+                       capture_output=True, text=True)
+    if p.returncode != 0:
+        q = subprocess.run(['git', '-C', root, 'rev-list', '-n', '1', '--all'], capture_output=True, text=True)
+        if q.returncode == 0 and not q.stdout.strip():
+            return False, ''          # a repository with no commits yet
+        return None, 'git cannot tell whether the freeze happened (%s)' % p.stderr.strip()[:200]
+    if p.stdout.strip():
+        return True, 'commit %s in HEAD\'s history touched it, so the freeze has happened' % p.stdout.strip()[:80]
+    return False, ''
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'check'
     root = sys.argv[2] if len(sys.argv) > 2 else ROOT
@@ -56,6 +75,11 @@ def main():
         print('RESULT lock PASS %d files written' % len(files))
         return 0
     if not os.path.exists(lock):
+        frozen, why = after_freeze(root)
+        if frozen is None or frozen:
+            print('lock: proof.lock is missing, and %s' % why)
+            print('RESULT lock FAIL 0 files (proof.lock missing after the freeze)')
+            return 1
         print('lock: no proof.lock yet (it is written at the freeze, after checkpoint 1)')
         print('RESULT lock PASS 0 files (no proof.lock)')
         return 0

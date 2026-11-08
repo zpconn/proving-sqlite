@@ -12,7 +12,7 @@ If your prompt says this is a re-review after a contract change, your worktree i
 2. **Rerun everything before believing it:** `make -C proofs/C-NN prove` on every configuration, coverage, `tools/mutate.py --card C-NN`, `tools/check_overlay.py` and `tools/scan.py`.
 3. **Check the code, not the prose.** When NOTES.md says a caller guarantees something, open the caller at that line and check.
 4. **Approve only with no blocker or major issue open.**
-5. **Long runs.** A CBMC run can take 10 minutes, longer than your shell waits by default. Start each run in the background with its output in a file and read the file when the run ends, or give the command a timeout longer than the run. Trust only output that ends with its RESULT line.
+5. **Long runs.** A CBMC run can take 10 minutes, longer than your shell waits by default. Start each run in the background with its output in a file and read the file when the run ends, or give the command a timeout longer than the run. Trust only output that ends with its RESULT line. Your sandbox gives you a private /tmp and shows you only your own worktree.
 
 ## 2. Checklist, most serious first
 
@@ -24,7 +24,7 @@ If your prompt says this is a re-review after a contract change, your worktree i
    - Anything callers don't establish must have a ledger draft that names who must make it true.
    - For a footprint, the required value minus one must fail.
 4. **Not vacuous.**
-   - Coverage reaches every line of the card's functions, or each gap is explained and the explanation is right; an unreachable line can mean a requires is too strong.
+   - Coverage reaches every line of the card's functions, or each gap is listed under `## Unreached lines` in NOTES.md and the explanation is right; an unreachable line can mean a requires is too strong.
    - The function's return is reachable.
    - Each of the card's mutants is killed, or its equivalence argument holds.
 5. **Ensures and assigns.** They're what the code does, which the proof shows. They give the callers' cards what those need, and no more. Assigns lists every write.

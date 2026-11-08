@@ -330,5 +330,25 @@
    "seconds": 15,
    "status": "PASS"
   }
- ]
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "5219e5648758280810ba7104856c48c9519fd66f",
+   "gate": "make gate CARD=C-01 (merge of C-01 r2)",
+   "gate_log": "evidence/gate/C-01-r2.log",
+   "note": "backfilled at checkpoint 0 from git history: the commit that last wrote the field and its gate log"
+  },
+  "mutants": {
+   "commit": "5219e5648758280810ba7104856c48c9519fd66f",
+   "gate": "make gate CARD=C-01 (merge of C-01 r2)",
+   "gate_log": "evidence/gate/C-01-r2.log",
+   "note": "backfilled at checkpoint 0 from git history: the commit that last wrote the field and its gate log"
+  },
+  "prove_summary": {
+   "commit": "5219e5648758280810ba7104856c48c9519fd66f",
+   "gate": "make gate CARD=C-01 (merge of C-01 r2)",
+   "gate_log": "evidence/gate/C-01-r2.log",
+   "note": "backfilled at checkpoint 0 from git history: the commit that last wrote the field and its gate log"
+  }
+ }
 }

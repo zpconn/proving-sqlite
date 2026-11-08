@@ -20,7 +20,24 @@ Rejects:
   8. contracts used by REPLACE that are not in proofs/contracts/<fn>.h, or contract_<fn> declared
      anywhere else; for an in-scope callee, no card ENFORCEs it;
   9. zero-filling tricks in harnesses and predicates: calloc, memset, `= {` initializers, and
-     file-scope object definitions (static storage is zero-initialized).
+     file-scope object definitions (static storage is zero-initialized);
+ 10. (checkpoint 0, decision C) functions that end or redirect a path, which hides it from every later check as an
+     assume would: abort, exit, _Exit, longjmp and their kin, __VERIFIER_*, and __CPROVER_array_set,
+     __CPROVER_array_replace and __CPROVER_array_copy, which write bytes wholesale; in harnesses, predicates,
+     specs and contracts;
+ 11. in each harness entry function (a proof's ENTRY): return or goto; anything but exactly one SETUP block;
+     statements before it other than declarations; in it, anything but declarations, __CPROVER_assume of
+     primitives, allocations and field or pointer assignments that read no data; and a call under proof (the
+     ENFORCE function, else the first call to a card function) that comes before END SETUP, is missing, or
+     sits inside a condition or loop, which would hide the inputs that skip it. SETUP blocks outside entry
+     functions;
+ 12. files in proofs/C-NN/ but harness.c, Makefile, NOTES.md and the ignored build/ directory; files in
+     overlay/ but sqlite3.c; files in proofs/include/ but proof.h and preds.h; symlinks anywhere under
+     proofs/, overlay/ or tests/repro/; preprocessor directives a harness or header has no use for
+     (#import, #embed, #line, any #pragma but once);
+ 13. with --base: a change to proofs/include/preds.h that removes or alters anything it held (it may only
+     gain predicates);
+ 14. a card whose functions are not all in some proof's COVER (coverage would not look at them).
 
 Usage: tools/scan.py [--root DIR] [--card C-NN [--base REF]] [--overlay FILE]
   --card limits the harness rules to one card and, with --base, requires every PROOF span that
@@ -49,6 +66,19 @@ LOOP_FUNCS = {'__CPROVER_loop_entry', '__CPROVER_forall', '__CPROVER_exists', '_
               '__CPROVER_rw_ok', '__CPROVER_same_object', '__CPROVER_POINTER_OFFSET', '__CPROVER_POINTER_OBJECT',
               '__CPROVER_OBJECT_SIZE', '__CPROVER_typed_target', 'sizeof'}
 C_KEYWORDS = {'if', 'while', 'for', 'switch', 'return', 'sizeof', 'do', 'else', 'case', 'goto'}
+# Rule 10: names that end a path (an assume by another name) or overwrite bytes wholesale. Matched as identifiers,
+# not only calls, so a function pointer to one is caught too.
+PATH_ENDERS = ['abort', 'exit', '_Exit', '_exit', 'quick_exit', 'at_quick_exit', 'atexit', 'longjmp', 'siglongjmp',
+               '_longjmp', '__builtin_longjmp', 'setjmp', 'sigsetjmp', '_setjmp', '__builtin_setjmp', 'thrd_exit',
+               'pthread_exit', '__builtin_trap', '__builtin_unreachable', '__CPROVER_array_set',
+               '__CPROVER_array_replace', '__CPROVER_array_copy', '__CPROVER_havoc_object', '__CPROVER_havoc_slice']
+PATH_ENDERS_RX = re.compile(r'\b(%s|__VERIFIER_[A-Za-z0-9_]*)\b' % '|'.join(re.escape(x) for x in PATH_ENDERS))
+# Rule 11: calls a SETUP statement may make
+SETUP_CALLS = {'malloc', 'sizeof', '__CPROVER_assume', '__CPROVER_r_ok', '__CPROVER_w_ok', '__CPROVER_rw_ok',
+               '__CPROVER_same_object', '__CPROVER_POINTER_OFFSET', '__CPROVER_POINTER_OBJECT', '__CPROVER_OBJECT_SIZE'}
+DEREF_RX = re.compile(r'(^|[(,!=<>&|?:~+\-])\s*\*')
+CARD_DIR_FILES = {'harness.c', 'Makefile', 'NOTES.md'}
+ALLOWED_DIRECTIVES = {'include', 'define', 'undef', 'if', 'ifdef', 'ifndef', 'elif', 'else', 'endif', 'error', 'pragma'}
 
 
 class Scan:
@@ -210,8 +240,9 @@ def check_configs(s):
     p = os.path.join(s.root, 'proofs', 'CONFIGS')
     for name, flags in prove.read_configs(s.root):
         for f in flags:
-            if not (f in ('-m64', '-m32', '--big-endian', '--little-endian') or re.match(r'^-DSQLITE_BYTEORDER=(1234|4321)$', f)):
-                s.bad(s.rel(p), 'configuration %s: flag %s is not a word-size or byte-order flag' % (name, f))
+            if not (f in ('-m64', '-m32', '--big-endian', '--little-endian', '-funsigned-char')
+                    or re.match(r'^-DSQLITE_BYTEORDER=(1234|4321)$', f)):
+                s.bad(s.rel(p), 'configuration %s: flag %s is not a word-size, byte-order or char-signedness flag' % (name, f))
 
 
 def check_pragmas(s, where, code):
@@ -279,7 +310,239 @@ def check_function_defs(s, where, code, sqlite_ids, allow_contract_decl=None):
                 code.count('\n', 0, m.start()) + 1, m.group(1), m.group(1)[len('contract_'):]))
 
 
-def check_harness(s, card_dir, sqlite_ids):
+def without_strings(code):
+    """String and character literals emptied (lines are kept), so names inside messages aren't matched."""
+    return re.sub(r'"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])*\'', '""', code)
+
+
+def check_path_enders(s, where, code):
+    """Rule 10."""
+    c = without_strings(code)
+    for m in PATH_ENDERS_RX.finditer(c):
+        s.bad(where, 'line %d: %s ends or redirects a path (an assume by another name) or overwrites bytes wholesale; '
+                     'not allowed' % (c.count('\n', 0, m.start()) + 1, m.group(1)))
+
+
+def check_directives(s, where, code):
+    """Rule 12: only the preprocessor directives a harness or header needs."""
+    for m in re.finditer(r'^[ \t]*#[ \t]*([A-Za-z_]\w*)(.*)$', code, re.M):
+        d, rest = m.group(1), m.group(2).strip()
+        line = code.count('\n', 0, m.start()) + 1
+        if d not in ALLOWED_DIRECTIVES:
+            s.bad(where, 'line %d: #%s not allowed' % (line, d))
+        elif d == 'pragma' and rest != 'once':
+            s.bad(where, 'line %d: #pragma %s not allowed (only #pragma once)' % (line, rest[:40]))
+
+
+def split_statements(text, base):
+    """[(offset, statement)] split at ';' outside parentheses and brackets."""
+    out, depth, start = [], 0, 0
+    for i, ch in enumerate(text):
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth -= 1
+        elif ch == ';' and depth == 0:
+            out.append((base + start, text[start:i]))
+            start = i + 1
+    if text[start:].strip():
+        out.append((base + start, text[start:]))
+    return [(o, x) for o, x in out if x.strip()]
+
+
+def calls_in(text):
+    return [m.group(1) for m in re.finditer(r'\b([A-Za-z_][A-Za-z0-9_]*)\s*\(', text) if m.group(1) not in C_KEYWORDS or m.group(1) == 'sizeof']
+
+
+def is_declaration(stmt):
+    """A declaration without an initializer, or anything else that assigns, calls and branches on nothing."""
+    return not re.search(r'[={}?]|\+\+|--', stmt) and all(c == 'sizeof' for c in calls_in(stmt)) and \
+        not re.search(r'\b(if|while|for|switch|do|else|case|return|goto)\b', stmt)
+
+
+def top_assignment(stmt):
+    """(lhs, rhs) if stmt is `lhs = rhs` with one plain '=' outside parentheses, else None."""
+    depth = 0
+    for i, ch in enumerate(stmt):
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth -= 1
+        elif ch == '=' and depth == 0:
+            prev = stmt[i - 1] if i else ''
+            nxt = stmt[i + 1] if i + 1 < len(stmt) else ''
+            if prev in '=!<>+-*/%&|^' or nxt == '=':
+                return None
+            return stmt[:i], stmt[i + 1:]
+    return None
+
+
+def setup_statement_problem(stmt):
+    """Rule 11: what a SETUP statement may be. None if allowed."""
+    t = stmt.strip()
+    bad_calls = [c for c in calls_in(t) if c not in SETUP_CALLS]
+    if re.search(r'[{}]', t) or re.search(r'\b(if|while|for|switch|do|else|case|return|goto)\b', t):
+        return 'a SETUP block holds straight-line statements only'
+    if bad_calls:
+        return 'a SETUP block may call only malloc and CPROVER primitives (calls %s)' % ', '.join(sorted(set(bad_calls)))
+    if re.match(r'^__CPROVER_assume\s*\(', t):
+        e = balanced(t, t.index('('))
+        return None if e == len(t) else 'an assume must be a statement of its own'
+    if is_declaration(t):
+        return None
+    a = top_assignment(t)
+    if a is None:
+        return 'a SETUP block holds declarations, assumes and allocations or field and pointer assignments only'
+    lhs, rhs = a
+    if '[' in lhs or re.match(r'^\s*\*', lhs) or re.search(r'\+\+|--', t):
+        return 'a SETUP assignment may not store through a subscript or a pointer (that fixes data bytes)'
+    if '[' in rhs or DEREF_RX.search(rhs):
+        return 'a SETUP assignment may not read through a subscript or a pointer (that copies data bytes)'
+    return None
+
+
+def check_entries(s, where, raw, code, proofs, card):
+    """Rule 11, for each proof's ENTRY function."""
+    defs = {name: (start, b, e) for name, start, b, e in top_level_functions(code)}
+    setup_rx = re.compile(r'/\*\s*SETUP\s*\*/')
+    end_rx = re.compile(r'/\*\s*END SETUP\s*\*/')
+    entry_ranges = []
+    for proof in proofs:
+        ent = proof.entry
+        if ent not in defs:
+            s.bad(where, '%s: entry function %s is not defined in harness.c' % (proof.name, ent))
+            continue
+        _, b, e = defs[ent]
+        entry_ranges.append((b, e))
+        body = code[b + 1:e]
+        for m in re.finditer(r'\b(return|goto)\b', body):
+            s.bad(where, 'line %d: %s in entry function %s (a path that skips the call under proof is an assume)' % (
+                code.count('\n', 0, b + 1 + m.start()) + 1, m.group(1), ent))
+        setups = [m for m in setup_rx.finditer(raw, b, e)]
+        ends = [m for m in end_rx.finditer(raw, b, e)]
+        if len(setups) != 1 or len(ends) != 1 or ends[0].start() < setups[0].end():
+            s.bad(where, 'entry function %s must hold exactly one /* SETUP */ ... /* END SETUP */ block (found %d and %d)' % (
+                ent, len(setups), len(ends)))
+            continue
+        sa, sb = setups[0].start(), ends[0].end()
+        for off, st in split_statements(code[b + 1:sa], b + 1):
+            if not is_declaration(st):
+                s.bad(where, 'line %d: before SETUP, entry function %s may only declare variables: %s' % (
+                    code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1, ent, ' '.join(st.split())[:80]))
+        for off, st in split_statements(code[setups[0].end():ends[0].start()], setups[0].end()):
+            why = setup_statement_problem(st)
+            if why:
+                s.bad(where, 'line %d: %s: %s' % (code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1, why,
+                                                    ' '.join(st.split())[:80]))
+        targets = proof.enforced or (card.functions if card else [])
+        if not targets:
+            continue
+        rx = re.compile(r'\b(%s)\s*\(' % '|'.join(re.escape(t) for t in targets))
+        m = rx.search(code, sb, e)
+        if not m:
+            s.bad(where, 'entry function %s never calls the function under proof (%s) after END SETUP' % (ent, ', '.join(targets)))
+            continue
+        before = code[b + 1:m.start()]
+        depth = before.count('{') - before.count('}')
+        stmt_start = max(before.rfind(';'), before.rfind('{'), before.rfind('}'))
+        prefix = before[stmt_start + 1:]
+        if depth != 0 or re.search(r'\b(if|else|while|for|do|switch|case)\b|\?|&&|\|\|', prefix):
+            s.bad(where, 'line %d: the call under proof (%s) must be a statement of %s\'s body, not inside a condition '
+                         'or loop (that hides the inputs that skip it)' % (code.count('\n', 0, m.start()) + 1, m.group(1), ent))
+    for m in setup_rx.finditer(raw):
+        if not any(b <= m.start() < e for b, e in entry_ranges):
+            s.bad(where, 'line %d: SETUP block outside an entry function' % (raw.count('\n', 0, m.start()) + 1))
+
+
+def check_card_dir_files(s, card_dir):
+    """Rule 12: proofs/C-NN/ holds harness.c, Makefile, NOTES.md and the ignored build/ directory only."""
+    for n in sorted(os.listdir(card_dir)):
+        p = os.path.join(card_dir, n)
+        if n == 'build' and os.path.isdir(p) and not os.path.islink(p):
+            continue
+        if n not in CARD_DIR_FILES or not os.path.isfile(p):
+            s.bad(s.rel(p), 'proofs/C-NN/ may hold only harness.c, Makefile and NOTES.md (quoted includes resolve here first)')
+
+
+def check_tree_files(s):
+    """Rule 12: overlay/ and proofs/include/ hold their named files only; no symlink under proofs/, overlay/,
+    tests/repro/."""
+    for sub, names in (('overlay', {'sqlite3.c'}), ('proofs/include', {'proof.h', 'preds.h'})):
+        d = os.path.join(s.root, sub)
+        if os.path.isdir(d):
+            for n in sorted(os.listdir(d)):
+                if n not in names or not os.path.isfile(os.path.join(d, n)):
+                    s.bad('%s/%s' % (sub, n), '%s/ may hold only %s' % (sub, ', '.join(sorted(names))))
+    for sub in ('proofs', 'overlay', 'tests/repro'):
+        d = os.path.join(s.root, sub)
+        if os.path.islink(d):
+            s.bad(sub, 'is a symlink')
+            continue
+        for dirpath, dirnames, filenames in os.walk(d):
+            for n in dirnames + filenames:
+                if os.path.islink(os.path.join(dirpath, n)):
+                    s.bad(s.rel(os.path.join(dirpath, n)), 'symlink not allowed (its content would live outside git)')
+
+
+def top_level_items(code):
+    """Preprocessor lines, function definitions and declarations at file scope, whitespace-normalized. A function
+    definition (a body whose header ends in ')') ends at its '}'; a struct, union, enum or initializer goes on to ';'."""
+    items, depth, start, i, n = [], 0, 0, 0, len(code)
+    func_body = False
+    while i < n:
+        c = code[i]
+        if depth == 0 and c == '#' and code[start:i].strip() == '':
+            j = code.find('\n', i)
+            j = n if j < 0 else j
+            items.append(' '.join(code[i:j].split()))
+            start = i = j
+            continue
+        if c == '{':
+            if depth == 0:
+                func_body = code[start:i].rstrip().endswith(')')
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth == 0 and func_body:
+                items.append(' '.join(code[start:i + 1].split()))
+                start = i + 1
+        elif c == ';' and depth == 0:
+            items.append(' '.join(code[start:i + 1].split()))
+            start = i + 1
+        i += 1
+    if code[start:].strip():
+        items.append(' '.join(code[start:].split()))
+    return [x for x in items if x and x != ';']
+
+
+def check_preds_growth(s, base):
+    """Rule 13: every file-scope item preds.h held at base is still there, unchanged."""
+    rel = 'proofs/include/preds.h'
+    p = subprocess.run(['git', '-C', s.root, 'show', '%s:%s' % (base, rel)], capture_output=True)
+    if p.returncode != 0:
+        return   # preds.h did not exist at base
+    old = top_level_items(strip_comments(p.stdout.decode('utf-8', 'replace')))
+    cur_path = os.path.join(s.root, rel)
+    new = top_level_items(strip_comments(open(cur_path, errors='replace').read())) if os.path.exists(cur_path) else []
+    from collections import Counter
+    missing = Counter(old) - Counter(new)
+    for item in missing:
+        s.bad(rel, 'may only gain predicates; this item it held at %s was removed or changed: %s' % (base, item[:100]))
+
+
+def check_cover(s, card_dir, card, proofs):
+    """Rule 14: every function the card names is in some proof's COVER."""
+    if card is None or not proofs:
+        return
+    covered = set()
+    for p in proofs:
+        covered.update(p.cover)
+    for f in card.functions:
+        if f not in covered:
+            s.bad(s.rel(os.path.join(card_dir, 'Makefile')), '%s is a function of %s but no proof\'s COVER names it' % (f, card.id))
+
+
+def check_harness(s, card_dir, sqlite_ids, proofs=(), card=None):
     hp = os.path.join(card_dir, 'harness.c')
     where = s.rel(hp)
     if not os.path.exists(hp):
@@ -300,9 +563,12 @@ def check_harness(s, card_dir, sqlite_ids):
             s.bad(where, 'sqlite3.c included more than once')
     check_pragmas(s, where, code)
     check_defines(s, where, code)
+    check_directives(s, where, code)
     check_assumes(s, where, raw, code, allow_setup=True)
     check_zero_fill(s, where, code)
     check_function_defs(s, where, code, sqlite_ids)
+    check_path_enders(s, where, code)
+    check_entries(s, where, raw, code, proofs, card)
 
 
 def check_card_makefile(s, card_dir):
@@ -344,6 +610,8 @@ def check_contract_files(s, sqlite_ids, all_cards, enforced):
             s.bad(where, 'must declare contract_%s' % fn)
         check_pragmas(s, where, code)
         check_defines(s, where, code)
+        check_directives(s, where, code)
+        check_path_enders(s, where, code)
         check_assumes(s, where, raw, code, allow_setup=False)
         check_function_defs(s, where, code, sqlite_ids, allow_contract_decl='contract_' + fn)
         for name, start, _, _ in top_level_functions(code):
@@ -370,6 +638,8 @@ def check_preds(s, sqlite_ids):
             code = strip_comments(raw)
             check_pragmas(s, where, code)
             check_defines(s, where, code)
+            check_directives(s, where, code)
+            check_path_enders(s, where, code)
             check_assumes(s, where, raw, code, allow_setup=False)
             check_zero_fill(s, where, code)
             check_function_defs(s, where, code, sqlite_ids)
@@ -577,11 +847,16 @@ def main():
             continue
         _, proofs = check_card_makefile(s, cd)
         card_proofs[d] = proofs
-        check_harness(s, cd, sqlite_ids)
+        check_card_dir_files(s, cd)
+        check_harness(s, cd, sqlite_ids, proofs, all_cards.get(d))
+        check_cover(s, cd, all_cards.get(d), proofs)
     enforced = check_replacements(s, all_cards, card_proofs)
     check_contract_files(s, sqlite_ids, all_cards, enforced)
     check_preds(s, sqlite_ids)
     check_overlay_spans(s, overlay_path, all_cards, a.card, a.base)
+    check_tree_files(s)
+    if a.base:
+        check_preds_growth(s, a.base)
     for p in s.problems:
         print('scan: ' + p)
     if not s.problems:

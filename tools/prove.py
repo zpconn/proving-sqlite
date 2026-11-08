@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""prove.py: build and run a card's CBMC proofs, coverage, and the configuration probe.
+"""prove.py: build and run a card's CBMC proofs, coverage, the include check and the configuration probe.
+
+  prove.py includes --card-dir proofs/C-NN [--config c]: preprocess the harness and fail on any file it pulls in
+  but the overlay's sqlite3.c, proofs/{include,contracts,spec}/*.h and system headers (the gate runs it).
 
 Every proof is one translation unit: the card's harness.c, whose first line is
 `#include "sqlite3.c"` (the overlay, found with -I), followed by contracts and predicates. Per
@@ -517,11 +520,23 @@ def cover_one(card, card_dir, proof, cfg_name, cfg_flags, overlay_dir, build_roo
 
 
 def explained_lines(card_dir):
-    """Upstream line numbers NOTES.md mentions as sqlite3.c:<line>."""
+    """Upstream lines NOTES.md explains: each `sqlite3.c:<line>` (or a range `sqlite3.c:<a>-<b>`) listed under the
+    heading "Unreached lines", up to the next heading. A line cited anywhere else in NOTES.md, such as a requires
+    table's caller line, explains nothing (checkpoint 0, decision C3)."""
     p = os.path.join(card_dir, 'NOTES.md')
     if not os.path.exists(p):
         return set()
-    return set(int(x) for x in re.findall(r'sqlite3\.c:(\d+)', open(p, errors='replace').read()))
+    out, inside = set(), False
+    for line in open(p, errors='replace'):
+        h = re.match(r'^\s*#+\s*(.*?)\s*#*\s*$', line)
+        if h:
+            inside = re.match(r'(?i)^unreached lines\b', h.group(1)) is not None
+            continue
+        if inside:
+            for m in re.finditer(r'sqlite3\.c:(\d+)(?:\s*[-\u2013]\s*(\d+))?', line):
+                lo, hi = int(m.group(1)), int(m.group(2) or m.group(1))
+                out.update(range(lo, min(hi, lo + 200) + 1))
+    return out
 
 
 def cmd_coverage(a):
@@ -554,7 +569,7 @@ def cmd_coverage(a):
                 print('  coverage %s %s %s: %d/%d lines; uncovered %s%s' % (
                     proof.name, cname, fn, len(set(d['goal_lines'])) - len(d['uncovered']), len(set(d['goal_lines'])),
                     ', '.join('sqlite3.c:%d' % x for x in d['uncovered']) or 'none',
-                    ('; NOT EXPLAINED in NOTES.md: ' + ', '.join('sqlite3.c:%d' % x for x in unexpl)) if unexpl else ''))
+                    ('; NOT EXPLAINED under "## Unreached lines" in NOTES.md: ' + ', '.join('sqlite3.c:%d' % x for x in unexpl)) if unexpl else ''))
                 if unexpl:
                     ok = False
     os.makedirs(build_root, exist_ok=True)
@@ -566,6 +581,61 @@ def cmd_coverage(a):
     return 0 if ok else 1
 
 
+# ---------------------------------------------------------------- includes
+
+def include_problems(card_dir, cfg_flags, overlay_dir):
+    """Preprocess the harness as build_proof compiles it and list every file it pulls in (GCC's linemarkers).
+    Allowed: the harness itself, the overlay's sqlite3.c, proofs/include/*.h, proofs/contracts/*.h, proofs/spec/*.h
+    and system headers (under /usr/include, /usr/lib/gcc, /usr/local/include). Returns (files, problems)."""
+    harness = os.path.join(card_dir, 'harness.c')
+    cmd = ['goto-cc'] + cfg_flags + ['-E', '-include', os.path.join(ROOT, 'proofs', 'include', 'proof.h'),
+                                     '-I', overlay_dir, '-I', os.path.join(ROOT, 'proofs', 'include'),
+                                     '-I', os.path.join(ROOT, 'proofs'), harness]
+    p = subprocess.run(['nice', '-n', '10'] + cmd, capture_output=True, text=True, errors='replace')
+    if p.returncode != 0:
+        return [], ['preprocessing failed: %s' % (p.stderr.strip()[-400:] or p.returncode)]
+    files = set()
+    for m in re.finditer(r'^#\s*\d+\s+"((?:[^"\\]|\\.)*)"', p.stdout, re.M):
+        files.add(m.group(1))
+    allowed_dirs = [os.path.join(os.path.realpath(ROOT), 'proofs', d) for d in ('include', 'contracts', 'spec')]
+    ok_exact = {os.path.realpath(harness), os.path.realpath(os.path.join(overlay_dir, 'sqlite3.c'))}
+    probs = []
+    for f in sorted(files):
+        if f.startswith('<') and f.endswith('>'):
+            continue        # <built-in>, <command-line>
+        rp = os.path.realpath(f if os.path.isabs(f) else os.path.join(card_dir, f))
+        if rp in ok_exact:
+            continue
+        if os.path.dirname(rp) in allowed_dirs and rp.endswith('.h'):
+            continue
+        if any(rp.startswith(d) for d in ('/usr/include/', '/usr/lib/gcc/', '/usr/local/include/')) \
+                and not rp.startswith(os.path.realpath(ROOT) + '/'):
+            continue
+        probs.append('includes %s, which is not the overlay, proofs/{include,contracts,spec}/*.h or a system header' % f)
+    return sorted(files), probs
+
+
+def cmd_includes(a):
+    card_dir = os.path.abspath(a.card_dir)
+    overlay_dir = os.path.abspath(a.overlay or os.path.join(ROOT, 'overlay'))
+    name = os.path.basename(os.path.normpath(card_dir))
+    try:
+        cfgs = select_configs(a.config)
+    except (CardError, OSError) as e:
+        print('includes: %s' % e)
+        print('RESULT includes %s %s FAIL' % (name, a.config or 'all'))
+        return 1
+    ok = True
+    for cname, cflags in cfgs:
+        files, probs = include_problems(card_dir, cflags, overlay_dir)
+        for pr in probs:
+            print('  includes %s %s: %s' % (name, cname, pr))
+        ok = ok and not probs
+        print('  includes %s %s: %d files, %d not allowed' % (name, cname, len(files), len(probs)))
+    print('RESULT includes %s %s %s' % (name, cfgs[0][0] if len(cfgs) == 1 else 'all', 'PASS' if ok else 'FAIL'))
+    return 0 if ok else 1
+
+
 # ---------------------------------------------------------------- configuration probe
 
 def expectations(name):
@@ -574,8 +644,9 @@ def expectations(name):
         raise CardError('configuration name %r is not <lp64|ilp32>-<le|be>' % name)
     w = 8 if m.group(1) == 'lp64' else 4
     le = m.group(2) == 'le'
+    # -be models 64-bit PowerPC, whose plain char is unsigned; -le models x86 and i386, whose plain char is signed
     return {'EXPECT_PTR': w, 'EXPECT_LONG': w, 'EXPECT_LOW_BYTE': 4 if le else 1,
-            'EXPECT_BYTEORDER': 1234 if le else 4321}
+            'EXPECT_BYTEORDER': 1234 if le else 4321, 'EXPECT_CHAR_UNSIGNED': 0 if le else 1}
 
 
 def cmd_probe(a):
@@ -611,7 +682,7 @@ def cmd_probe(a):
             asserts = [p for p in props if '.assertion.' in p['id']]
             for p in asserts:
                 print('  probe %s: %s: %s' % (cname, p['desc'], p['status']))
-            if verdict != 'SUCCESSFUL' or len(asserts) < 7:
+            if verdict != 'SUCCESSFUL' or len(asserts) < 9:
                 err = 'probe verdict %s with %d assertions' % (verdict, len(asserts))
         if err:
             print('  probe %s: %s' % (cname, err))
@@ -624,7 +695,7 @@ def cmd_probe(a):
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest='cmd', required=True)
-    for name in ('prove', 'coverage', 'probe'):
+    for name in ('prove', 'coverage', 'probe', 'includes'):
         s = sub.add_parser(name)
         s.add_argument('--card-dir', default='.')
         s.add_argument('--config', default='all')
@@ -633,7 +704,7 @@ def main():
         s.add_argument('--timeout', type=int, default=DEFAULT_TIMEOUT)
         s.add_argument('--trace', action='store_true')
     a = ap.parse_args()
-    return {'prove': cmd_prove, 'coverage': cmd_coverage, 'probe': cmd_probe}[a.cmd](a)
+    return {'prove': cmd_prove, 'coverage': cmd_coverage, 'probe': cmd_probe, 'includes': cmd_includes}[a.cmd](a)
 
 
 if __name__ == '__main__':

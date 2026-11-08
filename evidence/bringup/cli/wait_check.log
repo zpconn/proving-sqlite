@@ -1,0 +1,4 @@
+[before] total 748078 tokens, 36 tool calls, 913s, long.txt='LONG-RUN-FINISHED'
+[after] total 36925 tokens, 2 tool calls, 913s, long.txt='LONG-RUN-FINISHED'
+RESULT wait before 748078 tokens 36 tool calls
+RESULT wait after 36925 tokens 2 tool calls

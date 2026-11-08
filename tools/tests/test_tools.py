@@ -124,6 +124,8 @@ SUM_SPAN_BAD = 'PROOF(__CPROVER_assigns(i, s) __CPROVER_loop_invariant(0 <= i &&
 HARNESS_DEAD = r'''#include "sqlite3.c"
 void harness_toyDead(void) {
   int x;
+  /* SETUP */
+  /* END SETUP */
   toyDead(x);
 }
 '''
@@ -282,9 +284,14 @@ def main():
         rc, out, res = t.run(r, ['make', '-C', 'proofs/C-92', 'coverage', cfg])
         t.expect('coverage: unreachable line %d is flagged and unexplained fails' % dead,
                  rc != 0 and ('sqlite3.c:%d' % dead) in out and 'NOT EXPLAINED' in out, out)
-        t.write(r, 'proofs/C-92/NOTES.md', '- sqlite3.c:%d: x>20 && x<15 is unsatisfiable\n' % dead)
+        t.write(r, 'proofs/C-92/NOTES.md', '## Requires\n| caller | sqlite3.c:%d |\n' % dead)
         rc, out, res = t.run(r, ['make', '-C', 'proofs/C-92', 'coverage', cfg])
-        t.expect('coverage: the same gap explained in NOTES.md passes', rc == 0 and '1 uncovered 0 unexplained' in res, out)
+        t.expect('coverage: the gap cited in NOTES.md outside "Unreached lines" (a requires table) is not an explanation',
+                 rc != 0 and 'NOT EXPLAINED' in out and '1 unexplained' in res, out)
+        t.write(r, 'proofs/C-92/NOTES.md', '## Requires\n| caller | sqlite3.c:1 |\n\n## Unreached lines\n'
+                '- sqlite3.c:%d: x>20 && x<15 is unsatisfiable\n\n## Loops\n- none\n' % dead)
+        rc, out, res = t.run(r, ['make', '-C', 'proofs/C-92', 'coverage', cfg])
+        t.expect('coverage: the same gap listed under "## Unreached lines" in NOTES.md passes', rc == 0 and '1 uncovered 0 unexplained' in res, out)
         r = setup_get(t)
         rc, out, res = t.run(r, ['make', '-C', 'proofs/C-90', 'coverage', cfg])
         t.expect('coverage: an enforced function is measured on its wrapped body (no false gaps)', rc == 0 and '0 uncovered' in res, out)
@@ -314,6 +321,80 @@ def main():
             t.write(r, rel, text)
             rc, out, res = t.run(r, [py, 'tools/scan.py'])
             t.expect('scan rejects: %s' % name, rc != 0 and needle in out, out)
+        # checkpoint 0, decision C1: hidden assumes, and SETUP discipline
+        G = HARNESS_GET.replace('FOOT', '2')
+        END = '  /* END SETUP */\n'
+        c1 = [
+            ('abort() as a hidden assume', G.replace('  toyGet(p);', '  if (p[0] > 5) abort();\n  toyGet(p);'), 'abort ends or redirects'),
+            ('__VERIFIER_assume', G.replace('  toyGet(p);', '  __VERIFIER_assume(p[0] < 5);\n  toyGet(p);'), '__VERIFIER_assume'),
+            ('exit through a function pointer', G.replace('  toyGet(p);', '  void (*q)(int) = exit;\n  toyGet(p);'), 'exit ends'),
+            ('longjmp', G.replace('  toyGet(p);', '  toyGet(p);\n  longjmp(0, 1);'), 'longjmp'),
+            ('__CPROVER_array_set on the data', G.replace('  toyGet(p);', '  __CPROVER_array_set(p, 0);\n  toyGet(p);'), '__CPROVER_array_set'),
+            ('return in the entry function', G.replace(END, END + '  if (p[0] > 5) return;\n'), 'return in entry function'),
+            ('goto in the entry function', G.replace(END, END + '  if (p[0] > 5) goto out;\n').replace('  toyGet(p);', '  toyGet(p);\nout: ;'), 'goto in entry function'),
+            ('two SETUP blocks', G.replace('  toyGet(p);', '  /* SETUP */\n  __CPROVER_assume(p != 0);\n  /* END SETUP */\n  toyGet(p);'), 'exactly one'),
+            ('no SETUP block', G.replace('  /* SETUP */\n', '').replace(END, ''), 'exactly one'),
+            ('a statement before SETUP', G.replace('void harness_toyGet(void) {\n', 'void harness_toyGet(void) {\n  int x;\n  x = 3;\n'), 'before SETUP'),
+            ('a data byte stored in SETUP', G.replace(END, '  p[0] = 1;\n' + END), 'store through a subscript'),
+            ('a data byte copied into a local in SETUP', G.replace(END, '  int x = p[1];\n' + END), 'read through'),
+            ('a predicate called from a SETUP assume', G.replace(END, '  __CPROVER_assume(toyOk(p));\n' + END), 'may call only'),
+            ('the call under proof inside a condition', G.replace('  toyGet(p);', '  if (p[0] < 0x80) toyGet(p);'), 'not inside a condition'),
+            ('the call under proof in a short-circuit', G.replace('  toyGet(p);', '  p[0] < 0x80 && toyGet(p);'), 'not inside a condition'),
+            ('an entry function that never calls the function under proof', G.replace('  toyGet(p);', '  toyLen(1);'), 'never calls'),
+            ('a SETUP block in a helper', G + 'static void helper(u8 *q) {\n  /* SETUP */\n  __CPROVER_assume(q != 0);\n  /* END SETUP */\n}\n', 'SETUP block outside an entry function'),
+            ('#pragma GCC system_header', G.replace('void harness', '#pragma GCC system_header\nvoid harness'), 'pragma'),
+            ('#line', G.replace('void harness', '#line 1 "x.c"\nvoid harness'), '#line not allowed'),
+        ]
+        for name, text, needle in c1:
+            r = setup_get(t)
+            t.write(r, 'proofs/C-90/harness.c', text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py'])
+            t.expect('scan rejects (C1): %s' % name, rc != 0 and needle in out, out)
+        for name, rel, text, needle in [
+                ('abort() in a contract', 'proofs/contracts/toyGet.h', CONTRACT_GET.replace('FOOT', '2').replace(
+                    '__CPROVER_return_value >= 0', '__CPROVER_return_value >= 0 || (abort(), 1)'), 'abort'),
+                ('abort() in preds.h', 'proofs/include/preds.h', 'static int toyOk(const u8 *p) { if (p == 0) abort(); return 1; }\n', 'abort')]:
+            r = setup_get(t)
+            t.write(r, rel, text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py'])
+            t.expect('scan rejects (C1): %s' % name, rc != 0 and needle in out, out)
+        # checkpoint 0, decision C2: files and symlinks
+        r = setup_get(t)
+        t.write(r, 'proofs/C-90/contracts/toyGet.h', '#error shadow\n')
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan rejects (C2): a shadow header in proofs/C-90/contracts/', rc != 0 and 'may hold only harness.c' in out, out)
+        r = setup_get(t)
+        os.makedirs(os.path.join(t.base, 'outside'), exist_ok=True)
+        t.write(t.base, 'outside/harness.c', G)
+        os.remove(os.path.join(r, 'proofs/C-90/harness.c'))
+        os.symlink(os.path.join(t.base, 'outside/harness.c'), os.path.join(r, 'proofs/C-90/harness.c'))
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan rejects (C2): a symlinked harness.c', rc != 0 and 'symlink not allowed' in out, out)
+        r = setup_get(t)
+        t.write(r, 'overlay/contracts/toyGet.h', '/* shadow */\n')
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan rejects (C2): an extra file in overlay/', rc != 0 and 'overlay/ may hold only' in out, out)
+        r = setup_get(t)
+        t.write(r, 'tests/repro/F-draft-C-90-1.c', 'int main(void){return 0;}\n')
+        os.symlink('/etc/hostname', os.path.join(r, 'tests/repro/link.c'))
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan rejects (C2): a symlink under tests/repro/', rc != 0 and 'tests/repro/link.c' in out, out)
+        # checkpoint 0, decision C10
+        r = setup_get(t)
+        t.write(r, 'cards/C-90.md', card_md('C-90', ['toyGet', 'toyLen'], extra_may='proofs/contracts/toyGet.h, '))
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan rejects (C10): a card function no proof\'s COVER names', rc != 0 and 'toyLen is a function of C-90' in out, out)
+        # checkpoint 0, decision C4: preds.h may only gain predicates
+        r = setup_get(t)
+        t.write(r, 'proofs/include/preds.h', '#pragma once\nstatic int toyPos(int x) { return x > 0; }\n')
+        subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', r, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'base'], check=True)
+        t.write(r, 'proofs/include/preds.h', '#pragma once\nstatic int toyPos(int x) { return x > 0; }\nstatic int toyNeg(int x) { return x < 0; }\n')
+        rc, out, res = t.run(r, [py, 'tools/scan.py', '--card', 'C-90', '--base', 'HEAD'])
+        t.expect('scan (C4): preds.h gaining a predicate passes', rc == 0, out)
+        t.write(r, 'proofs/include/preds.h', '#pragma once\nstatic int toyPos(int x) { return x >= 0; }\n')
+        rc, out, res = t.run(r, [py, 'tools/scan.py', '--card', 'C-90', '--base', 'HEAD'])
+        t.expect('scan rejects (C4): a predicate in preds.h changed', rc != 0 and 'may only gain predicates' in out, out)
         # spans
         span_cases = [
             ('span with an assignment', SUM_SPAN_GOOD.replace('s <= 255 * i', 's = 0'), 'assignment'),
@@ -404,6 +485,117 @@ def main():
         subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
         rc, out, res = t.run(r, [py, 'tools/lock.py', 'check'])
         t.expect('lock: a new file under a frozen path fails', rc != 0 and 'tools/extra.py is under a frozen path' in out, out)
+        r = setup_get(t)
+        rc, out, res = t.run(r, [py, 'tools/lock.py', 'check'])
+        t.expect('lock (C7): before the freeze, no proof.lock passes', rc == 0 and 'PASS 0 files (no proof.lock)' in res, out)
+        t.write(r, 'GOAL.md', 'x\n')
+        subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
+        t.run(r, [py, 'tools/lock.py', 'write'])
+        subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', r, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'freeze'], check=True)
+        os.remove(os.path.join(r, 'proof.lock'))
+        rc, out, res = t.run(r, [py, 'tools/lock.py', 'check'])
+        t.expect('lock (C7): proof.lock deleted after the freeze commit fails', rc != 0 and 'missing after the freeze' in res, out)
+        subprocess.run(['git', '-C', r, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qam', 'drop the lock'], check=True)
+        rc, out, res = t.run(r, [py, 'tools/lock.py', 'check'])
+        t.expect('lock (C7): ... and still fails once its deletion is committed', rc != 0 and 'FAIL' in res, out)
+        r = setup_get(t)
+        t.write(r, 'HANDOFF.md', '# handoff\n')
+        rc, out, res = t.run(r, [py, 'tools/lock.py', 'check'])
+        t.expect('lock (C7): no proof.lock while HANDOFF.md exists fails', rc != 0 and 'HANDOFF.md' in out, out)
+
+    # ---- includes (checkpoint 0, decision C2): the gate's check on the preprocessed harness
+    if want('includes'):
+        r = setup_get(t)
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'includes', '--card-dir', 'proofs/C-90'])
+        t.expect('includes: a harness that includes the overlay, proofs/contracts/ and system headers passes on every configuration',
+                 rc == 0 and 'RESULT includes C-90 all PASS' in res, out)
+        t.write(r, 'proofs/C-90/contracts/toyGet.h', CONTRACT_GET.replace('FOOT', '1'))
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'includes', '--card-dir', 'proofs/C-90', '--config', 'lp64-le'])
+        t.expect('includes: a shadow proofs/C-90/contracts/toyGet.h (quoted includes resolve there first) fails',
+                 rc != 0 and 'proofs/C-90/contracts/toyGet.h' in out and 'FAIL' in res, out)
+        r = setup_get(t)
+        t.write(r, 'proofs/include/contracts/toyGet.h', CONTRACT_GET.replace('FOOT', '1'))
+        t.write(r, 'proofs/C-90/harness.c', HARNESS_GET.replace('FOOT', '2').replace('#include "contracts/toyGet.h"', '#include "contracts/toyGet.h"\n#include "preds.h"'))
+        t.write(r, 'proofs/include/preds.h', '#include "../../upstream/sqlite3.c"\n')
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'includes', '--card-dir', 'proofs/C-90', '--config', 'lp64-le'])
+        t.expect('includes: a header that pulls in upstream/ or a nested proofs/include/contracts/ file fails',
+                 rc != 0 and 'upstream/sqlite3.c' in out and 'proofs/include/contracts/toyGet.h' in out, out)
+
+    # ---- gate (checkpoint 0, decision C4): a preds.h change reruns every card that includes it
+    if want('gate'):
+        r = setup_get(t)
+        t.write(r, 'cards/C-91.md', card_md('C-91', ['toySum']))
+        t.write(r, 'proofs/C-91/harness.c', HARNESS_SUM.replace('#include <stdlib.h>', '#include <stdlib.h>\n#include "preds.h"'))
+        t.write(r, 'proofs/C-91/Makefile', MK_SUM)
+        t.write(r, 'overlay/sqlite3.c', TOY.replace('  while( i<n ){', '  while( i<n )' + SUM_SPAN_GOOD + '{'))
+        t.write(r, 'proofs/include/preds.h', '#pragma once\nstatic int toyPos(int x) { return x > 0; }\n')
+        t.write(r, 'Makefile', open(os.path.join(REPO, 'Makefile')).read())
+        subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', r, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'base'], check=True)
+        rc, out, res = t.run(r, [py, 'tools/gate.py', 'gate', '--card', 'C-90', '--base', 'HEAD'])
+        t.expect('gate: preds.h unchanged: make gate CARD=C-90 runs C-90 only, with its includes step',
+                 'gate: cards to run: C-90\n' in out and 'includes C-90' in out, out)
+        t.write(r, 'proofs/include/preds.h', '#pragma once\nstatic int toyPos(int x) { return x > 0; }\nstatic int toyNeg(int x) { return x < 0; }\n')
+        rc, out, res = t.run(r, [py, 'tools/gate.py', 'gate', '--card', 'C-90', '--base', 'HEAD'])
+        t.expect('gate: preds.h changed: make gate CARD=C-90 also reruns C-91, whose harness includes preds.h',
+                 'also running the cards that include it: C-91' in out and 'gate: cards to run: C-90, C-91' in out
+                 and 'prove C-91' in out, out)
+
+    # ---- regression tests for the fixes the pilot exposed (checkpoint 0, decision C9)
+    if want('regress'):
+        r = t.fresh()
+        code = ('import sys; sys.path.insert(0, "tools"); import cards\n'
+                'c = {"C-01": cards.Card("C-01", open("cards/C-01.md").read()), "C-02": cards.Card("C-02", open("cards/C-02.md").read()),'
+                ' "C-03": cards.Card("C-03", open("cards/C-03.md").read())}\n'
+                'print("C-01", cards.callers_of(c, "C-01")); print("C-02", cards.callers_of(c, "C-02")); print("C-03", cards.callers_of(c, "C-03"))\n')
+        t.write(r, 'cards/C-01.md', card_md('C-01', ['toyLen', 'toySum']))
+        t.write(r, 'cards/C-02.md', card_md('C-02', ['toyLen', 'toySum', 'toyGet']))
+        t.write(r, 'cards/C-03.md', card_md('C-03', ['toyDead'], depends='C-02'))
+        rc, out, res = t.run(r, [py, '-c', code])
+        t.expect('cards.callers_of: two cards sharing functions name each other, never themselves (pilot: "C-02, C-02")',
+                 "C-01 ['C-02', 'C-03']" in out and "C-02 ['C-01', 'C-03']" in out and 'C-03 []' in out, out)
+        r = setup_get(t)
+        os.makedirs(os.path.join(r, 'evidence', 'results'))
+        old = {'card': 'C-90', 'mutants': [{'verdict': 'KILLED', 'mutant': {'id': 'M-001'}, 'detail': 'by C-90/get'}],
+               'prove_summary': [], 'coverage_summary': [],
+               'provenance': {'mutants': {'commit': 'aaaa', 'gate_log': 'evidence/gate/C-90-r1.log'}}}
+        import json as _json
+        t.write(r, 'evidence/results/C-90.json', _json.dumps(old))
+        t.write(r, 'proofs/C-90/build/prove-summary.json', _json.dumps([{'card': 'C-90', 'proof': 'get', 'config': 'lp64-le',
+                'status': 'PASS', 'seconds': 1, 'cbmc_seconds': 1, 'properties': 7, 'failed': 0}]))
+        t.write(r, 'proofs/C-90/build/coverage-summary.json', _json.dumps([]))
+        code = ('import sys, json; sys.path.insert(0, "tools"); import campaign\n'
+                'class P: state = %r\n'
+                'campaign.collect_results(P(), %r, ["C-90"], 2, None, commit="bbbb", gate_log="evidence/gate/C-91-r1.log", merged="caller gate")\n'
+                'd = json.load(open("evidence/results/C-90.json")); print(json.dumps(d, sort_keys=True))\n' % (os.path.join(r, 'st'), r))
+        os.makedirs(os.path.join(r, 'st'))
+        rc, out, res = t.run(r, [py, '-c', code])
+        rec = None
+        try:
+            rec = _json.loads(out.strip().split('\n')[-1])
+        except ValueError:
+            pass
+        csvt = open(os.path.join(r, 'results.csv')).read() if os.path.exists(os.path.join(r, 'results.csv')) else ''
+        t.expect('collect_results: a caller\'s gate (no mutants.json) keeps the card\'s mutant results, and each field records '
+                 'its own commit and gate log (pilot: C-02 lost its mutants)',
+                 rec and len(rec.get('mutants') or []) == 1 and rec['provenance']['mutants']['commit'] == 'aaaa'
+                 and rec['provenance']['prove_summary'] == {'commit': 'bbbb', 'gate_log': 'evidence/gate/C-91-r1.log', 'gate': 'caller gate'}
+                 and ',1,1,0,' in csvt and 'bbbb evidence/gate/C-91-r1.log' in csvt and 'aaaa evidence/gate/C-90-r1.log' in csvt, out + csvt)
+
+    # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
+    if want('probe'):
+        r = t.fresh()
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'probe', '--config', 'lp64-be', '--overlay', os.path.join(REPO, 'overlay')])
+        t.expect('probe: lp64-be with -funsigned-char passes, char signedness included',
+                 rc == 0 and 'plain char signedness (CBMC): SUCCESS' in out and 'RESULT probe lp64-be PASS' in out, out)
+        t.write(r, 'proofs/CONFIGS', open(os.path.join(REPO, 'proofs', 'CONFIGS')).read().replace(' -funsigned-char', ''))
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'probe', '--config', 'lp64-be', '--overlay', os.path.join(REPO, 'overlay')])
+        t.expect('probe: lp64-be without -funsigned-char (x86\'s signed char) fails', rc != 0 and 'RESULT probe lp64-be FAIL' in out, out)
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.write(r, 'proofs/CONFIGS', open(os.path.join(REPO, 'proofs', 'CONFIGS')).read().replace('-funsigned-char', '-fsigned-char'))
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan: CONFIGS may carry -funsigned-char but not another char flag', rc != 0 and '-fsigned-char' in out and '-funsigned-char' not in out.replace('-fsigned', ''), out)
 
     print('RESULT tool-tests %s %d/%d' % ('PASS' if t.passed == t.total else 'FAIL', t.passed, t.total))
     if not a.keep:

@@ -2,33 +2,62 @@
 # Not frozen by proof.lock, because CLI flags change. It may hold only command lines, model names and
 # usage-limit patterns (GOAL.md §0.3). The prompt always goes on standard input; campaign.py fixes its text.
 # Placeholders: {dir} the session's worktree, {model}, {effort}, {session} the CLI's session or thread id,
-# {home} the user's home directory.
+# {home} the user's home directory, {wtroot} ../proving-sqlite-wt, {repo} the primary checkout.
 # Every session runs under `nice -n 10` with API-key variables removed from its environment (campaign.py).
 # Evidence for every flag: evidence/bringup/10-cli.md.
 
 [vendors.codex]
 # workspace-write sandbox: writes only in {dir} and /tmp, no network, .git outside the workspace read-only.
-# --ignore-user-config: no user plugins or model defaults leak in; auth still comes from ~/.codex.
-start = ["codex", "exec", "--json", "--ignore-user-config",
+# --ignore-user-config: no user plugins or model defaults leak in; auth still comes from ~/.codex. It does not turn off
+# the ChatGPT connectors (Gmail, Sites deploy and ~300 more tools, which run outside the sandbox), web search or
+# subagents, so --disable and web_search="disabled" do. --strict-config rejects a key this codex doesn't know.
+# Waiting (checkpoint 0, decision D): background_terminal_max_timeout lets one write_stdin call block until the
+# command exits, up to an hour, and features.code_mode.default_exec_yield_time_ms stops the exec cell that wraps it
+# from yielding back to the model every 30 s. campaign.py's builder prompt says how to wait (LONG_RUN_CODEX).
+start = ["codex", "exec", "--json", "--ignore-user-config", "--strict-config",
          "-c", "sandbox_mode=\"workspace-write\"", "-c", "approval_policy=\"never\"",
+         "-c", "web_search=\"disabled\"",
+         "-c", "background_terminal_max_timeout=3600000", "-c", "features.code_mode.default_exec_yield_time_ms=3600000",
+         "--disable", "apps", "--disable", "plugins", "--disable", "remote_plugin", "--disable", "tool_suggest",
+         "--disable", "multi_agent", "--disable", "multi_agent_v2", "--disable", "image_generation",
+         "--disable", "browser_use", "--disable", "browser_use_external", "--disable", "computer_use",
+         "--disable", "in_app_browser", "--disable", "goals",
          "-m", "{model}", "-c", "model_reasoning_effort=\"{effort}\"", "-"]
-resume = ["codex", "exec", "resume", "{session}", "--json", "--ignore-user-config",
+resume = ["codex", "exec", "resume", "{session}", "--json", "--ignore-user-config", "--strict-config",
           "-c", "sandbox_mode=\"workspace-write\"", "-c", "approval_policy=\"never\"",
+          "-c", "web_search=\"disabled\"",
+          "-c", "background_terminal_max_timeout=3600000", "-c", "features.code_mode.default_exec_yield_time_ms=3600000",
+          "--disable", "apps", "--disable", "plugins", "--disable", "remote_plugin", "--disable", "tool_suggest",
+          "--disable", "multi_agent", "--disable", "multi_agent_v2", "--disable", "image_generation",
+          "--disable", "browser_use", "--disable", "browser_use_external", "--disable", "computer_use",
+          "--disable", "in_app_browser", "--disable", "goals",
           "-m", "{model}", "-c", "model_reasoning_effort=\"{effort}\"", "-"]
 login_check = ["codex", "login", "status"]
 # Printed when a ChatGPT plan's limit stops a session (strings in codex-cli 0.166.0; the apostrophe may be U+2019).
 usage_limit_patterns = ["(?i)you.{1,3}ve hit your usage limit", "usage_limit_reached", "(?i)usage limit reached",
                         "(?i)rate_limit_reached"]
+# Printed when the ChatGPT login is gone or can't be refreshed (strings in codex-cli 0.166.0): "Your access token could
+# not be refreshed … Please log out and sign in again.", "re-run `codex login`", "Run codex login …",
+# "no Codex credentials were found", and the refresh_token_failed error kind.
+auth_failure_patterns = ["(?i)sign in again", "(?i)codex login", "(?i)access token could not be refreshed",
+                         "(?i)no Codex credentials", "refresh_token_failed", "(?i)authentication session could not be refreshed"]
 
 [vendors.claude]
-# Inside bubblewrap: the filesystem is read-only except {dir}, /tmp and Claude Code's own state, so a reviewer
-# cannot write the project or another worktree. Auto permission mode: no prompts; unsafe actions are refused.
-start = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--bind", "/tmp", "/tmp",
+# Inside bubblewrap (checkpoint 0, decision C6; campaign.py's command_problems refuses anything looser):
+#   / read-only; a private /tmp; ~/.codex (builder transcripts) hidden; {wtroot} = ../proving-sqlite-wt hidden, so
+#   state/ (session logs) and every other worktree are; {repo}, the primary checkout, hidden except its .git, read-only,
+#   which the worktree's git needs; writable: the session's own worktree {dir}, and ~/.claude and ~/.claude.json,
+#   which Claude Code needs for its login and session files. ~/.claude stays writable, so a session can read earlier
+#   Claude sessions' transcripts there (other reviewers', the orchestrator's), but never a builder's.
+# Auto permission mode: no prompts; unsafe actions are refused. Network stays on: Claude Code needs it.
+start = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
+         "--tmpfs", "{home}/.codex", "--tmpfs", "{wtroot}", "--tmpfs", "{repo}", "--ro-bind", "{repo}/.git", "{repo}/.git",
          "--bind", "{home}/.claude", "{home}/.claude", "--bind", "{home}/.claude.json", "{home}/.claude.json",
          "--bind", "{dir}", "{dir}", "--chdir", "{dir}",
          "claude", "-p", "--model", "{model}", "--effort", "{effort}", "--permission-mode", "auto",
          "--output-format", "stream-json", "--verbose", "--include-partial-messages"]
-resume = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--bind", "/tmp", "/tmp",
+resume = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
+          "--tmpfs", "{home}/.codex", "--tmpfs", "{wtroot}", "--tmpfs", "{repo}", "--ro-bind", "{repo}/.git", "{repo}/.git",
           "--bind", "{home}/.claude", "{home}/.claude", "--bind", "{home}/.claude.json", "{home}/.claude.json",
           "--bind", "{dir}", "{dir}", "--chdir", "{dir}",
           "claude", "-p", "--resume", "{session}", "--model", "{model}", "--effort", "{effort}",
@@ -38,8 +67,16 @@ login_check = ["claude", "auth", "status"]
 # stream-json rate_limit_event whose status is "rejected".
 usage_limit_patterns = ["(?i)you.{1,3}ve hit your (usage )?limit", "(?i)usage limit reached", "(?i)claude ai usage limit",
                         "\"status\":\\s*\"rejected\"", "(?i)5-hour limit", "(?i)weekly limit"]
+# Printed when the login is gone, expired or revoked (strings in Claude Code 2.1.319): "Login expired · Please run
+# /login", "OAuth token revoked · Please run /login", "Failed to authenticate: …", "Not logged in. Run claude auth login",
+# "API Error: 401 Invalid API key · Please run /login", and the authentication_failed error kind.
+auth_failure_patterns = ["Please run /login", "(?i)login expired", "(?i)not logged in", "(?i)OAuth (access )?token (has )?(expired|been revoked|revoked)",
+                         "(?i)failed to authenticate", "authentication_failed", "authentication_error", "(?i)invalid api key",
+                         "(?i)login reached its time limit"]
 
-# Roles and tiers (GOAL.md §0.10). campaign.py refuses a reviewer on the vendor that built the round.
+# Roles and tiers (GOAL.md §0.10). The vendor lines must match campaign.py's ROLE_VENDOR (builder and spec-review on
+# codex, reviewer and ledger on claude), which it uses whatever this file says, refusing a mismatch; and it refuses a
+# reviewer on the vendor that built the round it judges, re-reviews included.
 [roles.builder.high]
 vendor = "codex"
 model = "gpt-6-astra"

@@ -1,8 +1,8 @@
 # PROGRESS
 
-## Status (2026-11-08 14:40, setup session, checkpoint 0)
+## Status (2026-11-08 17:30, setup session, after checkpoint 0)
 
-**Done:** instructions installed, machine checked (evidence/bringup/machine.txt), GOAL.md §0 and §1. **Next:** wait for Zach at checkpoint 0, then §2.
+**Done:** instructions installed, machine checked (evidence/bringup/machine.txt), GOAL.md §0 and §1; checkpoint 0's decisions A–E and the auditor's fixes C1–C10 (below; evidence/bringup/13-checkpoint0.md). **Next:** the auditor rechecks the fixes; then §2.
 
 | § | Item | Result | Evidence |
 |---|---|---|---|
@@ -22,11 +22,18 @@
 
 Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 session-minutes; C-01 225 and C-02 450 properties per configuration, CBMC ≤ 1 s each; coverage 100%; mutants 16/16.
 
+**Checkpoint 0 decisions, done** (each with a tool test or selftest step; 13-checkpoint0.md has the detail):
+- A: corrections 1–8 applied to GOAL.md (§1.3–§1.5, §1.9, §2.4, §3.1, Appendix A), builder §2.6/§2.9, AGENTS.md §9, HOWTO.
+- B: lp64-be adds -funsigned-char; the probe checks char signedness; scan allows the flag.
+- C1–C10: scan (path enders, SETUP discipline, card-dir files, symlinks, preds.h growth, COVER), gate (includes check, preds.h users), coverage (Unreached lines), lock (missing after freeze), campaign.py (vendors fixed, command guards, reviewer sandbox, trailers on merges, mode/symlink refusal, results provenance).
+- D: Codex can block: two sessions.toml settings plus the builder's wait advice. 15-minute wait: 748,078 tokens before, 36,925 after.
+- E: auth-failure patterns pause the vendor, add a triage item, resume with `campaign.py resume-vendor`.
+- Tests: tool tests 95/95, selftest 49/49, full gate PASS (13-tool-tests.txt, 13-selftest.txt, 13-full-gate.log).
+
 **Open questions for Zach:**
-1. Approve the GOAL.md corrections below, which matter for §2 and the frozen files (builder §2.6 and §2.9 especially)?
-2. SQLite 3.54.1 is out. The pin stays 3.53.4 per §1.1.
-3. Claude's login expires 2026-11-15 00:37 UTC (`claude auth status`), possibly mid-campaign. Re-login before stage 3?
-4. Long waits are costly under Codex: a 15-minute wait cost 1.5M tokens of polling. Big CBMC cards (C-15, C-17) will spend part of their caps waiting.
+1. SQLite 3.54.1 is out; the pin stays 3.53.4 per §1.1.
+2. Codex builders had ChatGPT connectors (Gmail, Sites deploy, ~300 tools), web search and subagents available despite `--ignore-user-config`; the pilot never used them, and they are now disabled. Anything else to turn off?
+3. Claude's login now expires 2026-12-07 22:27 UTC. An expired login now pauses the vendor with a triage item instead of failing cards.
 
 ## What bring-up showed GOAL.md or the plan got wrong
 
@@ -42,7 +49,8 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 ## Notes for §2
 
 - Ledger drafts so far: C-01's builder proposed one for sqlite3PutVarint's 9-byte output buffer (reports/C-01-b2.md), to be numbered in §2.3 with the three boundary contracts and A-001.
-- "Every commit on main carries a Campaign: trailer" holds for main's first-parent history; 11-coordinator.md explains.
+- Every commit campaign.py makes now carries a Campaign: trailer, its merges of main into card branches and orch included (C8). The pilot's two merges of main (4a793a2, 3d01a2e) predate this and have none.
+- results.csv's lp64-be rows predate -funsigned-char; the next merge that reruns each card regenerates them. The full gate already passes with it.
 - Token counting: codex counts input (which already includes cache reads) + cache writes + output; claude counts input + cache reads + cache writes + output.
 
 ## Log
@@ -53,3 +61,6 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 - 12:30–13:20 Tools, tests, campaign.py, fake CLIs, selftest; CLI checks with real codex and claude (13:04: found the Codex background-job behavior).
 - 13:22 Pilot started. 13:24 killed C-02's builder; resumed. 13:37 C-02 merged. 13:40 C-01 r1 REJECT; r2 approved 13:53; merged 14:03. 14:17 full gate PASS. 14:18 finish.
 - 14:20–14:40 Planted-bug check. Fixed three tool issues the pilot exposed (12-pilot.md); tests 52/52, selftest 31/31, `make gate CARD=C-02` PASS on main.
+- 14:40 Checkpoint 0 reported. Zach approved corrections 1–8 and gave decisions B–E with the auditor's fixes C1–C10; he renewed the Claude login.
+- 15:50–16:20 D: found the two Codex settings that let one tool call block (probes in the scratchpad); found and disabled the connectors. 16:25–16:45 before/after 15-minute wait measured.
+- 16:00–17:30 B, C1–C10, E implemented with tests; GOAL.md, agents/, AGENTS.md, HOWTO, 10-cli.md updated; real reviewer sandbox probed; full gate on the changed tree.

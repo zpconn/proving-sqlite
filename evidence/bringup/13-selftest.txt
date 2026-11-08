@@ -1,0 +1,51 @@
+selftest fixture: /var/tmp/campaign-selftest-g26devix
+ok   sessions.toml's codex and claude commands, start and resume, pass the session guards
+ok   session guard refuses codex without the workspace-write sandbox
+ok   session guard refuses codex with approvals on
+ok   session guard refuses codex with the sandbox bypassed
+ok   session guard refuses codex with a second sandbox_mode
+ok   session guard refuses claude without bwrap
+ok   session guard refuses claude with bypassPermissions
+ok   session guard refuses bwrap with a shared /tmp
+ok   session guard refuses bwrap that leaves ~/.codex visible
+ok   session guard refuses bwrap that leaves the other worktrees and state/ visible
+ok   session guard refuses bwrap that binds / writable afterwards
+ok   campaign.py refuses a sessions.toml that puts builders on claude
+ok   a re-review is refused when its reviewer would share the vendor that built the card's last round
+ok   start: primary checkout moves to orch, main gets its own checkout
+ok   phase A settles (every card merged, in triage, or waiting)
+ok   C-01 approved and merged
+ok   C-02 a rejection whose second round answers the review
+ok   C-03 three rejections go to triage
+ok   C-04 a crash that it resumes (with the CLI's resume command) and merges
+ok   C-05 three crashes in one round go to triage
+ok   C-06 a usage limit pauses the vendor until the reset, without counting against the card
+ok   C-07 a builder that changes a file outside May change: triage, nothing committed
+ok   C-08 a builder that commits a file outside May change: triage
+ok   C-09 a reviewer that changes a tracked file, twice: discarded, rerun once, then triage
+ok   C-10 a reviewer that changes a tracked file once, then is rerun and merges
+ok   C-11 a gate failure after APPROVE: triage with the gate log, main unchanged
+ok   C-12 a session that reaches its cap: stopped at the cap, allowed changes committed, triage
+ok   C-13 a card whose dependency is not merged stays waiting and never starts
+ok   C-14 a builder that writes its own review file: triage
+ok   C-15 a reviewer on the builder's vendor: refused, triage
+ok   C-16 a card branch that gains a commit after its review: triage, not merged
+ok   C-17 a FINDING the reviewer approves goes to triage, not merge
+ok   C-18 an expired login pauses the vendor with a triage item, not counted against the card; resume-vendor refuses while logged out, then resumes it, and it merges
+ok   C-19 a builder that leaves a symlink on a May change path: triage, nothing committed
+ok   C-20 a builder that leaves an executable harness.c: triage, nothing committed
+ok   a reviewer's sandbox hides the host /tmp, state/, main's checkout, other worktrees, ~/.codex and the primary checkout, and its own worktree is writable
+ok   every commit campaign.py put on main carries a Campaign: trailer (12 commits)
+ok   no reviewer ran on its round's builder vendor
+ok   a land that touches proofs/ is refused
+ok   a land of PROGRESS.md is queued and lands on main with a trailer
+ok   every commit campaign.py made on any branch carries a Campaign: trailer, its merges of main into card branches (1) and orch (1) included (43 commits)
+ok   status prints every card, the triage and merge queues, pauses and the last full gate
+ok   phase B settles
+ok   kill -9 of the daemon mid-session: restart neither loses nor repeats the session (C-21 merged, one start per session)
+ok   kill -9 of a session: it is resumed in the same worktree and the card merges (C-22)
+ok   kill -9 of daemon and merge job mid-merge: the merge is redone once, never twice (C-23)
+ok   kill -9 of the daemon mid-merge: the surviving merge job's result is taken once (C-24)
+ok   finish: primary checkout back on main with orch merged, main's checkout removed
+ok   no session saw the API-key or CLAUDE_CODE_ variables planted in campaign.py's environment (53 sessions)
+RESULT selftest PASS 49/49

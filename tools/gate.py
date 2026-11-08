@@ -3,8 +3,11 @@
 
 make gate CARD=C-NN runs, in order, stopping at nothing (every step reports):
   check_overlay; proof.lock; scan (with --card and, if given, --base); the configuration probe;
-  the proofs, coverage and mutants of C-NN and of every card whose proofs call its functions
-  (tools/cards.py callers_of), restricted to cards that have proofs/C-XX/Makefile.
+  the includes, proofs, coverage and mutants of C-NN and of every card whose proofs call its functions
+  (tools/cards.py callers_of), restricted to cards that have proofs/C-XX/Makefile. With --base, if
+  proofs/include/preds.h differs from BASE, also every card whose preprocessed harness includes it.
+The includes step (tools/prove.py includes) preprocesses each harness on every configuration and fails if it
+pulls in any file but the overlay's sqlite3.c, proofs/{include,contracts,spec}/*.h and system headers.
 make gate (full) runs check_overlay; proof.lock; scan; probe; every proof dir's proofs and coverage on
 every configuration; every mutant in proofs/MUTANTS against every proof; and requires each function
 named by a card with proofs to have at least two mutants.
@@ -23,6 +26,7 @@ ROOT = os.path.dirname(TOOLS)
 sys.path.insert(0, TOOLS)
 import cards as cardlib  # noqa: E402
 import mutate  # noqa: E402
+import prove  # noqa: E402
 
 
 def step(name, cmd, results):
@@ -50,6 +54,24 @@ def proof_cards():
 
 def make(card, target, config='all'):
     return ['make', '-C', os.path.join('proofs', card), target, 'CONFIG=%s' % config]
+
+
+def preds_users(have):
+    """Cards whose preprocessed harness includes proofs/include/preds.h on some configuration."""
+    target = os.path.realpath(os.path.join(ROOT, 'proofs', 'include', 'preds.h'))
+    out = []
+    for c in have:
+        for _, flags in prove.read_configs(ROOT):
+            files, _ = prove.include_problems(os.path.join(ROOT, 'proofs', c), flags, os.path.join(ROOT, 'overlay'))
+            if any(os.path.realpath(f) == target for f in files if not f.startswith('<')):
+                out.append(c)
+                break
+    return out
+
+
+def preds_changed(base):
+    p = subprocess.run(['git', '-C', ROOT, 'diff', '--quiet', base, '--', 'proofs/include/preds.h'])
+    return p.returncode != 0
 
 
 def main():
@@ -83,6 +105,11 @@ def main():
                 todo = []
             else:
                 todo = [a.card] + [c for c in cardlib.callers_of(cards, a.card) if c in have]
+                if a.base and preds_changed(a.base):
+                    users = [c for c in preds_users(have) if c not in todo]
+                    print('gate: proofs/include/preds.h differs from %s; also running the cards that include it: %s' % (
+                        a.base, ', '.join(users) or 'none'))
+                    todo += users
                 if a.card not in have:
                     print('gate: proofs/%s/Makefile missing' % a.card)
                     results.append(('card proofs', False, 'missing proofs/%s/Makefile' % a.card, 0))
@@ -93,6 +120,7 @@ def main():
             label = 'all'
         print('gate: cards to run: %s' % (', '.join(todo) or 'none'))
         for c in todo:
+            step('includes %s' % c, [py, 'tools/prove.py', 'includes', '--card-dir', os.path.join('proofs', c)], results)
             step('prove %s' % c, make(c, 'prove'), results)
             step('coverage %s' % c, make(c, 'coverage'), results)
         # mutants

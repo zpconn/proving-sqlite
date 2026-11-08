@@ -11,6 +11,7 @@ Commands
   wait                                    return when the triage queue changes, the campaign finishes, campaign.py
                                           stops, or four hours pass
   retry C-NN | park C-NN | reopen C-NN --for C-MM
+  resume-vendor <codex|claude>            after Zach signs in again: lift the pause a failed login caused
   land                                    merge main into orch, check the paths, queue orch for main
   session <spec-review|ledger>            a one-off session, started the same way
   selftest                                rerun the coordinator tests in a scratch directory of its own
@@ -61,6 +62,10 @@ VERDICTS_REVIEWER = ('APPROVE', 'REJECT', 'NEEDS-ZACH')
 LAND_ALLOWED = ['cards/', 'tests/repro/', 'evidence/approvals/', 'evidence/orchestrator/', 'PROGRESS.md', 'LEDGER.md',
                 'FINDINGS.md']
 ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evidence/ledger/', 'reports/ledger-']}
+# GOAL.md §0.10, hard-coded (checkpoint 0, decision C5): sessions.toml supplies models and command lines, never vendors.
+# The spec was written by Claude, so its reviewer runs on Codex.
+ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'spec-review': 'codex'}
+AUTH_RECHECK = 15 * 60          # an auth pause is lifted only by `resume-vendor`; status reminds every 15 min
 TICK = float(os.environ.get('CAMPAIGN_TICK', '10'))
 
 
@@ -221,13 +226,120 @@ def load_sessions(main_dir):
         return tomllib.load(f)
 
 
+class SessionRefused(CampaignError):
+    pass
+
+
 def role_config(sess, role, tier):
+    """(vendor, model, effort, vendor config). The vendor is ROLE_VENDOR's; a sessions.toml that names another for
+    the role is refused rather than followed."""
     try:
         rc = sess['roles'][role][tier]
     except KeyError:
         raise CampaignError('sessions.toml has no roles.%s.%s' % (role, tier))
-    v = sess['vendors'][rc['vendor']]
-    return rc['vendor'], rc['model'], rc['effort'], v
+    vendor = ROLE_VENDOR.get(role)
+    if vendor is None:
+        raise SessionRefused('no vendor is fixed for role %s' % role)
+    if rc.get('vendor', vendor) != vendor:
+        raise SessionRefused('sessions.toml puts roles.%s.%s on %s, but campaign.py runs %s sessions on %s only '
+                             '(GOAL.md §0.10)' % (role, tier, rc.get('vendor'), role, vendor))
+    return vendor, rc['model'], rc['effort'], sess['vendors'][vendor]
+
+
+CODEX_FORBIDDEN = {'--dangerously-bypass-approvals-and-sandbox', '--yolo', '--full-auto', '--approve-for-me', '-s',
+                   '--sandbox', '-a', '--ask-for-approval', '--add-dir', '--oss', '-p', '--profile'}
+CLAUDE_FORBIDDEN = {'--dangerously-skip-permissions', '--allow-dangerously-skip-permissions', '--bare',
+                    '--add-dir', '--permission-prompt-tool', '--settings', '--mcp-config', '--plugin-dir'}
+
+
+def command_problems(vendor, argv, wt, p):
+    """Why a session's command line is refused (checkpoint 0, decisions C5 and C6), or [].
+    codex: `codex exec` with sandbox_mode="workspace-write" and approval_policy="never", each set once, and none of the
+    flags that loosen either. claude: bubblewrap first, with / read-only, a private /tmp, ~/.codex, the worktree root
+    (../<repo>-wt: state/ and every other worktree) and the primary checkout hidden (its .git read-only), and only
+    the session's own worktree, ~/.claude and ~/.claude.json writable, then `claude -p` in auto permission mode."""
+    home = os.path.expanduser('~')
+    probs = []
+    if vendor == 'codex':
+        if os.path.basename(argv[0]) != 'codex' or len(argv) < 2 or argv[1] != 'exec':
+            probs.append('a codex session must start with `codex exec`')
+        sets = [argv[i + 1] for i, a in enumerate(argv[:-1]) if a in ('-c', '--config')]
+        sb = [x for x in sets if x.split('=', 1)[0].strip() in ('sandbox_mode',)]
+        ap = [x for x in sets if x.split('=', 1)[0].strip() in ('approval_policy', 'ask_for_approval')]
+        if sb != ['sandbox_mode="workspace-write"']:
+            probs.append('codex must set sandbox_mode="workspace-write" exactly once (found %s)' % sb)
+        if ap != ['approval_policy="never"']:
+            probs.append('codex must set approval_policy="never" exactly once (found %s)' % ap)
+        loose = [x for x in sets if x.split('=', 1)[0].strip().startswith(('sandbox_workspace_write', 'sandbox_permissions',
+                                                                          'permissions', 'default_permissions', 'shell_environment_policy'))]
+        if loose:
+            probs.append('codex settings that loosen the sandbox: %s' % loose)
+        bad = [a for a in argv if a in CODEX_FORBIDDEN or a.startswith('--sandbox=') or a.startswith('--profile=')]
+        if bad:
+            probs.append('codex flags not allowed: %s' % bad)
+        return probs
+    if vendor != 'claude':
+        return ['unknown vendor %s' % vendor]
+    if not argv or os.path.basename(argv[0]) != 'bwrap':
+        return ['a claude session must start with bwrap']
+    try:
+        ci = [os.path.basename(a) for a in argv].index('claude')
+    except ValueError:
+        return ['no claude command after bwrap']
+    bw, cl = argv[1:ci], argv[ci:]
+    mounts, i = [], 0
+    while i < len(bw):
+        a = bw[i]
+        if a in ('--ro-bind', '--bind', '--dev-bind', '--ro-bind-try', '--bind-try', '--dev-bind-try', '--symlink'):
+            mounts.append((a, bw[i + 1], bw[i + 2]))
+            i += 3
+        elif a in ('--tmpfs', '--dev', '--proc', '--chdir', '--dir', '--remount-ro', '--perms', '--size'):
+            mounts.append((a, bw[i + 1], bw[i + 1]))
+            i += 2
+        else:
+            mounts.append((a, None, None))
+            i += 1
+    real = lambda x: os.path.realpath(x)  # noqa: E731
+    if not mounts or mounts[0] != ('--ro-bind', '/', '/'):
+        probs.append('bwrap must begin with --ro-bind / /')
+    allowed_rw = {real(wt), real(os.path.join(home, '.claude')), real(os.path.join(home, '.claude.json'))}
+    for kind, src, dst in mounts:
+        if kind in ('--bind', '--dev-bind', '--bind-try', '--dev-bind-try') and real(dst) not in allowed_rw:
+            probs.append('bwrap binds %s writable; only the worktree, ~/.claude and ~/.claude.json may be' % dst)
+        if kind in ('--ro-bind', '--ro-bind-try') and (src, dst) != ('/', '/') and \
+                (real(src), real(dst)) != (real(os.path.join(p.primary, '.git')),) * 2:
+            probs.append('bwrap read-only binds %s; only / and the primary checkout\'s .git are' % dst)
+        if kind in ('--symlink', '--remount-ro', '--perms', '--size', '--dir') or kind not in (
+                '--ro-bind', '--bind', '--dev-bind', '--ro-bind-try', '--bind-try', '--dev-bind-try', '--tmpfs', '--dev',
+                '--proc', '--chdir', '--die-with-parent', '--new-session', '--unshare-pid', '--unshare-ipc'):
+            probs.append('bwrap option %s not allowed' % kind)
+    order = [(k, real(d) if d else d) for k, s_, d in mounts]
+
+    def last_mount_at(path):
+        """The last mount whose destination is path or one of its parents, as bwrap applies them in order."""
+        rp = real(path)
+        hit = None
+        for k, d in order:
+            if d and k != '--chdir' and (rp == d or rp.startswith(d.rstrip('/') + '/')):
+                hit = (k, d)
+        return hit
+    for hidden in ('/tmp', os.path.join(home, '.codex'), p.wt, p.primary, os.path.join(p.wt, 'state'),
+                   os.path.join(p.wt, 'main'), os.path.join(p.wt, 'merge')):
+        if real(hidden) in (real(wt),):
+            continue
+        hit = last_mount_at(hidden)
+        if not hit or hit[0] != '--tmpfs':
+            probs.append('bwrap must hide %s behind a --tmpfs (last mount there: %s)' % (hidden, hit))
+    hit = last_mount_at(wt)
+    if not hit or hit != ('--bind', real(wt)):
+        probs.append('the worktree %s must be the last mount at its path, writable (found %s)' % (wt, hit))
+    if len(cl) < 2 or cl[1] != '-p':
+        probs.append('claude must run as `claude -p`')
+    if 'bypassPermissions' in cl or any(a in CLAUDE_FORBIDDEN for a in cl):
+        probs.append('claude flags not allowed: %s' % [a for a in cl if a in CLAUDE_FORBIDDEN or a == 'bypassPermissions'])
+    if 'auto' not in [cl[i + 1] for i, a in enumerate(cl[:-1]) if a == '--permission-mode']:
+        probs.append('claude must run with --permission-mode auto')
+    return probs
 
 
 def fill(argv, **kw):
@@ -457,6 +569,76 @@ def hit_usage_limit(job, sess):
     return False, None
 
 
+def hit_auth_failure(job, sess):
+    """The CLI's own output says its login is gone or expired (checkpoint 0, decision E). Returns the matching line
+    or None. Like usage limits, matched against control_text only, never agent messages."""
+    pats = sess['vendors'][job['vendor']].get('auth_failure_patterns', [])
+    text = control_text(job)
+    for pat in pats:
+        m = re.search(pat, text)
+        if m:
+            a = text.rfind('\n', 0, m.start()) + 1
+            b = text.find('\n', m.end())
+            return text[a:b if b >= 0 else len(text)].strip()[:300]
+    return None
+
+
+def login_ok(sess, vendor):
+    """(ok, output) from the vendor's login_check command."""
+    cmd = sess['vendors'][vendor].get('login_check')
+    if not cmd:
+        return False, 'sessions.toml has no login_check for %s' % vendor
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=60, env=session_env())
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return False, str(e)
+    out = (p.stdout + p.stderr).strip()
+    if p.returncode != 0 or re.search(r'(?i)not logged in|"loggedIn"\s*:\s*false', out):
+        return False, out[:400]
+    m = re.search(r'"loginExpiresAt"\s*:\s*"([^"]+)"', out)
+    if m:
+        try:
+            if dt.datetime.fromisoformat(m.group(1).replace('Z', '+00:00')).timestamp() < now():
+                return False, 'login expired at %s' % m.group(1)
+        except ValueError:
+            pass
+    return True, out[:400]
+
+
+def mode_problems(wt, base, paths):
+    """Symlinks, submodules and file-mode changes the builder's commit would carry (checkpoint 0, decision C2):
+    everything since base, committed or not, staged into a scratch index."""
+    if not paths:
+        return []
+    idx = os.path.join(wt, '.campaign', 'mode-check.index')
+    os.makedirs(os.path.dirname(idx), exist_ok=True)
+    env = dict(os.environ, GIT_INDEX_FILE=idx)
+    try:
+        subprocess.run(['git', 'read-tree', 'HEAD'], cwd=wt, env=env, check=True, capture_output=True)
+        subprocess.run(['git', 'add', '-A', '--'] + paths, cwd=wt, env=env, check=True, capture_output=True)
+        raw = subprocess.run(['git', 'diff', '--cached', '--raw', '--no-renames', base], cwd=wt, env=env, check=True,
+                             capture_output=True, text=True).stdout
+    except subprocess.CalledProcessError as e:
+        err = e.stderr.decode('utf-8', 'replace') if isinstance(e.stderr, bytes) else (e.stderr or '')
+        return ['cannot check file modes: %s' % err.strip()[:200]]
+    finally:
+        if os.path.exists(idx):
+            os.remove(idx)
+    probs = []
+    for line in raw.split('\n'):
+        m = re.match(r'^:(\d{6}) (\d{6}) \S+ \S+ (\S+)\t(.*)$', line)
+        if not m:
+            continue
+        old, new, path = m.group(1), m.group(2), m.group(4)
+        if new in ('120000', '160000'):
+            probs.append('%s would be a %s' % (path, 'symlink' if new == '120000' else 'submodule'))
+        elif old == '000000' and new not in ('000000', '100644'):
+            probs.append('new file %s has mode %s, not 100644' % (path, new))
+        elif old != '000000' and new != '000000' and old != new:
+            probs.append('%s changes mode %s -> %s' % (path, old, new))
+    return probs
+
+
 def first_line(path):
     if not os.path.exists(path):
         return None
@@ -469,6 +651,18 @@ def first_line(path):
 
 
 # =============================================================== prompts (fixed here, frozen with tools/)
+
+# How a Codex builder waits for a long command (checkpoint 0, decision D; evidence/bringup/13-waiting.md). Codex runs
+# tools inside a JavaScript exec cell; sessions.toml lets one write_stdin call and the cell around it block for up to
+# an hour, so a 15-minute run costs one model call instead of one per minute. agents/builder/GOAL.md §2.9 says the same.
+LONG_RUN_CODEX = (
+    'Long commands (a CBMC run can take 10 minutes per configuration): wait once, never poll. In one exec cell, start '
+    'the command with tools.exec_command, its output in a file (yield_time_ms 1000); if it is still running, call '
+    'tools.write_stdin with its session_id, chars "" and yield_time_ms 3600000. That call returns when the command '
+    'exits (this session allows waits of up to an hour), so the cell and your turn wait with it. Do not use sleep, '
+    'short yields or repeated wait calls to check on a run. Background jobs do not survive here: a command\'s '
+    'background children are killed when it returns. Trust only output that ends with its RESULT line.')
+
 
 def prompt_builder(cid, rnd, reviews, notes, wt):
     lines = [
@@ -486,11 +680,7 @@ def prompt_builder(cid, rnd, reviews, notes, wt):
         'Your token usage so far, against the card\'s cap, is in .campaign/usage; check it after each run.',
         'Work only in this directory (%s) and /tmp. Do not commit, branch or merge: campaign.py commits what you '
         'leave when you exit, and only the paths on your card\'s May change line.' % wt,
-        'CBMC runs can take 10 minutes per configuration. In this sandbox a command\'s background children are killed '
-        'when the command returns, so run long commands in the foreground with output in a file (for example '
-        '`make -C proofs/%s prove CONFIG=lp64-le > /tmp/%s.log 2>&1; tail -5 /tmp/%s.log`) and let them finish, or '
-        'give them a timeout longer than the run. Trust only output that ends with its RESULT line. proofs/HOWTO.md '
-        'records how proofs are built here.' % (cid, cid, cid),
+        LONG_RUN_CODEX + ' proofs/HOWTO.md records how proofs are built here.',
     ]
     return '\n\n'.join(lines) + '\n'
 
@@ -572,11 +762,27 @@ class Campaign:
         st.journal('card', card=c['id'], frm=old, to=state, reason=reason)
 
     def running_sessions(self, st):
-        return [j for j in st.d['jobs'].values() if j['kind'] in ('builder', 'reviewer', 'oneoff') and j['state'] in ('running', 'limit')]
+        return [j for j in st.d['jobs'].values() if j['kind'] in ('builder', 'reviewer', 'oneoff') and j['state'] in ('running', 'limit', 'auth')]
 
     def vendor_paused(self, st, vendor):
         v = st.d['vendors'].get(vendor) or {}
-        return v.get('paused_until', 0) > now()
+        return v.get('paused_until', 0) > now() or bool(v.get('auth_failed'))
+
+    def auth_pause(self, st, vendor, job, line):
+        """A login that failed works like a usage limit (checkpoint 0, decision E): no session starts on the vendor,
+        the interrupted session waits to resume, nothing counts against its card, and a triage item asks Zach to
+        sign in again. `campaign.py resume-vendor <vendor>` lifts it once the CLI's login check passes."""
+        v = st.d['vendors'].setdefault(vendor, {})
+        if not v.get('auth_failed'):
+            v['auth_failed'] = {'at': iso(), 'job': job['id'], 'line': line}
+            st.d['triage_seq'] += 1
+            st.d.setdefault('vendor_triage', {})[vendor] = {
+                'seq': st.d['triage_seq'], 'since': iso(),
+                'reason': '%s login failed (%s): ask Zach to sign in again (`%s`), then run `tools/campaign.py '
+                          'resume-vendor %s`' % (vendor, line[:160], 'codex login' if vendor == 'codex' else 'claude auth login', vendor)}
+            st.journal('vendor-auth-pause', vendor=vendor, job=job['id'], line=line)
+        job['state'] = 'auth'
+        job['outcome'] = 'auth failure'
 
     def scoped(self, st, cards):
         sc = st.d.get('scope')
@@ -608,17 +814,29 @@ class Campaign:
 
     # ---------------------------------------------------------- starting sessions
     def start_session(self, st, job, vendor, model, effort, vcfg, wt, prompt, resume_of=None):
+        """Start a session, or raise SessionRefused if its command line fails command_problems."""
         job.update(vendor=vendor, model=model, effort=effort, wt=wt)
+        places = dict(dir=wt, model=model, effort=effort, home=os.path.expanduser('~'), wtroot=self.p.wt,
+                      repo=self.p.primary)
         if resume_of and resume_of.get('cli_session'):
-            argv = fill(vcfg['resume'], dir=wt, model=model, effort=effort, session=resume_of['cli_session'],
-                        home=os.path.expanduser('~'))
+            argv = fill(vcfg['resume'], session=resume_of['cli_session'], **places)
+        else:
+            argv = fill(vcfg['start'], session='', **places)
+        probs = command_problems(vendor, argv, wt, self.p)
+        if probs:
+            job['state'] = 'refused'
+            job['outcome'] = 'refused: ' + '; '.join(probs)
+            st.journal('session-refused', job=job['id'], card=job.get('card'), vendor=vendor, why='; '.join(probs))
+            raise SessionRefused('refused to start a %s session: %s' % (vendor, '; '.join(probs)))
+        for i, a in enumerate(argv[:-1]):
+            if a == '--tmpfs' and not os.path.exists(argv[i + 1]):
+                os.makedirs(argv[i + 1], exist_ok=True)   # bwrap cannot create a mount point under a read-only /
+        if resume_of and resume_of.get('cli_session'):
             job['resumed_from'] = resume_of['id']
             job['cli_session'] = resume_of['cli_session']
             if vendor == 'codex':
                 job['codex_base'] = resume_of.get('codex_last_total') or {}
                 job['rollout'] = resume_of.get('rollout')
-        else:
-            argv = fill(vcfg['start'], dir=wt, model=model, effort=effort, session='', home=os.path.expanduser('~'))
         st.journal('session-start', job=job['id'], card=job.get('card'), role=job.get('role'), vendor=vendor,
                    model=model, round=job.get('round'), resume=bool(resume_of))
         spawn_runner(self.p, job, argv, wt, prompt)
@@ -636,6 +854,13 @@ class Campaign:
         return wt
 
     def start_builder_round(self, st, c, card, sess, resume_job=None):
+        try:
+            self._start_builder_round(st, c, card, sess, resume_job)
+        except SessionRefused as e:
+            c['job'] = None
+            self.set_state(st, c, 'triage', str(e))
+
+    def _start_builder_round(self, st, c, card, sess, resume_job=None):
         cid = c['id']
         vendor, model, effort, vcfg = role_config(sess, 'builder', card.tier)
         wt = self.ensure_card_wt(cid)
@@ -644,7 +869,9 @@ class Campaign:
             if changed_paths(wt, 'HEAD'):
                 git(['reset', '--hard', '-q'], cwd=wt)
                 git(['clean', '-fdq'], cwd=wt)
-            p = subprocess.run(['git', 'merge', '--no-edit', '-q', 'main'], cwd=wt, capture_output=True, text=True)
+            msg = ('Merge main into card/%s for round %d\n\nCampaign: merge of main %s into card/%s before builder round %d; '
+                   'no conflicts' % (cid, c['round'] + 1, git(['rev-parse', '--short', 'main'], cwd=wt), cid, c['round'] + 1))
+            p = subprocess.run(['git', 'merge', '--no-edit', '-q', '-m', msg, 'main'], cwd=wt, capture_output=True, text=True)
             if p.returncode != 0:
                 subprocess.run(['git', 'merge', '--abort'], cwd=wt, capture_output=True)
                 self.set_state(st, c, 'triage', 'merging main into card/%s conflicts: %s' % (cid, (p.stdout + p.stderr).strip()[:300]))
@@ -667,13 +894,20 @@ class Campaign:
             self.set_state(st, c, 'building')
 
     def start_reviewer(self, st, c, card, sess, resume_job=None, rereview=None):
+        try:
+            self._start_reviewer(st, c, card, sess, resume_job, rereview)
+        except SessionRefused as e:
+            c['job'] = None
+            self.set_state(st, c, 'triage', 'refused to start a reviewer: %s' % e)
+
+    def _start_reviewer(self, st, c, card, sess, resume_job=None, rereview=None):
         cid = c['id']
         vendor, model, effort, vcfg = role_config(sess, 'reviewer', card.tier)
         bvendor = c.get('builder_vendor')
-        if rereview is None and (not bvendor or bvendor == vendor):
-            self.set_state(st, c, 'triage', 'refused to start a reviewer on %s, the vendor that built round %d (%s)' % (
-                vendor, c['round'], bvendor))
-            return
+        # re-reviews too (checkpoint 0, decision C5): the reviewer is never on the vendor that built the card's last round
+        if not bvendor or bvendor == vendor:
+            raise SessionRefused('the reviewer would run on %s, the vendor that built round %d (%s)%s' % (
+                vendor, c['round'], bvendor, ' (re-review)' if rereview else ''))
         if resume_job is not None:
             wt = resume_job['wt']
             commit = resume_job['commit']
@@ -713,7 +947,7 @@ class Campaign:
             self.monitor(st, job, cards, sess)
         # resume sessions paused by a usage limit
         for job in list(st.d['jobs'].values()):
-            if job['state'] == 'limit' and not self.vendor_paused(st, job['vendor']) and not st.d.get('stopping'):
+            if job['state'] in ('limit', 'auth') and not self.vendor_paused(st, job['vendor']) and not st.d.get('stopping'):
                 if len(self.running_sessions(st)) - 1 < MAX_SESSIONS:   # it counts itself
                     c = self.card(st, job['card'])
                     job['state'] = 'resumed'
@@ -731,13 +965,12 @@ class Campaign:
         for cid in scope:
             c = self.card(st, cid)
             if c['state'] == 'reviewing' and c.get('job') is None:
-                if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, role_config(sess, 'reviewer', cards[cid].tier)[0]):
+                if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, ROLE_VENDOR['reviewer']):
                     self.start_reviewer(st, c, cards[cid], sess, rereview=c.get('rereview'))
         for cid in scope:
             c = self.card(st, cid)
             if c['state'] == 'ready':
-                vendor = role_config(sess, 'builder', cards[cid].tier)[0]
-                if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, vendor):
+                if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, ROLE_VENDOR['builder']):
                     self.start_builder_round(st, c, cards[cid], sess)
         # one merge at a time
         if not any(j['kind'] in ('merge', 'land') and j['state'] == 'running' for j in st.d['jobs'].values()):
@@ -813,8 +1046,19 @@ class Campaign:
             job['outcome'] = 'usage limit'
             c['job'] = job['id']
             return
+        auth = hit_auth_failure(job, sess) if not job.get('cap_reached') else None
+        if auth:
+            self.auth_pause(st, job['vendor'], job, auth)
+            c['job'] = job['id']
+            return
         paths = changed_paths(wt, c['round_base'])
         bad = [x for x in paths if not card.allows(x)]
+        if not bad:
+            modes = mode_problems(wt, c['round_base'], paths)
+            if modes:
+                job['outcome'] = 'symlink or mode change'
+                self.set_state(st, c, 'triage', 'builder left a symlink or a file-mode change (nothing committed): %s' % '; '.join(modes[:5]))
+                return
         report = os.path.join(wt, 'reports', '%s-b%d.md' % (cid, c['round']))
         verdict = first_line(report)
         if job.get('cap_reached'):
@@ -875,6 +1119,11 @@ class Campaign:
             self.pause_vendor(st, job['vendor'], reset)
             job['state'] = 'limit'
             job['outcome'] = 'usage limit'
+            c['job'] = job['id']
+            return
+        auth = hit_auth_failure(job, sess) if not job.get('cap_reached') else None
+        if auth:
+            self.auth_pause(st, job['vendor'], job, auth)
             c['job'] = job['id']
             return
         if job.get('cap_reached'):
@@ -1099,20 +1348,24 @@ def ff_main(p, sha, expect):
         git(['merge', '-q', '--ff-only', sha], cwd=main)
 
 
-def collect_results(p, mw, cids, round_, reviewer):
+def collect_results(p, mw, cids, round_, reviewer, commit=None, gate_log=None, merged=None):
     """Copy the gate's per-card evidence into evidence/results/C-XX.json (the input RESULTS.md and results.csv
-    are generated from), and regenerate RESULTS.md, results.csv, CAMPAIGN.md and evidence/tokens.csv."""
+    are generated from), and regenerate RESULTS.md, results.csv, CAMPAIGN.md and evidence/tokens.csv.
+    A field the gate didn't rerun is kept as it was (a caller's gate reruns its proofs and coverage, not its mutants),
+    and rec['provenance'][field] says which commit's gate produced each field and where its log is (decision C9)."""
     os.makedirs(os.path.join(mw, 'evidence', 'results'), exist_ok=True)
     for cid in cids:
         b = os.path.join(mw, 'proofs', cid, 'build')
         out = os.path.join(mw, 'evidence', 'results', cid + '.json')
-        # keep what this gate didn't rerun (a caller's gate reruns its proofs and coverage, not its mutants)
         rec = json.load(open(out)) if os.path.exists(out) else {}
         rec['card'] = cid
+        prov = rec.setdefault('provenance', {})
         for name in ('prove-summary', 'coverage-summary', 'mutants'):
             f = os.path.join(b, name + '.json')
             if os.path.exists(f):
-                rec[name.replace('-', '_')] = json.load(open(f))
+                key = name.replace('-', '_')
+                rec[key] = json.load(open(f))
+                prov[key] = {'commit': commit, 'gate_log': gate_log, 'gate': merged}
         with open(out, 'w') as f:
             json.dump(rec, f, indent=1, sort_keys=True)
     src = os.path.join(p.state, 'tokens.csv')
@@ -1165,7 +1418,8 @@ def do_merge(p, job, logf):
     os.makedirs(os.path.join(mw, 'evidence', 'gate'), exist_ok=True)
     shutil.copy(glog, os.path.join(mw, 'evidence', 'gate', '%s-r%d.log' % (cid, rnd)))
     # results are generated with this card already counted as merged
-    collect_results(p, mw, [k for k in run_cards if os.path.exists(os.path.join(mw, 'proofs', k, 'Makefile'))], rnd, job)
+    collect_results(p, mw, [k for k in run_cards if os.path.exists(os.path.join(mw, 'proofs', k, 'Makefile'))], rnd, job,
+                    commit=merge_sha, gate_log='evidence/gate/%s-r%d.log' % (cid, rnd), merged='make gate CARD=%s (merge of %s r%d)' % (cid, cid, rnd))
     git(['add', '-A', '--', 'evidence', 'RESULTS.md', 'results.csv', 'CAMPAIGN.md'], cwd=mw)
     git(['commit', '-q', '-m', '%s: results after merge\n\nCampaign: results and gate log for %s r%d; %s\nCampaign-Step: %s' % (
         cid, cid, rnd, last, job['step'])], cwd=mw)
@@ -1397,7 +1651,8 @@ def cmd_finish(a):
         dirty = changed_paths(p.primary, 'HEAD')
         if dirty:
             raise CampaignError('commit your changes on orch first: %s' % ', '.join(dirty[:10]))
-        pm = subprocess.run(['git', 'merge', '--no-edit', '-q', 'main'], cwd=p.primary, capture_output=True, text=True)
+        pm = subprocess.run(['git', 'merge', '--no-edit', '-q', '-m', orch_merge_msg(p, 'finish'), 'main'], cwd=p.primary,
+                            capture_output=True, text=True)
         if pm.returncode != 0:
             subprocess.run(['git', 'merge', '--abort'], cwd=p.primary, capture_output=True)
             raise CampaignError('merging main into orch conflicts: %s' % pm.stdout.strip()[:300])
@@ -1467,12 +1722,15 @@ def print_status(p):
     print('%-5s %-9s %-3s %-6s %13s %13s %s' % ('card', 'state', 'rnd', 'vendor', 'builder tok', 'reviewer tok', 'waiting on / reason'))
     for cid in sorted(d['cards']):
         print(card_line(cid, d['cards'][cid], cards.get(cid), d['jobs']))
-    tri = sorted((c for c in d['cards'].values() if c['state'] == 'triage'), key=lambda c: c.get('triage_seq', 0))
-    print('triage queue: %s' % ('; '.join('%s (%s)' % (c['id'], c.get('reason')) for c in tri) or 'empty'))
+    tri = sorted([(c.get('triage_seq', 0), c['id'], c.get('reason')) for c in d['cards'].values() if c['state'] == 'triage'] +
+                 [(x.get('seq', 0), 'vendor ' + v, x.get('reason')) for v, x in sorted((d.get('vendor_triage') or {}).items())])
+    print('triage queue: %s' % ('; '.join('%s (%s)' % (k, r) for _, k, r in tri) or 'empty'))
     print('merge queue: %s' % (', '.join(x.get('card') or ('land ' + (x.get('sha') or 'full gate')[:12]) for x in d['merge_queue']) or 'empty'))
     pauses = ['%s until %s' % (v, iso(x['paused_until'])) for v, x in sorted(d['vendors'].items()) if x.get('paused_until', 0) > now()]
+    pauses += ['%s until its login is fixed (since %s)' % (v, x['auth_failed'].get('at')) for v, x in sorted(d['vendors'].items())
+               if x.get('auth_failed')]
     print('vendor pauses: %s' % (', '.join(pauses) or 'none'))
-    run = [j for j in d['jobs'].values() if j['state'] in ('running', 'limit')]
+    run = [j for j in d['jobs'].values() if j['state'] in ('running', 'limit', 'auth')]
     print('running jobs: %s' % (', '.join('%s(%s %s)' % (j['id'], j.get('card') or j.get('role') or '', j['state']) for j in run) or 'none'))
     fg = d.get('last_full_gate')
     print('last full gate: %s' % ('%s at %s' % (fg.get('result'), fg.get('at')) if fg else 'none'))
@@ -1487,16 +1745,42 @@ def cmd_status(a):
     return 0
 
 
+def triage_signature(d):
+    return sorted([(c['id'], c.get('triage_seq')) for c in d.get('cards', {}).values() if c['state'] == 'triage'] +
+                  [('vendor ' + v, x.get('seq')) for v, x in (d.get('vendor_triage') or {}).items()])
+
+
+def cmd_resume_vendor(a):
+    """Lift an auth pause once the vendor's login check passes; its paused sessions resume on the next tick."""
+    p = P()
+    camp = Campaign(p)
+    sess = camp.sess()
+    if a.vendor not in sess.get('vendors', {}):
+        raise CampaignError('no vendor %s in sessions.toml' % a.vendor)
+    ok, out = login_ok(sess, a.vendor)
+    if not ok:
+        print('resume-vendor: %s login check still fails: %s' % (a.vendor, out))
+        return 1
+    with State(p) as st:
+        v = st.d['vendors'].setdefault(a.vendor, {})
+        was = v.pop('auth_failed', None)
+        (st.d.get('vendor_triage') or {}).pop(a.vendor, None)
+        st.journal('vendor-auth-resume', vendor=a.vendor, was=bool(was), login=out[:120])
+    print('resume-vendor: %s login check passes; %s' % (a.vendor, 'paused sessions resume on the next tick' if was else 'it was not paused'))
+    print_status(p)
+    return 0
+
+
 def cmd_wait(a):
     p = P()
     t0 = now()
     d0 = State.read_only(p) or {'cards': {}}
-    tri0 = sorted((c['id'], c.get('triage_seq')) for c in d0['cards'].values() if c['state'] == 'triage')
+    tri0 = triage_signature(d0)
     reason = None
     while reason is None:
         time.sleep(min(20, max(1, TICK)))
         d = State.read_only(p) or {'cards': {}, 'merge_queue': []}
-        tri = sorted((c['id'], c.get('triage_seq')) for c in d['cards'].values() if c['state'] == 'triage')
+        tri = triage_signature(d)
         scope = d.get('scope') or sorted(d['cards'])
         if tri != tri0:
             reason = 'triage queue changed'
@@ -1560,6 +1844,11 @@ def cmd_reopen(a):
     return 0
 
 
+def orch_merge_msg(p, why):
+    return ('Merge main into orch\n\nCampaign: %s; main %s merged into orch, the orchestrator\'s checkout, so it lands '
+            'on current main; no conflicts' % (why, git(['rev-parse', '--short', 'main'], cwd=p.primary)))
+
+
 def cmd_land(a):
     p = P()
     if current_branch(p.primary) != 'orch':
@@ -1567,7 +1856,8 @@ def cmd_land(a):
     dirty = changed_paths(p.primary, 'HEAD')
     if dirty:
         raise CampaignError('commit your changes on orch first: %s' % ', '.join(dirty[:10]))
-    pm = subprocess.run(['git', 'merge', '--no-edit', '-q', 'main'], cwd=p.primary, capture_output=True, text=True)
+    pm = subprocess.run(['git', 'merge', '--no-edit', '-q', '-m', orch_merge_msg(p, 'land'), 'main'], cwd=p.primary,
+                        capture_output=True, text=True)
     if pm.returncode != 0:
         subprocess.run(['git', 'merge', '--abort'], cwd=p.primary, capture_output=True)
         raise CampaignError('merging main into orch conflicts: %s' % (pm.stdout + pm.stderr).strip()[:300])
@@ -1621,6 +1911,13 @@ def cmd_session(a):
                 continue
             job['rc'] = (ex or {}).get('rc', 'lost')
             job['ended'] = (ex or {}).get('ended', now())
+            auth = hit_auth_failure(job, sess)
+            if auth:
+                camp.auth_pause(st, vendor, job, auth)
+                camp.record_tokens(job)
+                print('%s login failed (%s); sign in again, run `tools/campaign.py resume-vendor %s`, then rerun this '
+                      'session' % (vendor, auth, vendor))
+                return 1
             limit, reset = hit_usage_limit(job, sess)
             if limit:
                 camp.pause_vendor(st, vendor, reset)
@@ -1718,6 +2015,10 @@ class SelfTest:
         'C-15': ('a reviewer on the builder\'s vendor', {}),
         'C-16': ('a card branch that gains a commit after its review', {'C-16/reviewer/1': ['slow:4']}),
         'C-17': ('a FINDING the reviewer approves goes to triage, not merge', {'C-17/builder/1': ['finding']}),
+        'C-18': ('an expired login pauses the vendor with a triage item, not counted against the card',
+                 {'C-18/builder/1': ['auth', 'done']}),
+        'C-19': ('a builder that leaves a symlink on a May change path', {'C-19/builder/1': ['symlink']}),
+        'C-20': ('a builder that leaves an executable harness.c', {'C-20/builder/1': ['exec-mode']}),
     }
     PHASE_B = {
         'C-21': ('kill -9 the daemon mid-session', {'C-21/builder/1': ['slow:5', 'done']}),
@@ -1728,7 +2029,8 @@ class SelfTest:
 
     def __init__(self, keep):
         import tempfile
-        self.base = tempfile.mkdtemp(prefix='campaign-selftest-')
+        # not under /tmp: a reviewer's sandbox gets a private /tmp, and the fixture's fake CLIs must stay visible
+        self.base = tempfile.mkdtemp(prefix='campaign-selftest-', dir='/var/tmp' if os.path.isdir('/var/tmp') else None)
         self.keep = keep
         self.primary = os.path.join(self.base, 'proving-sqlite')
         self.wt = self.primary + '-wt'
@@ -1736,6 +2038,8 @@ class SelfTest:
         self.results = []
         self.ctl = os.path.join(self.base, 'fake-control.json')
         self.gctl = os.path.join(self.base, 'gate-control.json')
+        self.fstate = os.path.join(self.home, '.claude', 'fakecli')    # writable inside a reviewer's sandbox
+        self.marker = os.path.join('/tmp', 'campaign-selftest-marker-%d' % os.getpid())
 
     def ok(self, name, cond, detail=''):
         self.results.append((name, bool(cond)))
@@ -1744,9 +2048,15 @@ class SelfTest:
 
     def env(self):
         e = dict(os.environ)
-        e['PATH'] = os.path.join(self.primary, 'tools', 'fakecli') + ':' + e.get('PATH', '')
+        e['PATH'] = os.path.join(self.home, 'bin') + ':' + e.get('PATH', '')
         e['HOME'] = self.home
         e['FAKECLI_CONTROL'] = self.ctl
+        e['FAKECLI_STATE'] = self.fstate
+        e['FAKECLI_PROBE'] = json.dumps({
+            'host /tmp': self.marker, 'state/': os.path.join(self.wt, 'state', 'state.json'),
+            'main checkout': os.path.join(self.wt, 'main', 'cards'), '~/.codex': os.path.join(self.home, '.codex', 'sessions'),
+            'primary checkout files': os.path.join(self.primary, 'PROGRESS.md'),
+            'other worktree': os.path.join(self.wt, 'C-02', 'cards')})
         e['FAKEGATE_CONTROL'] = self.gctl
         e['CAMPAIGN_TICK'] = '0.3'
         for k in list(e):
@@ -1773,11 +2083,15 @@ class SelfTest:
         return read_jsonl(os.path.join(self.wt, 'state', 'journal.jsonl'))
 
     def fakelog(self):
-        return read_jsonl(self.ctl + '.log')
+        return read_jsonl(os.path.join(self.fstate, 'fakecli.log'))
 
     def build_fixture(self):
         os.makedirs(os.path.join(self.home, '.claude'))
+        os.makedirs(os.path.join(self.home, '.codex', 'sessions'))
         open(os.path.join(self.home, '.claude.json'), 'w').write('{}')
+        # the fake CLIs live outside the repo, as the real ones do: a reviewer's sandbox hides the primary checkout
+        shutil.copytree(os.path.join(TOOLS, 'fakecli'), os.path.join(self.home, 'bin'), ignore=shutil.ignore_patterns('__pycache__'))
+        open(self.marker, 'w').write('host /tmp marker\n')
         open(os.path.join(self.home, '.gitconfig'), 'w').write('[user]\n\tname = selftest\n\temail = selftest@example.invalid\n')
         os.makedirs(self.primary)
         shutil.copytree(TOOLS, os.path.join(self.primary, 'tools'), ignore=shutil.ignore_patterns('__pycache__', 'tests'))
@@ -1802,7 +2116,7 @@ class SelfTest:
         s = open(sp).read()
         s = re.sub(r'(\[roles\.reviewer\.high\]\nvendor = )"claude"', r'\1"codex"', s)
         open(sp, 'w').write(s)
-        ctl = {'limit_reset_seconds': 6}
+        ctl = {'limit_reset_seconds': 6, 'C-01/reviewer/1': ['probe']}
         for spec in list(self.PHASE_A.values()) + list(self.PHASE_B.values()):
             ctl.update(spec[1])
         json.dump(ctl, open(self.ctl, 'w'))
@@ -1838,9 +2152,73 @@ class SelfTest:
     def main_log(self, rev='main'):
         return git(['log', '--first-parent', '--format=%H%x00%B%x01', rev], cwd=self.primary)
 
+    def unit_checks(self):
+        """In-process checks of the session guards (decisions C5 and C6): no daemon, no CLI."""
+        p = P(self.primary)
+        sess = load_sessions(self.primary)
+        home = os.path.expanduser('~')
+        rwt = os.path.join(p.wt, 'C-01-r1')
+
+        def argv(vendor, key='start', edit=None):
+            role = 'builder' if vendor == 'codex' else 'reviewer'
+            v, m, e, cfg = role_config(sess, role, 'standard')
+            a = fill(cfg[key], dir=rwt if vendor == 'claude' else os.path.join(p.wt, 'C-01'), model=m, effort=e,
+                     session='S', home=home, wtroot=p.wt, repo=p.primary)
+            return edit(a) if edit else a
+
+        def probs(vendor, edit=None):
+            return command_problems(vendor, argv(vendor, edit=edit), rwt if vendor == 'claude' else os.path.join(p.wt, 'C-01'), p)
+        ok_now = not probs('codex') and not probs('claude') and not command_problems(
+            'codex', argv('codex', 'resume'), os.path.join(p.wt, 'C-01'), p) and not command_problems('claude', argv('claude', 'resume'), rwt, p)
+        self.ok('sessions.toml\'s codex and claude commands, start and resume, pass the session guards', ok_now,
+                [probs('codex'), probs('claude')])
+
+        def drop(pair):
+            return lambda a: [x for i, x in enumerate(a) if not (x == pair[1] and i and a[i - 1] == pair[0]) and not (
+                x == pair[0] and i + 1 < len(a) and a[i + 1] == pair[1])]
+        cases = [
+            ('codex without the workspace-write sandbox', 'codex', drop(('-c', 'sandbox_mode="workspace-write"')), 'sandbox_mode'),
+            ('codex with approvals on', 'codex', lambda a: [x.replace('"never"', '"on-request"') for x in a], 'approval_policy'),
+            ('codex with the sandbox bypassed', 'codex', lambda a: a[:2] + ['--dangerously-bypass-approvals-and-sandbox'] + a[2:], 'not allowed'),
+            ('codex with a second sandbox_mode', 'codex', lambda a: a[:-1] + ['-c', 'sandbox_mode="danger-full-access"', '-'], 'exactly once'),
+            ('claude without bwrap', 'claude', lambda a: a[a.index('claude'):], 'bwrap'),
+            ('claude with bypassPermissions', 'claude', lambda a: [x if x != 'auto' else 'bypassPermissions' for x in a], 'not allowed'),
+            ('bwrap with a shared /tmp', 'claude', lambda a: a[:a.index('/tmp') - 1] + ['--bind', '/tmp', '/tmp'] + a[a.index('/tmp') + 1:], '/tmp'),
+            ('bwrap that leaves ~/.codex visible', 'claude', drop(('--tmpfs', os.path.join(home, '.codex'))), '.codex'),
+            ('bwrap that leaves the other worktrees and state/ visible', 'claude', drop(('--tmpfs', p.wt)), 'state'),
+            ('bwrap that binds / writable afterwards', 'claude', lambda a: a[:a.index('--chdir')] + ['--bind', '/', '/'] + a[a.index('--chdir'):], 'writable'),
+        ]
+        for name, vendor, edit, needle in cases:
+            pr = probs(vendor, edit)
+            self.ok('session guard refuses %s' % name, pr and any(needle in x for x in pr), pr)
+        bad_sess = json.loads(json.dumps(sess))
+        bad_sess['roles']['builder']['standard']['vendor'] = 'claude'
+        try:
+            role_config(bad_sess, 'builder', 'standard')
+            refused = None
+        except SessionRefused as e:
+            refused = str(e)
+        self.ok('campaign.py refuses a sessions.toml that puts builders on claude', refused and 'runs builder sessions on codex' in refused, refused)
+
+        class FakeSt:
+            d = {'triage_seq': 0, 'jobs': {}, 'job_seq': 0}
+
+            def journal(self, *a, **k):
+                pass
+        st = FakeSt()
+
+        class FakeCard:
+            tier = 'standard'
+            cap_reviewer = 1000000
+        c = {'id': 'C-01', 'state': 'merged', 'round': 2, 'history': [], 'builder_vendor': 'claude', 'review_attempt': 0}
+        Campaign(p).start_reviewer(st, c, FakeCard(), sess, rereview='contract change in C-02')
+        self.ok('a re-review is refused when its reviewer would share the vendor that built the card\'s last round',
+                c['state'] == 'triage' and 'refused to start a reviewer' in (c.get('reason') or '') and 're-review' in c['reason'], c)
+
     def run(self):
         self.build_fixture()
         print('selftest fixture: %s' % self.base)
+        self.unit_checks()
         a_cards = sorted(self.PHASE_A)
         p = self.camp('start', '--no-tmux', '--cards', ','.join(a_cards))
         self.ok('start: primary checkout moves to orch, main gets its own checkout',
@@ -1862,6 +2240,18 @@ class SelfTest:
             for v, x in (st.get('vendors') or {}).items():
                 if x.get('paused_until', 0) > now():
                     meddled.setdefault('pause_seen', x['paused_until'])
+            # the auth pause: Zach hasn't signed in yet (resume-vendor refuses), then has (it resumes)
+            cx = (st.get('vendors') or {}).get('codex') or {}
+            if cx.get('auth_failed') and 'auth' not in meddled:
+                meddled['auth'] = {'triage': dict((st.get('vendor_triage') or {}).get('codex') or {})}
+                time.sleep(2)
+                flag = os.path.join(self.home, '.fakecli-logged-out')
+                open(flag, 'w').write('x')
+                meddled['auth']['refused'] = self.camp('resume-vendor', 'codex').returncode
+                os.remove(flag)
+                r = self.camp('resume-vendor', 'codex')
+                meddled['auth']['resumed'] = r.returncode
+                meddled['auth']['out'] = r.stdout[-400:]
         done = self.wait_for(self.settled(a_cards), 420, during=intervene)
         st = self.state()
         self.ok('phase A settles (every card merged, in triage, or waiting)', done,
@@ -1915,6 +2305,30 @@ class SelfTest:
         self.ok('C-16 %s: triage, not merged' % self.PHASE_A['C-16'][0],
                 meddled.get('C-16') and S('C-16') == 'triage' and 'moved or changed' in R('C-16') and 'Campaign-Merge: C-16' not in log_main, R('C-16'))
         self.ok('C-17 %s' % self.PHASE_A['C-17'][0], S('C-17') == 'triage' and 'FINDING approved' in R('C-17'), R('C-17'))
+        au = meddled.get('auth') or {}
+        ap = [e for e in jr if e['kind'] == 'vendor-auth-pause' and e.get('vendor') == 'codex']
+        ar = [e for e in jr if e['kind'] == 'vendor-auth-resume' and e.get('vendor') == 'codex']
+        starts_in_auth = []
+        if ap and ar:
+            t_a = dt.datetime.fromisoformat(ap[0]['ts']).timestamp()
+            t_r = dt.datetime.fromisoformat(ar[0]['ts']).timestamp()
+            starts_in_auth = [e for e in jr if e['kind'] == 'session-start' and e.get('vendor') == 'codex'
+                              and t_a + 0.5 < dt.datetime.fromisoformat(e['ts']).timestamp() < t_r - 0.5]
+        self.ok('C-18 %s; resume-vendor refuses while logged out, then resumes it, and it merges' % self.PHASE_A['C-18'][0],
+                S('C-18') == 'merged' and cs['C-18']['interruptions'] == 0 and ap and ar and not starts_in_auth
+                and 'sign in again' in (au.get('triage') or {}).get('reason', '') and au.get('refused') == 1 and au.get('resumed') == 0
+                and not st.get('vendor_triage', {}).get('codex'),
+                {'state': S('C-18'), 'auth': au, 'starts_in_auth': starts_in_auth, 'pause': ap[:1], 'resume': ar[:1]})
+        self.ok('C-19 %s: triage, nothing committed' % self.PHASE_A['C-19'][0],
+                S('C-19') == 'triage' and 'symlink' in R('C-19') and 'builder round' not in cb('C-19'), R('C-19') + ' | ' + cb('C-19'))
+        self.ok('C-20 %s: triage, nothing committed' % self.PHASE_A['C-20'][0],
+                S('C-20') == 'triage' and '100755' in R('C-20') and 'builder round' not in cb('C-20'), R('C-20') + ' | ' + cb('C-20'))
+        pr_ = [x for x in self.fakelog() if x.get('probe') is not None]
+        seen = pr_[0]['probe'] if pr_ else {}
+        self.ok('a reviewer\'s sandbox hides the host /tmp, state/, main\'s checkout, other worktrees, ~/.codex and the '
+                'primary checkout, and its own worktree is writable',
+                pr_ and seen.get('own worktree writable') and not any(v for k, v in seen.items() if k != 'own worktree writable'),
+                seen)
         # every commit on main's first-parent history since start carries a Campaign: trailer
         recs = [r for r in git(['log', '--first-parent', '--format=%H%x00%B%x01', '%s..main' % start_sha], cwd=self.primary).split('\x01') if r.strip()]
         bad = [r.strip()[:60] for r in recs if 'Campaign:' not in r]
@@ -1940,6 +2354,18 @@ class SelfTest:
         ml = git(['show', 'main:PROGRESS.md'], cwd=pr, check=False)
         self.ok('a land of PROGRESS.md is queued and lands on main with a trailer',
                 p.returncode == 0 and landed and 'orchestrator note' in ml and 'Campaign: land orch' in self.main_log(), p.stdout + p.stderr)
+        # every commit campaign.py made, on any branch, carries a trailer: its merges of main into card branches and
+        # into orch included (checkpoint 0, decision C8). Excluded: commits the fixture's fake sessions and this test
+        # make themselves, which campaign.py refuses or that the orchestrator writes.
+        theirs = ('sneaky', 'late commit after review started', 'progress', 'sneak a proof')
+        allc = [r for r in git(['log', '--branches', '--format=%H%x00%B%x01', '^' + start_sha], cwd=self.primary).split('\x01') if r.strip()]
+        allc = [r for r in allc if r.split('\x00', 1)[1].strip().split('\n')[0] not in theirs]
+        m_card = [r for r in allc if 'Merge main into card/' in r]
+        m_orch = [r for r in allc if 'Merge main into orch' in r]
+        bad = [r.split('\x00', 1)[1].strip()[:70] for r in allc if 'Campaign:' not in r]
+        self.ok('every commit campaign.py made on any branch carries a Campaign: trailer, its merges of main into card '
+                'branches (%d) and orch (%d) included (%d commits)' % (len(m_card), len(m_orch), len(allc)),
+                allc and m_card and m_orch and not bad, bad)
         p = self.camp('status')
         self.ok('status prints every card, the triage and merge queues, pauses and the last full gate',
                 all(k in p.stdout for k in ('C-01', 'triage queue:', 'merge queue:', 'vendor pauses:', 'last full gate:')), p.stdout)
@@ -2018,6 +2444,10 @@ class SelfTest:
                 fl and not leaked, leaked)
 
     def cleanup(self):
+        try:
+            os.remove(self.marker)
+        except OSError:
+            pass
         for pidf in glob.glob(os.path.join(self.wt, 'state', 'jobs', '*', 'pid')):
             try:
                 os.killpg(int(open(pidf).read()), signal.SIGKILL)
@@ -2069,6 +2499,8 @@ def main():
     s.add_argument('--note')
     s = sub.add_parser('session')
     s.add_argument('role')
+    s = sub.add_parser('resume-vendor')
+    s.add_argument('vendor')
     s = sub.add_parser('selftest')
     s.add_argument('--keep', action='store_true')
     s = sub.add_parser('_job')
@@ -2082,7 +2514,7 @@ def main():
         return cmd_merge(a.dir)
     fn = {'start': cmd_start, 'stop': cmd_stop, 'finish': cmd_finish, 'status': cmd_status, 'daemon': cmd_daemon,
           'land': cmd_land, 'wait': cmd_wait, 'retry': cmd_retry, 'park': cmd_park, 'reopen': cmd_reopen,
-          'session': cmd_session, 'selftest': cmd_selftest}[a.cmd]
+          'session': cmd_session, 'selftest': cmd_selftest, 'resume-vendor': cmd_resume_vendor}[a.cmd]
     try:
         return fn(a)
     except (CampaignError, GitError, cardlib.CardFormatError) as e:

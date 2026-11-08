@@ -51,7 +51,7 @@ Every status line, report and result uses them. Nothing claims more than its evi
 - Data bytes are nondet: those of any record or page, and the string and blob contents a Mem points at.
 - Requires may state sizes, allocation, aliasing and struct field values. They never constrain data bytes.
 - If a read extent depends on the bytes, require the worst case (9 bytes for a varint).
-- No `__CPROVER_assume` outside a harness's `/* SETUP */ ... /* END SETUP */` block. No option that turns a check off. No unwinding without unwinding assertions. `tools/scan.py` enforces these.
+- No `__CPROVER_assume` outside a harness's `/* SETUP */ ... /* END SETUP */` block: one per entry function, before the call under proof. No other way to end a path early (return or goto in an entry function, abort, exit, longjmp, `__VERIFIER_*`). No option that turns a check off. No unwinding without unwinding assertions. `tools/scan.py` enforces these.
 - A real counterexample under requires that real callers guarantee is a finding, not an obstacle. Never add a requires to make one go away.
 
 ## 7. Nothing leaves the machine
@@ -69,8 +69,8 @@ Don't push, add a git remote, publish, post to the SQLite forum, email anyone or
 - Run CBMC and agent sessions under `nice -n 10`.
 - At most 4 builder and reviewer sessions at once, together; fewer if CBMC makes the machine swap.
 - Every CBMC run has a timeout, starting at 10 minutes per configuration.
-- Long runs: start them in the background with output in a file, or give the command a timeout longer than the run. Trust only output that ends with its `RESULT` line. A run a shell cut off is not a result.
-- Keep scratch files under /tmp, never in tracked paths.
+- Long runs: builders wait for them in one blocking call, as agents/builder/GOAL.md §2.9 says, because Codex's sandbox kills background jobs. Claude sessions start them in the background with output in a file, or give the command a timeout longer than the run. Trust only output that ends with its `RESULT` line. A run a shell cut off is not a result.
+- Keep scratch files under /tmp, never in tracked paths. A reviewer's /tmp is private to its session.
 
 ## 10. Models and subscriptions
 

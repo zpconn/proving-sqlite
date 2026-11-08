@@ -5,7 +5,7 @@ Prove with CBMC that 22 functions in SQLite 3.53.4's varint and record decoding 
 **Why it exists.** This is milestone 1 of a proposal to Richard Hipp, SQLite's author: prove SQLite free of undefined behavior one module at a time, with agents doing the proof work, a mechanical checker deciding, and nothing in his tree changing. Hipp has written that formal verification only moves bugs into the design spec. This milestone's answer is that the property is one sentence, and everything else the proofs rest on is written down in LEDGER.md, short enough for him to check. Nothing leaves this machine without my say.
 
 Before designing anything, study:
-- **SQLite 3.53.4's amalgamation**, `SQLITE_SOURCE_ID` "2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e09459bcc": every function in Appendix A at its line, the varint macros at 22362–22370, the serial-value macros at 91931–91935, and the structs Mem, UnpackedRecord, KeyInfo and CollSeq.
+- **SQLite 3.53.4's amalgamation**, `SQLITE_SOURCE_ID` "2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e09459bcc": every function in Appendix A at its line, the varint macros at 22361–22369, the serial-value macros at 91930–91934, and the structs Mem, UnpackedRecord, KeyInfo and CollSeq.
 - **The record format** in SQLite's file format document (sqlite.org/fileformat2.html, "Record Format"). P3's reference decoder is written from its serial type table.
 - **SQLite's AGENTS.md** (github.com/sqlite/sqlite/blob/master/AGENTS.md). Agent-written code is not accepted; agent-found bug reports with a reproducible test case are.
 - **Hipp's December 2025 forum replies** on formal verification (sqlite.org/forum/info/39134ba0298d89cf), and the April 2026 follow-up in the same thread on an AI translation of SQLite's B-tree into Rocq, which stalled.
@@ -25,7 +25,7 @@ Before designing anything, study:
 8. **Budgets.** Every card has a token cap (Appendix B), and the milestone's cap is 1B tokens. A token is anything a CLI reports: input, cache reads and writes, and output. campaign.py stops a session at its card's cap and records every session it starts in `evidence/tokens.csv`. Record your own sessions in `evidence/orchestrator/tokens.csv` at each checkpoint.
 9. **The machine.** Run CBMC and agent sessions under `nice -n 10`. Run at most 4 builder and reviewer sessions at once, together, and fewer if CBMC makes the machine swap. Give every CBMC run a timeout, starting at 10 minutes per configuration.
 10. **Models and subscriptions.** Builders run on Codex with GPT-6 Astra (`gpt-6-astra`): xhigh reasoning effort on high-tier cards, high on standard ones. Reviewers run on Claude Code, Opus 5.5 on high-tier cards and Sonnet 5.5 on standard ones. The ledger agent, both orchestrator sessions and the auditor run on Claude Code with Opus 5.5. Every session runs on my Claude or ChatGPT subscription, through that vendor's own CLI signed in with my account: `claude -p` and `codex exec`. Use no API keys. A key in the environment can take precedence over the login, so campaign.py strips API-key variables from every session's environment, and no session uses a flag that needs a key, such as claude's `--bare`. Drive neither model through any other tool. Usage limits set the pace: a session stopped by a limit resumes after the reset, and that doesn't count against its card.
-11. **Who commits to main.** `tools/campaign.py start` moves your checkout to branch `orch` and gives main its own checkout at `../proving-sqlite-wt/main`; `tools/campaign.py finish` reverses that. In between, only campaign.py commits to main. You commit on orch and send your commits with `tools/campaign.py land`. Every commit campaign.py makes carries a `Campaign:` trailer saying what it is and what checked it.
+11. **Who commits to main.** `tools/campaign.py start` moves your checkout to branch `orch` and gives main its own checkout at `../proving-sqlite-wt/main`; `tools/campaign.py finish` reverses that. In between, only campaign.py commits to main. You commit on orch and send your commits with `tools/campaign.py land`. Every commit campaign.py makes carries a `Campaign:` trailer saying what it is and what checked it, its merges of main into card branches and into orch included.
 
 ## 1. Bring-up and pilot
 
@@ -33,9 +33,9 @@ Set up the repo (Appendix D), pins and tools, and test what this plan assumes ab
 
 1. **Pins.** The SQLite 3.53.4 amalgamation, checking SQLITE_SOURCE_ID against the value above; its source release (sqlite-src-3530400.zip), which holds the test suite the ledger agent runs offline; and the latest CBMC release, recording its version and solver back ends. If SQLite has a newer release, still pin 3.53.4, because Appendix A was checked against it, and tell me.
 2. **Contracts on separate declarations.** The DFCC command line accepts `--enforce-contract <function>[/<contract>]` and `--replace-call-with-contract <function>[/<contract>]`, but its documentation doesn't say what the suffix means. On a toy, show whether `f/c` checks f against clauses declared on a separate declaration c, fails when c's ensures is false of f, and replaces calls to f with c. If it works, contracts live in `proofs/contracts/` and SQLite's text gets only loop annotations. If not, contracts become PROOF spans on the definitions in the overlay. Record the choice.
-3. **Loop contracts.** Define `#define PROOF(...) __VA_ARGS__` in `proofs/include/proof.h`. On a toy while loop and a toy do-while (sqlite3VdbeRecordCompareWithSkip's loop is a do-while), show that `__CPROVER_assigns`, `__CPROVER_loop_invariant` and `__CPROVER_decreases`, in that order between header and body, are applied by `--apply-loop-contracts`, and that a false invariant and a non-decreasing measure are each caught. The documentation shows only inline loop contracts. goto-synthesizer can dump synthesized ones as JSON, but nothing documented reads them back, so assume inline.
-4. **Checks.** Write `proofs/CHECKS`, the CBMC options every proof uses: pointer, bounds, signed overflow, undefined shift, division by zero, pointer overflow and pointer primitive checks; a float-to-integer conversion check if your CBMC has one; malloc that may fail and return NULL; and unwinding assertions. Confirm each option in `cbmc --help`, then show each check fires on a toy that commits its UB. Write `UB-CLASSES.md`: every kind of undefined behavior in C11 Annex J.2 that can arise in this code, each marked *checked* (by which option), *argued* (by inspection, listing the sites, e.g. serialGet's `*(i64*)&x` and sqlite3GetVarint's `(signed char*)p`) or *out of scope* (data races, since the proofs assume one thread; stack exhaustion), with the reason.
-5. **Configurations.** `proofs/CONFIGS` defines lp64-le, ilp32-le and lp64-be. lp64-be also passes `-DSQLITE_BYTEORDER=4321` when preprocessing. For each, show with a probe harness, and by preprocessing the overlay, that the word size, the endianness and SQLite's byte-order branches are what the name says. Hipp tests on a big-endian PowerPC, among others.
+3. **Loop contracts.** Define `#define PROOF(...) __VA_ARGS__` in `proofs/include/proof.h`. On a toy while loop and a toy do-while (sqlite3VdbeRecordCompareWithSkip's loop is a do-while), show that `__CPROVER_assigns`, `__CPROVER_loop_invariant` and `__CPROVER_decreases`, in that order between header and body (for a do-while, between `do` and the body: CBMC 6.11 does not parse them after the condition, and the invariant must hold at the top of every iteration), are applied by `--apply-loop-contracts`, and that a false invariant and a non-decreasing measure are each caught. The documentation shows only inline loop contracts. goto-synthesizer can dump synthesized ones as JSON, but nothing documented reads them back, so assume inline.
+4. **Checks.** Write `proofs/CHECKS`, the CBMC options every proof uses: pointer, bounds, signed overflow, undefined shift, division by zero, pointer overflow and pointer primitive checks; a float-to-integer conversion check if your CBMC has one (6.11 has none on its own: `--conversion-check` also flags conversions C defines, so CHECKS runs it as a second pass restricted to its float-to-integer properties); malloc that may fail and return NULL; and unwinding assertions. Confirm each option in `cbmc --help`, then show each check fires on a toy that commits its UB. Write `UB-CLASSES.md`: every kind of undefined behavior in C11 Annex J.2 that can arise in this code, each marked *checked* (by which option), *argued* (by inspection, listing the sites, e.g. serialGet's `*(i64*)&x` and sqlite3GetVarint's `(signed char*)p`) or *out of scope* (data races, since the proofs assume one thread; stack exhaustion), with the reason.
+5. **Configurations.** `proofs/CONFIGS` defines lp64-le, ilp32-le and lp64-be. lp64-be also passes `-DSQLITE_BYTEORDER=4321` when preprocessing, and `-funsigned-char`, since PowerPC's plain char is unsigned; it must not pass `-m64`, which resets goto-cc to little-endian. ilp32-le needs gcc-multilib's 32-bit headers. For each, show with a probe harness, and by preprocessing the overlay, that the word size, the endianness, the signedness of plain char and SQLite's byte-order branches are what the name says. Hipp tests on a big-endian PowerPC, among others.
 6. **Builds.** Time goto-cc on the whole overlay per configuration, and decide how proofs link against it, e.g. one sqlite3 goto binary per configuration, with each harness linked in and unused functions dropped. Record the time and memory. Builds write only inside the worktree they run in, because a Codex session can write nowhere else, and .gitignore covers everything they write.
 7. **Coverage.** Find the command that reports which lines of the function under proof a harness reaches. Show that it flags a deliberately unreachable line in a toy.
 8. **Native probes.** Build these with ASan and UBSan against unmodified upstream, not with CBMC:
@@ -45,7 +45,7 @@ Set up the repo (Appendix D), pins and tools, and test what this plan assumes ab
    - `tools/check_overlay.py`.
    - `tools/scan.py` (§3.4).
    - `tools/mutate.py`, which applies one mutant to a scratch copy of the overlay and always restores the original.
-   - Top-level `make prove`, `make coverage`, `make gate` and `make gate CARD=C-NN` (§3.4). `make -C proofs/C-NN prove` takes `CONFIG=<name>` to run one configuration. Every target ends its output with one result line, such as `RESULT prove C-03 lp64-le PASS 212s 1843 properties 0 failed`, so a run cut off by a shell timeout can't pass for a result.
+   - Top-level `make prove`, `make coverage`, `make gate` and `make gate CARD=C-NN` (§3.4). `make -C proofs/C-NN prove` takes `CONFIG=<name>` to run one configuration. Every target ends its output with one result line, such as `RESULT prove C-03 lp64-le PASS 212s 1843 properties 0 failed`, so a run cut off by a shell timeout can't pass for a result. (`make -C` prints "Leaving directory" after it unless `GNUMAKEFLAGS=--no-print-directory` is set, as campaign.py sets it for every session and gate.)
 10. **Agent CLIs.** From `claude --help` and `codex exec --help`, write `tools/sessions.toml`: for each vendor, role and tier, the command that starts a headless session in a given directory, with its model and effort, no permission prompts (for Codex, the workspace-write sandbox) and JSON output. On a toy task in a scratch worktree, show for each CLI that:
     1. a session runs to the end without prompts, on my subscription login, with no API-key variable set, and the CLI's own output or status command confirms the login;
     2. its token usage can be read while it runs, or at least when it ends;
@@ -89,7 +89,7 @@ Also prepare:
 1. Appendix A confirmed against the pin, with each function's direct callees from the call graph and the order the cards will run in.
 2. proofs/spec/record_format.h, checked against the file format document by a reviewer session on the vendor that didn't write it (`tools/campaign.py session`).
 3. LEDGER.md drafts for the three boundary contracts and for A-001, in the Appendix C format.
-4. proofs/MUTANTS: at least two mutants per function, each a one-token change to a bounds check, mask, shift, constant or loop condition. A mutant is killed when some proof fails. List any you expect to be equivalent, and why.
+4. proofs/MUTANTS: at least two mutants per function, each a one-token change to a bounds check, mask, shift, constant or loop condition. A mutant is killed when some proof fails. Each line names, with `card=`, the card whose proofs must kill it, so a card's gate never waits on a card that merges later; the full gate runs every mutant against every proof. List any you expect to be equivalent, and why.
 5. A card for every function (Appendix B), with its Depends on and May change lines.
 6. TRUSTED.md and UB-CLASSES.md.
 
@@ -111,11 +111,11 @@ The campaign session starts here. Read HANDOFF.md and run the checks it lists; i
 1. **What campaign.py does.** It's a plain program with no model in its loop, frozen with tools/ at checkpoint 1. Appendix E lists the card states.
    - **Order.** A card is ready when every card on its Depends on line is merged. Ready cards start in card order, within §0.9's limit, and never on a vendor that is waiting out a usage limit.
    - **Worktrees.** A builder works in `../proving-sqlite-wt/C-NN` on branch `card/C-NN`, and each round starts by merging main into that branch; a conflict sends the card to triage. A reviewer gets a fresh worktree, detached at the commit it judges, which is deleted afterwards.
-   - **Sessions.** Each starts from tools/sessions.toml, detached in its own process group under `nice -n 10`, with its output streamed to `../proving-sqlite-wt/state/` and its exit status written beside it, so it outlives a restart of campaign.py. Builders run on Codex and reviewers on Claude, at the card's tier, as §0.10 says and sessions.toml implements. The prompt is fixed in campaign.py: the role's GOAL file, the card, the round and any reviews to answer. `tools/campaign.py session` starts a one-off session the same way, for the §2 spec review and the ledger agent. It commits what the session writes, checked against the paths that role may write, on a branch of its own, and during a campaign lands it on main.
-   - **Commits.** Sessions don't write git. When a builder ends, campaign.py checks every change since the round started, committed or not, including new files git doesn't ignore. If all are on the card's May change line, it commits them with a message naming the card and round; otherwise it commits nothing and sends the card to triage. When a reviewer ends, it commits only the review file: onto the card branch, or onto main for a re-review of a merged card. A reviewer that changed a tracked file is discarded and run once more, and if that one does too, the card goes to triage.
+   - **Sessions.** Each starts from tools/sessions.toml, detached in its own process group under `nice -n 10`, with its output streamed to `../proving-sqlite-wt/state/` and its exit status written beside it, so it outlives a restart of campaign.py. Builders run on Codex and reviewers on Claude, at the card's tier, as §0.10 says; campaign.py fixes the vendors and sessions.toml supplies the models and command lines. Codex runs in its workspace-write sandbox. Claude runs in `--permission-mode auto` inside bubblewrap, which leaves only its worktree, ~/.claude and ~/.claude.json writable and hides /tmp, ~/.codex, state/, the other worktrees and the primary checkout; campaign.py refuses a command line without these. The prompt is fixed in campaign.py: the role's GOAL file, the card, the round and any reviews to answer. `tools/campaign.py session` starts a one-off session the same way, for the §2 spec review and the ledger agent. It commits what the session writes, checked against the paths that role may write, on a branch of its own, and during a campaign lands it on main.
+   - **Commits.** Sessions don't write git. When a builder ends, campaign.py checks every change since the round started, committed or not, including new files git doesn't ignore. If all are on the card's May change line, and none adds a symlink or changes a file mode, it commits them with a message naming the card and round; otherwise it commits nothing and sends the card to triage. When a reviewer ends, it commits only the review file: onto the card branch, or onto main for a re-review of a merged card. A reviewer that changed a tracked file is discarded and run once more, and if that one does too, the card goes to triage.
    - **Verdicts.** The first line of the report or review decides. DONE and FINDING start a reviewer. APPROVE sends the card to merge, or, on a FINDING, to triage with the finding reproduced. REJECT starts the next builder round, up to three. Anything else goes to triage: STUCK, NEEDS-DECISION, NEEDS-ZACH, a third REJECT, or a missing first line.
    - **Merges,** one at a time. campaign.py merges only the commit the reviewer approved, plus the review. In a scratch worktree at main's head, it merges them with `--no-ff`, checks that the merge touches only the card's May change paths and its own reviews, and runs `make gate CARD=C-NN`. If that passes, it regenerates RESULTS.md, results.csv, CAMPAIGN.md and evidence/tokens.csv, adds the gate log under evidence/gate/, commits them, and fast-forwards main. If not, the card goes to triage with the gate log. After the last card merges, it runs the full `make gate`.
-   - **Interruptions.** A session that ends without its report or verdict is resumed in the same worktree. If its output matches its vendor's usage-limit pattern, no session starts on that vendor until the reset time it printed, or, if it printed none, for 30 minutes, doubling up to 4 hours; that doesn't count against the card. Any other interruption counts, and the third in a round sends the card to triage. Output that matches no pattern is logged verbatim, so the patterns can be fixed.
+   - **Interruptions.** A session that ends without its report or verdict is resumed in the same worktree. If its output matches its vendor's usage-limit pattern, no session starts on that vendor until the reset time it printed, or, if it printed none, for 30 minutes, doubling up to 4 hours; that doesn't count against the card. A session whose output matches its vendor's auth-failure pattern, an expired or revoked login, is handled the same way, except that the vendor stays paused until I sign in again: campaign.py adds a triage item asking for that, and `tools/campaign.py resume-vendor <vendor>` lifts the pause once the CLI's login check passes. Any other interruption counts, and the third in a round sends the card to triage. Output that matches no pattern is logged verbatim, so the patterns can be fixed.
    - **Caps.** It counts each session's tokens as §0.8 defines them, or its time where §1.10 found no running count, and keeps the running total in `.campaign/usage` in the session's worktree, where builders read it. At the card's cap it ends the session, commits a builder's allowed changes, and sends the card to triage.
    - **Restarts.** It journals each step in `../proving-sqlite-wt/state/` before taking it. On restart it reconciles the journal with git and the running sessions, so a crash at any point neither loses nor repeats a session or a merge. `tools/campaign.py stop` stops it starting anything new; running sessions carry on, and `start` picks up where it left off.
    - **Status.** `tools/campaign.py status` prints each card's state, round, vendor, tokens against cap and what it is waiting on, then the triage queue, the merge queue, any vendor pause and the last full gate's result. CAMPAIGN.md holds the same.
@@ -125,11 +125,12 @@ The campaign session starts here. Read HANDOFF.md and run the checks it lists; i
    - Commit your own changes on branch orch, then run `tools/campaign.py land`. It merges main into orch, so your checkout stays current, and queues orch for main. A land may touch only cards/, tests/repro/, evidence/approvals/, evidence/orchestrator/, PROGRESS.md, LEDGER.md and FINDINGS.md. A frozen file may change only with my approval record and an updated proof.lock in the same land; campaign.py then runs the full gate and sends every card whose proof fails to triage. Proofs reach main only through card merges.
    - campaign.py is frozen. If it misbehaves, stop it and ask me before changing it.
 3. **Contract changes.** A builder that needs more from an approved contract, such as a stronger ensures or a weaker requires, reports NEEDS-DECISION with the change. If you agree, `tools/campaign.py reopen C-NN --for C-MM` sends C-NN, the card that owns the contract, back for a new round with the request added to its notes, and C-MM waits for it. When C-NN merges again, its gate has rerun every proof that uses the contract, and campaign.py starts a re-review of each merged card whose proof uses it. A REJECT sends that card back for a new round.
-4. **The gate.** `make gate` runs everything below. `make gate CARD=C-NN`, which campaign.py runs before each merge, runs check_overlay, the proof.lock check and scan.py, plus the proofs, coverage and mutants of the card and of every card whose proofs call its functions.
+4. **The gate.** `make gate` runs everything below. `make gate CARD=C-NN`, which campaign.py runs before each merge, runs check_overlay, the proof.lock check and scan.py, plus the include check, proofs, coverage and mutants of the card and of every card whose proofs call its functions, and, if proofs/include/preds.h changed, of every card that includes it.
    - check_overlay;
-   - proof.lock's hashes, once it exists;
+   - proof.lock's hashes; after the freeze, a missing proof.lock fails;
+   - each harness, preprocessed on every configuration, includes only overlay/sqlite3.c, proofs/include/*.h, proofs/contracts/*.h, proofs/spec/*.h and system headers;
    - every merged proof, on every configuration, with proofs/CHECKS;
-   - coverage of every proof, with each unreached line of the function under proof explained in its NOTES.md;
+   - coverage of every proof, with each unreached line of the function under proof listed under "Unreached lines" in its NOTES.md, and every function of each card in some proof's COVER;
    - every mutant in proofs/MUTANTS killed, or shown equivalent by a reviewed argument;
    - `tools/scan.py`, which rejects:
      - any `__CPROVER_assume` outside a harness's setup block;
@@ -138,6 +139,10 @@ The campaign session starts here. Read HANDOFF.md and run the checks it lists; i
      - a boundary contract that doesn't name its ledger entry;
      - a harness that defines a function SQLite's code calls;
      - a PROOF span anywhere but where §1.2 and §1.3 allow, in the functions its card names, or one that holds anything but contract clauses;
+     - abort, exit, _Exit, longjmp, __VERIFIER_* and __CPROVER_array_set/array_replace in harnesses, predicates, specs and contracts;
+     - return or goto in a harness entry function, and anything but exactly one SETUP block per entry function, before the call under proof;
+     - any file in proofs/C-NN/ but harness.c, Makefile and NOTES.md, and any symlink under proofs/, overlay/ or tests/repro/;
+     - a change to preds.h other than new predicates;
    - the P2 and P3 harnesses.
 5. **Ledger and findings.** Builders draft entries. Once a reviewer has checked a draft, you number it and land it in LEDGER.md or FINDINGS.md, copying a finding's repro to `tests/repro/F-NNN.c`. A finding is a counterexample that reproduces: `tests/repro/F-NNN.c` builds natively against unmodified upstream/sqlite3.c and fails under ASan or UBSan. A reviewer reproduces each one before it goes in.
 6. **Results.** RESULTS.md and results.csv give, for each function, property and configuration: CBMC time, properties checked, coverage, mutants killed, the review verdict and the ledger entries used. campaign.py generates them from evidence at each merge; never edit them by hand.
@@ -168,32 +173,32 @@ When the boundary contracts and A-001 have settled, install the ledger agent's b
 
 ## Appendix A. Scope
 
-SQLite 3.53.4 amalgamation. *UB sites* counts the memory accesses AddressSanitizer instruments at -O1 plus UBSan's arithmetic and pointer checks, measured on this pin; use it for budgeting only. The 22 functions total about 800 lines, 7 loops and 570 UB sites.
+SQLite 3.53.4 amalgamation. *Line* is the line that names the function (corrected at checkpoint 0: the table first gave the line after it, and 191392 for sqlite3CorruptError). *UB sites* counts the memory accesses AddressSanitizer instruments at -O1 plus UBSan's arithmetic and pointer checks, measured on this pin; use it for budgeting only. The 22 functions total about 800 lines, 7 loops and 570 UB sites.
 
 | Level | Function | Line | NLOC | Loops | UB sites | Calls in scope | Boundary calls |
 |---|---|---|---|---|---|---|---|
-| 0 | sqlite3VarintLen | 38216 | 7 | 1 | 2 | | |
-| 0 | putVarint64 | 37968 | 25 | 3 | 23 | | |
-| 0 | sqlite3GetVarint | 38022 | 106 | 0 | 51 | | |
-| 0 | sqlite3VdbeSerialTypeLen | 91863 | 9 | 0 | 4 | | |
-| 0 | sqlite3VdbeOneByteSerialTypeLen | 91872 | 5 | 0 | 3 | | |
-| 0 | serialGet | 91946 | 20 | 0 | 34 | | |
-| 0 | serialGet7 | 91981 | 18 | 0 | 34 | | |
-| 0 | vdbeRecordDecodeInt | 92553 | 33 | 0 | 76 | | |
-| 0 | sqlite3VdbeFindCompare | 93011 | 34 | 0 | 22 | | |
-| 0 | isAllZero | 92370 | 7 | 1 | 3 | | |
-| 0 | sqlite3IsNaN | 36446 | 8 | 0 | 5 | | |
-| 0 | sqlite3VdbeMemSetNull | 86608 | 7 | 0 | 2 | | |
-| 1 | sqlite3PutVarint | 37992 | 12 | 0 | 7 | putVarint64 | |
-| 1 | sqlite3GetVarint32 | 38183 | 23 | 0 | 16 | sqlite3GetVarint | |
-| 1 | sqlite3VdbeSerialGet | 91998 | 68 | 0 | 72 | serialGet | |
-| 1 | sqlite3IntFloatCompare | 92426 | 16 | 0 | 1 | sqlite3IsNaN | |
-| 1 | sqlite3VdbeAllocUnpackedRecord | 92097 | 15 | 0 | 9 | | sqlite3DbMallocRaw |
-| 2 | sqlite3VdbeRecordUnpack | 92117 | 41 | 1 | 20 | sqlite3GetVarint32, sqlite3VdbeSerialGet, sqlite3VdbeSerialTypeLen, sqlite3VdbeMemSetNull | |
-| 2 | sqlite3VdbeRecordCompareWithSkip | 92608 | 198 | 1 | 73 | sqlite3GetVarint32, sqlite3VdbeSerialGet, serialGet7, sqlite3VdbeSerialTypeLen, sqlite3VarintLen, vdbeRecordDecodeInt, sqlite3IntFloatCompare, isAllZero | vdbeCompareMemString, sqlite3CorruptError |
-| 3 | sqlite3VdbeRecordCompare | 92829 | 6 | 0 | 0 | sqlite3VdbeRecordCompareWithSkip | |
-| 3 | vdbeRecordCompareString | 92941 | 61 | 0 | 24 | sqlite3GetVarint32, sqlite3VdbeRecordCompareWithSkip | sqlite3CorruptError |
-| 4 | vdbeRecordCompareInt | 92846 | 76 | 0 | 86 | sqlite3VdbeRecordCompare, sqlite3VdbeRecordCompareWithSkip | |
+| 0 | sqlite3VarintLen | 38215 | 7 | 1 | 2 | | |
+| 0 | putVarint64 | 37967 | 25 | 3 | 23 | | |
+| 0 | sqlite3GetVarint | 38021 | 106 | 0 | 51 | | |
+| 0 | sqlite3VdbeSerialTypeLen | 91862 | 9 | 0 | 4 | | |
+| 0 | sqlite3VdbeOneByteSerialTypeLen | 91871 | 5 | 0 | 3 | | |
+| 0 | serialGet | 91945 | 20 | 0 | 34 | | |
+| 0 | serialGet7 | 91980 | 18 | 0 | 34 | | |
+| 0 | vdbeRecordDecodeInt | 92552 | 33 | 0 | 76 | | |
+| 0 | sqlite3VdbeFindCompare | 93010 | 34 | 0 | 22 | | |
+| 0 | isAllZero | 92369 | 7 | 1 | 3 | | |
+| 0 | sqlite3IsNaN | 36445 | 8 | 0 | 5 | | |
+| 0 | sqlite3VdbeMemSetNull | 86607 | 7 | 0 | 2 | | |
+| 1 | sqlite3PutVarint | 37991 | 12 | 0 | 7 | putVarint64 | |
+| 1 | sqlite3GetVarint32 | 38182 | 23 | 0 | 16 | sqlite3GetVarint | |
+| 1 | sqlite3VdbeSerialGet | 91997 | 68 | 0 | 72 | serialGet | |
+| 1 | sqlite3IntFloatCompare | 92425 | 16 | 0 | 1 | sqlite3IsNaN | |
+| 1 | sqlite3VdbeAllocUnpackedRecord | 92096 | 15 | 0 | 9 | | sqlite3DbMallocRaw |
+| 2 | sqlite3VdbeRecordUnpack | 92116 | 41 | 1 | 20 | sqlite3GetVarint32, sqlite3VdbeSerialGet, sqlite3VdbeSerialTypeLen, sqlite3VdbeMemSetNull | |
+| 2 | sqlite3VdbeRecordCompareWithSkip | 92607 | 198 | 1 | 73 | sqlite3GetVarint32, sqlite3VdbeSerialGet, serialGet7, sqlite3VdbeSerialTypeLen, sqlite3VarintLen, vdbeRecordDecodeInt, sqlite3IntFloatCompare, isAllZero | vdbeCompareMemString, sqlite3CorruptError |
+| 3 | sqlite3VdbeRecordCompare | 92828 | 6 | 0 | 0 | sqlite3VdbeRecordCompareWithSkip | |
+| 3 | vdbeRecordCompareString | 92940 | 61 | 0 | 24 | sqlite3GetVarint32, sqlite3VdbeRecordCompareWithSkip | sqlite3CorruptError |
+| 4 | vdbeRecordCompareInt | 92845 | 76 | 0 | 86 | sqlite3VdbeRecordCompare, sqlite3VdbeRecordCompareWithSkip | |
 
 memcmp, called by sqlite3VdbeRecordCompareWithSkip and vdbeRecordCompareString, is CBMC's library model, so it goes in TRUSTED.md.
 
@@ -201,9 +206,9 @@ Boundary contracts are assumed, and each needs a LEDGER.md entry:
 
 | Function | Line | Used by | Why it's not proved here |
 |---|---|---|---|
-| sqlite3DbMallocRaw | 32114 | sqlite3VdbeAllocUnpackedRecord | The allocator and lookaside belong to a later milestone. Contract: returns NULL or a fresh block of at least n bytes. |
-| vdbeCompareMemString | 92351 | sqlite3VdbeRecordCompareWithSkip | It calls the collation's xCmp, which is application code, or converts encodings through vdbemem.c. |
-| sqlite3CorruptError | 191392 | sqlite3VdbeRecordCompareWithSkip, vdbeRecordCompareString | It reports through sqlite3_log, which can call the application's log callback, and returns SQLITE_CORRUPT. |
+| sqlite3DbMallocRaw | 32113 | sqlite3VdbeAllocUnpackedRecord | The allocator and lookaside belong to a later milestone. Contract: returns NULL or a fresh block of at least n bytes. |
+| vdbeCompareMemString | 92350 | sqlite3VdbeRecordCompareWithSkip | It calls the collation's xCmp, which is application code, or converts encodings through vdbemem.c. |
+| sqlite3CorruptError | 191373 | sqlite3VdbeRecordCompareWithSkip, vdbeRecordCompareString | It reports through sqlite3_log, which can call the application's log callback, and returns SQLITE_CORRUPT. |
 
 Facts read from the source on 2026-11-04, for card notes. The §1.8 probes check the sqlite3VarintLen and sqlite3VdbeRecordUnpack facts.
 - sqlite3GetVarint takes no length and reads up to 9 bytes. It is straight-line code.

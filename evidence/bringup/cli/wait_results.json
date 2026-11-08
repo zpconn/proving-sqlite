@@ -1,0 +1,299 @@
+{
+ "after": {
+  "advice": "Long commands (a CBMC run can take 10 minutes per configuration): wait once, never poll. In one exec cell, start the command with tools.exec_command, its output in a file (yield_time_ms 1000); if it is still running, call tools.write_stdin with its session_id, chars \"\" and yield_time_ms 3600000. That call returns when the command exits (this session allows waits of up to an hour), so the cell and your turn wait with it. Do not use sleep, short yields or repeated wait calls to check on a run. Background jobs do not survive here: a command's background children are killed when it returns. Trust only output that ends with its RESULT line.",
+  "argv": [
+   "codex",
+   "exec",
+   "--json",
+   "--ignore-user-config",
+   "--strict-config",
+   "-c",
+   "sandbox_mode=\"workspace-write\"",
+   "-c",
+   "approval_policy=\"never\"",
+   "-c",
+   "web_search=\"disabled\"",
+   "-c",
+   "background_terminal_max_timeout=3600000",
+   "-c",
+   "features.code_mode.default_exec_yield_time_ms=3600000",
+   "--disable",
+   "apps",
+   "--disable",
+   "plugins",
+   "--disable",
+   "remote_plugin",
+   "--disable",
+   "tool_suggest",
+   "--disable",
+   "multi_agent",
+   "--disable",
+   "multi_agent_v2",
+   "--disable",
+   "image_generation",
+   "--disable",
+   "browser_use",
+   "--disable",
+   "browser_use_external",
+   "--disable",
+   "computer_use",
+   "--disable",
+   "in_app_browser",
+   "--disable",
+   "goals",
+   "-m",
+   "{model}",
+   "-c",
+   "model_reasoning_effort=\"{effort}\"",
+   "-"
+  ],
+  "calls": [
+   [
+    "2026-11-08T22:27:10.474Z",
+    "exec",
+    "const r = await tools.exec_command({cmd:\"sleep 900; echo LONG-RUN-FINISHED > /tmp/wait-after-long-command-output.txt\",yield_time_ms:1000,max_output_tokens:1000}"
+   ],
+   [
+    "2026-11-08T22:42:13.177Z",
+    "exec",
+    "text(await tools.exec_command({cmd:\"cp /tmp/wait-after-long-command-output.txt long.txt\",yield_time_ms:1000,max_output_tokens:1000}));\n"
+   ]
+  ],
+  "effort": "high",
+  "exit": {
+   "ended": 1794177735.6947267,
+   "rc": 0
+  },
+  "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J76823-wait-after",
+  "long_txt": "LONG-RUN-FINISHED",
+  "model": "gpt-6-astra",
+  "rollout": "/home/zpconn/.codex/sessions/2026/11/08/rollout-2026-11-08T16-27-04-01a1bd45-b251-7f42-83e7-056be00b0c53.jsonl",
+  "seconds": 913,
+  "tool_calls": 2,
+  "usage": {
+   "cache_read": 24192,
+   "cache_write": 0,
+   "input": 36712,
+   "output": 213,
+   "total": 36925
+  }
+ },
+ "before": {
+  "advice": "CBMC runs can take 10 minutes per configuration. In this sandbox a command's background children are killed when the command returns, so run long commands in the foreground with output in a file and let them finish, or give them a timeout longer than the run. Trust only output that ends with its last line.",
+  "argv": [
+   "codex",
+   "exec",
+   "--json",
+   "--ignore-user-config",
+   "-c",
+   "sandbox_mode=\"workspace-write\"",
+   "-c",
+   "approval_policy=\"never\"",
+   "-m",
+   "{model}",
+   "-c",
+   "model_reasoning_effort=\"{effort}\"",
+   "-"
+  ],
+  "calls": [
+   [
+    "2026-11-08T22:27:10.097Z",
+    "exec",
+    "text(await tools.exec_command({cmd:\"sleep 900; echo LONG-RUN-FINISHED\",yield_time_ms:1000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:27:16.941Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:27:50.726Z",
+    "wait",
+    "{\"cell_id\":\"2\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:28:09.494Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:28:42.362Z",
+    "wait",
+    "{\"cell_id\":\"3\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:29:02.430Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:29:37.176Z",
+    "wait",
+    "{\"cell_id\":\"4\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:29:55.233Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:30:28.402Z",
+    "wait",
+    "{\"cell_id\":\"5\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:30:48.094Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:31:20.852Z",
+    "wait",
+    "{\"cell_id\":\"6\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:31:40.992Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:32:13.808Z",
+    "wait",
+    "{\"cell_id\":\"7\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:32:33.778Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:33:08.310Z",
+    "wait",
+    "{\"cell_id\":\"8\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:33:27.303Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:33:59.852Z",
+    "wait",
+    "{\"cell_id\":\"9\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:34:19.755Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:34:53.386Z",
+    "wait",
+    "{\"cell_id\":\"10\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:35:12.594Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:35:45.505Z",
+    "wait",
+    "{\"cell_id\":\"11\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:36:05.544Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:36:40.087Z",
+    "wait",
+    "{\"cell_id\":\"12\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:36:58.279Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:37:31.523Z",
+    "wait",
+    "{\"cell_id\":\"13\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:37:50.567Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:38:23.377Z",
+    "wait",
+    "{\"cell_id\":\"14\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:38:43.163Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:39:15.801Z",
+    "wait",
+    "{\"cell_id\":\"15\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:39:35.811Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:40:09.924Z",
+    "wait",
+    "{\"cell_id\":\"16\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:40:28.753Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:41:01.556Z",
+    "wait",
+    "{\"cell_id\":\"17\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:41:21.459Z",
+    "exec",
+    "text(await tools.write_stdin({session_id:12127,chars:\"\",yield_time_ms:50000,max_output_tokens:1000}));\n"
+   ],
+   [
+    "2026-11-08T22:41:54.908Z",
+    "wait",
+    "{\"cell_id\":\"18\",\"yield_time_ms\":20000,\"max_tokens\":1000}"
+   ],
+   [
+    "2026-11-08T22:42:12.221Z",
+    "exec",
+    "text(await tools.exec_command({cmd:\"printf '%s\\\\n' 'LONG-RUN-FINISHED' > long.txt\",\"max_output_tokens\":1000}));\n"
+   ]
+  ],
+  "effort": "high",
+  "exit": {
+   "ended": 1794177736.4448361,
+   "rc": 0
+  },
+  "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J76824-wait-before",
+  "long_txt": "LONG-RUN-FINISHED",
+  "model": "gpt-6-astra",
+  "rollout": "/home/zpconn/.codex/sessions/2026/11/08/rollout-2026-11-08T16-27-04-01a1bd45-b251-73a0-b9b1-8c6dbc3c4ed8.jsonl",
+  "seconds": 913,
+  "tool_calls": 36,
+  "usage": {
+   "cache_read": 722816,
+   "cache_write": 0,
+   "input": 746226,
+   "output": 1852,
+   "total": 748078
+  }
+ }
+}

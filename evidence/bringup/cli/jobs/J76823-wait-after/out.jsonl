@@ -1,0 +1,11 @@
+{"type":"thread.started","thread_id":"01a1bd45-b251-7f42-83e7-056be00b0c53"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll run the command with output saved in `/tmp`, wait for it to finish, then write its printed line to `long.txt`.\n"}}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'sleep 900; echo LONG-RUN-FINISHED > /tmp/wait-after-long-command-output.txt'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'sleep 900; echo LONG-RUN-FINISHED > /tmp/wait-after-long-command-output.txt'","aggregated_output":"","exit_code":0,"status":"completed"}}
+{"type":"item.started","item":{"id":"item_2","type":"command_execution","command":"/bin/bash -lc 'cat /tmp/wait-after-long-command-output.txt'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_2","type":"command_execution","command":"/bin/bash -lc 'cat /tmp/wait-after-long-command-output.txt'","aggregated_output":"LONG-RUN-FINISHED\n","exit_code":0,"status":"completed"}}
+{"type":"item.started","item":{"id":"item_3","type":"command_execution","command":"/bin/bash -lc 'cp /tmp/wait-after-long-command-output.txt long.txt'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_3","type":"command_execution","command":"/bin/bash -lc 'cp /tmp/wait-after-long-command-output.txt long.txt'","aggregated_output":"","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"done"}}
+{"type":"turn.completed","usage":{"input_tokens":36712,"cached_input_tokens":24192,"cache_write_input_tokens":0,"output_tokens":213,"reasoning_output_tokens":0}}

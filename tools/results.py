@@ -22,7 +22,7 @@ import prove  # noqa: E402
 
 COLS = ['card', 'property', 'proof', 'functions', 'config', 'status', 'cbmc_seconds', 'properties', 'failed',
         'lines_covered', 'lines_total', 'uncovered_lines', 'mutants_killed', 'mutants_total', 'mutants_equivalent',
-        'review', 'ledger_entries']
+        'review', 'ledger_entries', 'prove_from', 'coverage_from', 'mutants_from']
 
 
 def review_verdict(root, cid):
@@ -52,6 +52,12 @@ def ledger_entries(root, proof):
     return ' '.join(sorted(set(ids)))
 
 
+def prov_text(pv):
+    """'<commit> <gate log>' for one field's provenance record (campaign.py collect_results), or ''."""
+    pv = pv or {}
+    return ' '.join(x for x in ((pv.get('commit') or '')[:12], pv.get('gate_log') or '') if x)
+
+
 def rows(root):
     out = []
     cards = cardlib.load_all(root)
@@ -77,6 +83,8 @@ def rows(root):
         mk = sum(1 for x in muts if x['verdict'] == 'KILLED')
         me = sum(1 for x in muts if x['verdict'] == 'EQUIVALENT')
         rv = review_verdict(root, cid)
+        prov = rec.get('provenance') or {}
+        frm = {k: prov_text(prov.get(k)) for k in ('prove_summary', 'coverage_summary', 'mutants')}
         for r in rec.get('prove_summary') or []:
             pr = pmap.get(r['proof'])
             fns = ' '.join(pr.cover) if pr else ''
@@ -85,7 +93,8 @@ def rows(root):
                         'config': r['config'], 'status': r['status'], 'cbmc_seconds': r.get('cbmc_seconds', r.get('seconds')),
                         'properties': r['properties'], 'failed': r['failed'], 'lines_covered': cv[0], 'lines_total': cv[1],
                         'uncovered_lines': cv[2], 'mutants_killed': mk, 'mutants_total': len(muts), 'mutants_equivalent': me,
-                        'review': rv, 'ledger_entries': ledger_entries(root, pr) if pr else ''})
+                        'review': rv, 'ledger_entries': ledger_entries(root, pr) if pr else '',
+                        'prove_from': frm['prove_summary'], 'coverage_from': frm['coverage_summary'], 'mutants_from': frm['mutants']})
     return out
 
 
@@ -110,6 +119,15 @@ def results_md(rs):
         lines.append('| %s |' % ' | '.join(str(x) for x in [r['card'], r['property'], r['proof'], r['functions'], r['config'],
                                                              r['status'], r['cbmc_seconds'], r['properties'], r['failed'], cov,
                                                              mu, r['review'], r['ledger_entries']]))
+    seen = []
+    for r in rs:
+        k = (r['card'], r['prove_from'], r['coverage_from'], r['mutants_from'])
+        if k not in seen:
+            seen.append(k)
+    if seen:
+        lines += ['', 'Where each card\'s numbers come from (the commit whose gate produced them, and its log):', '']
+        for cid, pf, cf, mf in seen:
+            lines.append('- %s: proofs %s; coverage %s; mutants %s' % (cid, pf or 'unrecorded', cf or 'unrecorded', mf or 'unrecorded'))
     return '\n'.join(lines) + '\n'
 
 
