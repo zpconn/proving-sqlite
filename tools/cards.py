@@ -129,6 +129,7 @@ def callers_of(cards, cid):
             continue
         seen.add(k)
         todo.extend(x for x in callers_of_direct(cards, k) if x not in seen)
+    seen.discard(cid)   # sharing a function with a caller makes the walk come back to cid itself
     return sorted(seen)
 
 

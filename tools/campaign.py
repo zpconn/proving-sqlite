@@ -1105,12 +1105,14 @@ def collect_results(p, mw, cids, round_, reviewer):
     os.makedirs(os.path.join(mw, 'evidence', 'results'), exist_ok=True)
     for cid in cids:
         b = os.path.join(mw, 'proofs', cid, 'build')
-        rec = {'card': cid}
+        out = os.path.join(mw, 'evidence', 'results', cid + '.json')
+        # keep what this gate didn't rerun (a caller's gate reruns its proofs and coverage, not its mutants)
+        rec = json.load(open(out)) if os.path.exists(out) else {}
+        rec['card'] = cid
         for name in ('prove-summary', 'coverage-summary', 'mutants'):
             f = os.path.join(b, name + '.json')
             if os.path.exists(f):
                 rec[name.replace('-', '_')] = json.load(open(f))
-        out = os.path.join(mw, 'evidence', 'results', cid + '.json')
         with open(out, 'w') as f:
             json.dump(rec, f, indent=1, sort_keys=True)
     src = os.path.join(p.state, 'tokens.csv')
@@ -1441,9 +1443,9 @@ def card_line(cid, c, card, jobs):
         waiting = 'merge queue'
     capb = card.cap_builder if card else 0
     capr = card.cap_reviewer if card else 0
-    return '%-5s %-9s r%-2d %-6s %6.2fM/%-5.0fM %6.2fM/%-5.0fM %s' % (
-        cid, c['state'], c['round'], vendor, c['tokens_builder'] / 1e6, capb / 1e6, c['tokens_reviewer'] / 1e6, capr / 1e6,
-        waiting[:110])
+    return '%-5s %-9s r%-2d %-6s %13s %13s %s' % (
+        cid, c['state'], c['round'], vendor, '%.2fM/%.0fM' % (c['tokens_builder'] / 1e6, capb / 1e6),
+        '%.2fM/%.0fM' % (c['tokens_reviewer'] / 1e6, capr / 1e6), waiting[:110])
 
 
 def print_status(p):
@@ -1462,7 +1464,7 @@ def print_status(p):
         git(['rev-parse', '--short', 'main'], cwd=p.main_dir(), check=False)))
     if d.get('scope'):
         print('scope: %s' % ', '.join(d['scope']))
-    print('%-5s %-9s %-3s %-6s %-14s %-14s %s' % ('card', 'state', 'rnd', 'vendor', 'builder tok', 'reviewer tok', 'waiting on / reason'))
+    print('%-5s %-9s %-3s %-6s %13s %13s %s' % ('card', 'state', 'rnd', 'vendor', 'builder tok', 'reviewer tok', 'waiting on / reason'))
     for cid in sorted(d['cards']):
         print(card_line(cid, d['cards'][cid], cards.get(cid), d['jobs']))
     tri = sorted((c for c in d['cards'].values() if c['state'] == 'triage'), key=lambda c: c.get('triage_seq', 0))

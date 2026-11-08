@@ -533,6 +533,162 @@
    "seconds": 1
   }
  ],
+ "mutants": [
+  {
+   "detail": "by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "<<32",
+    "function": "putVarint64",
+    "id": "M-004",
+    "line": 37970,
+    "review": null,
+    "to": "<<33"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 2 failed: [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "0x7f",
+    "function": "putVarint64",
+    "id": "M-005",
+    "line": 37974,
+    "review": null,
+    "to": "0x3f"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 3 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case; [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "0x7f",
+    "function": "sqlite3PutVarint",
+    "id": "M-008",
+    "line": 37992,
+    "review": null,
+    "to": "0xff"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 3 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case; [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "0x3fff",
+    "function": "sqlite3PutVarint",
+    "id": "M-009",
+    "line": 37996,
+    "review": null,
+    "to": "0x7fff"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "<<7",
+    "function": "sqlite3GetVarint",
+    "id": "M-010",
+    "line": 38029,
+    "review": null,
+    "to": "<<8"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "<<15",
+    "function": "sqlite3GetVarint",
+    "id": "M-011",
+    "line": 38150,
+    "review": null,
+    "to": "<<14"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "p[-4]",
+    "function": "sqlite3GetVarint",
+    "id": "M-012",
+    "line": 38161,
+    "review": null,
+    "to": "p[-5]"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "<<7",
+    "function": "sqlite3GetVarint32",
+    "id": "M-013",
+    "line": 38192,
+    "review": null,
+    "to": "<<6"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "0xffffffff",
+    "function": "sqlite3GetVarint32",
+    "id": "M-014",
+    "line": 38204,
+    "review": null,
+    "to": "0xfffffffe"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": "i=1",
+    "function": "sqlite3VarintLen",
+    "id": "M-015",
+    "line": 38217,
+    "review": null,
+    "to": "i=0"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case",
+   "mutant": {
+    "card": "C-02",
+    "equivalent": null,
+    "from": ">>= 7",
+    "function": "sqlite3VarintLen",
+    "id": "M-016",
+    "line": 38217,
+    "review": null,
+    "to": ">>= 8"
+   },
+   "verdict": "KILLED"
+  }
+ ],
  "prove_summary": [
   {
    "card": "C-02",

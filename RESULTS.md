@@ -11,6 +11,6 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 | C-01 | P1 | put | sqlite3PutVarint | ilp32-le | PASS | 0 | 115 | 0 | 9/9 | 5/5 | APPROVE (C-01-r2.md) |  |
 | C-01 | P1 | put64 | putVarint64 | lp64-be | PASS | 0 | 110 | 0 | 18/18 | 5/5 | APPROVE (C-01-r2.md) |  |
 | C-01 | P1 | put | sqlite3PutVarint | lp64-be | PASS | 0 | 115 | 0 | 9/9 | 5/5 | APPROVE (C-01-r2.md) |  |
-| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-le | PASS | 1 | 450 | 0 | 133/133 | 0/0 | APPROVE (C-02-r1.md) |  |
-| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | ilp32-le | PASS | 0 | 450 | 0 | 133/133 | 0/0 | APPROVE (C-02-r1.md) |  |
-| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-be | PASS | 0 | 450 | 0 | 133/133 | 0/0 | APPROVE (C-02-r1.md) |  |
+| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-le | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
+| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | ilp32-le | PASS | 0 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
+| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-be | PASS | 0 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
