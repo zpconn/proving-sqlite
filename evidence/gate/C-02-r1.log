@@ -1,0 +1,119 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 0 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 0 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  lock: no proof.lock yet (it is written at the freeze, after checkpoint 1)
+  RESULT lock PASS 0 files (no proof.lock)
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-02 --base 9621a560d88d09c3fc64aad1a9b8fdb40b5e50b8
+  scan: 1 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (22s)
+gate: cards to run: C-02, C-02
+==== prove C-02: make -C proofs/C-02 prove CONFIG=all
+  RESULT prove C-02/roundtrip lp64-le PASS 12s 450 properties 0 failed
+  RESULT prove C-02 lp64-le PASS 12s 450 properties 0 failed
+  RESULT prove C-02/roundtrip ilp32-le PASS 12s 450 properties 0 failed
+  RESULT prove C-02 ilp32-le PASS 12s 450 properties 0 failed
+  RESULT prove C-02/roundtrip lp64-be PASS 12s 450 properties 0 failed
+  RESULT prove C-02 lp64-be PASS 12s 450 properties 0 failed
+  RESULT prove C-02 all PASS 36s 1350 properties 0 failed
+==== prove C-02 PASS (35s)
+==== coverage C-02: make -C proofs/C-02 coverage CONFIG=all
+    coverage roundtrip lp64-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip ilp32-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-be putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3VarintLen: 4/4 lines; uncovered none
+  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+==== coverage C-02 PASS (17s)
+==== prove C-02: make -C proofs/C-02 prove CONFIG=all
+  RESULT prove C-02/roundtrip lp64-le PASS 6s 450 properties 0 failed
+  RESULT prove C-02 lp64-le PASS 6s 450 properties 0 failed
+  RESULT prove C-02/roundtrip ilp32-le PASS 6s 450 properties 0 failed
+  RESULT prove C-02 ilp32-le PASS 6s 450 properties 0 failed
+  RESULT prove C-02/roundtrip lp64-be PASS 6s 450 properties 0 failed
+  RESULT prove C-02 lp64-be PASS 6s 450 properties 0 failed
+  RESULT prove C-02 all PASS 18s 1350 properties 0 failed
+==== prove C-02 PASS (17s)
+==== coverage C-02: make -C proofs/C-02 coverage CONFIG=all
+    coverage roundtrip lp64-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip ilp32-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-be putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3VarintLen: 4/4 lines; uncovered none
+  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+==== coverage C-02 PASS (16s)
+==== mutants C-02: /usr/bin/python3 tools/mutate.py --card C-02 --with  --json proofs/C-02/build/mutants.json
+  MUTANT M-004 putVarint64:37970 '<<32'->'<<33' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-005 putVarint64:37974 '0x7f'->'0x3f' KILLED by C-02/roundtrip lp64-le: 2 failed: [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-008 sqlite3PutVarint:37992 '0x7f'->'0xff' KILLED by C-02/roundtrip lp64-le: 3 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case; [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-009 sqlite3PutVarint:37996 '0x3fff'->'0x7fff' KILLED by C-02/roundtrip lp64-le: 3 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case; [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-010 sqlite3GetVarint:38029 '<<7'->'<<8' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-011 sqlite3GetVarint:38150 '<<15'->'<<14' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-012 sqlite3GetVarint:38161 'p[-4]'->'p[-5]' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-013 sqlite3GetVarint32:38192 '<<7'->'<<6' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-014 sqlite3GetVarint32:38204 '0xffffffff'->'0xfffffffe' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-015 sqlite3VarintLen:38217 'i=1'->'i=0' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case
+  MUTANT M-016 sqlite3VarintLen:38217 '>>= 7'->'>>= 8' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case
+  RESULT mutate C-02 PASS 11/11 killed 0 equivalent
+==== mutants C-02 PASS (127s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 0 spans
+  lock                     PASS    0s  RESULT lock PASS 0 files (no proof.lock)
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   23s  RESULT probe all PASS
+  prove C-02               PASS   36s  RESULT prove C-02 all PASS 36s 1350 properties 0 failed
+  coverage C-02            PASS   17s  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+  prove C-02               PASS   18s  RESULT prove C-02 all PASS 18s 1350 properties 0 failed
+  coverage C-02            PASS   17s  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+  mutants C-02             PASS  127s  RESULT mutate C-02 PASS 11/11 killed 0 equivalent
+RESULT gate C-02 PASS 239s 0 failed
