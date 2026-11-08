@@ -55,7 +55,7 @@ Everything else is read-only, including upstream/, tools/, the gate, CHECKS, CON
 - the scans pass;
 - NOTES.md and the report are written.
 
-**Stuck** means eight runs in a row without fewer failed properties, or 80% of the card's token cap used. campaign.py keeps your running total in `.campaign/usage`; check it after each run, because at the cap it ends your session. Then stop and report STUCK with what you tried and what you would try next. Don't thrash.
+**Stuck** means eight runs in a row without fewer failed properties, or 80% of the card's token cap used. campaign.py keeps your running total in `.campaign/usage`, in tokens or, for some CLIs, in time; check it after each run, because at the cap it ends your session. Then stop and report STUCK with what you tried and what you would try next. Don't thrash.
 
 ## 4. Report
 

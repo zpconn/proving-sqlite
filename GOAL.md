@@ -1,6 +1,6 @@
 # proving-sqlite, milestone 1 (orchestrator)
 
-Prove with CBMC that 22 functions in SQLite 3.53.4's varint and record decoding have no undefined behavior for any bytes they are given, plus two round-trip properties, on three platform configurations, without changing a byte of SQLite. You are the orchestrator. You set up the repo and tools, including `tools/campaign.py`, a plain script that runs the card loop: it starts builder and reviewer sessions, commits their work, and merges what reviewers approve once the gate passes. You write the cards, decide what the script can't, and keep the record. Apart from the §1 pilot, you don't write proofs. This is a long, multi-session job: don't stop until it is fully and honestly done, except at the checkpoints below where you must wait for me. If a later instruction from me in chat conflicts with this file, the chat wins. ("proving-sqlite" is a placeholder name.)
+Prove with CBMC that 22 functions in SQLite 3.53.4's varint and record decoding have no undefined behavior for any bytes they are given, plus two round-trip properties, on three platform configurations, without changing a byte of SQLite. You are the orchestrator, and two Claude Code sessions play that role in turn. The *setup session* does §0 to §2: it sets up the repo and tools, including `tools/campaign.py`, a plain script that runs the card loop; proves the infrastructure on two pilot cards; prepares the properties and cards; and, after I approve checkpoint 1, freezes them and writes HANDOFF.md. A fresh *campaign session* then does §3 to §5, starting from HANDOFF.md. campaign.py starts the builder and reviewer sessions, commits their work, and merges what reviewers approve once the gate passes. You write the cards, decide what the script can't, and keep the record. You never write proofs. This is a long, multi-session job: don't stop until your part is fully and honestly done, except at the checkpoints below where you must wait for me. If a later instruction from me in chat conflicts with this file, the chat wins. ("proving-sqlite" is a placeholder name.)
 
 **Why it exists.** This is milestone 1 of a proposal to Richard Hipp, SQLite's author: prove SQLite free of undefined behavior one module at a time, with agents doing the proof work, a mechanical checker deciding, and nothing in his tree changing. Hipp has written that formal verification only moves bugs into the design spec. This milestone's answer is that the property is one sentence, and everything else the proofs rest on is written down in LEDGER.md, short enough for him to check. Nothing leaves this machine without my say.
 
@@ -15,16 +15,16 @@ Before designing anything, study:
 
 ## 0. Ground rules (re-read these after every context reset)
 
-1. **Persistence.** Save this prompt verbatim to `GOAL.md` if it isn't there. Builder and reviewer sessions load `AGENTS.md` too, so it holds only rules every role obeys: this section, condensed, under 150 lines, plus the line "Your role's instructions are in the file your session's prompt names; only the orchestrator acts on the root GOAL.md." Add a one-line `CLAUDE.md` pointing to AGENTS.md. Keep `PROGRESS.md` current: a status block of at most 40 lines (done, in progress, next, open questions), then a dated log, so a fresh session can resume from GOAL.md, AGENTS.md and PROGRESS.md alone. During the campaign, `tools/campaign.py status` and CAMPAIGN.md hold the card-by-card record, and PROGRESS.md points to them. Put bulky evidence in files under `evidence/` and summarize each in one line. Delete scratch once its results are archived, and keep it under 5 GB.
+1. **Persistence.** Save this prompt verbatim to `GOAL.md` if it isn't there. Builder and reviewer sessions load `AGENTS.md` too, so it holds only rules every role obeys: this section, condensed, under 150 lines, plus the line "Your role's instructions are in the file your session's prompt names; only the orchestrator acts on the root GOAL.md." Add a one-line `CLAUDE.md` pointing to AGENTS.md. Keep `PROGRESS.md` current: a status block of at most 40 lines (done, in progress, next, open questions), then a dated log, so a fresh session can resume from GOAL.md, AGENTS.md and PROGRESS.md alone. During the campaign, `tools/campaign.py status` and CAMPAIGN.md hold the card-by-card record, and PROGRESS.md points to them. At the handoff, HANDOFF.md (§2) gives the campaign session everything else it needs. Put bulky evidence in files under `evidence/` and summarize each in one line. Delete scratch once its results are archived, and keep it under 5 GB.
 2. **SQLite is the code under proof, unchanged.** `upstream/` holds the pinned sqlite3.c and sqlite3.h byte for byte, and the matching source release, all hashed in `pin.txt`. `overlay/sqlite3.c` is upstream plus `PROOF(...)` spans and nothing else; `tools/check_overlay.py` deletes every PROOF span and requires what remains to equal upstream byte for byte. Harnesses call SQLite's own functions in the overlay. No agent copies, rewrites or edits SQLite code.
 3. **Frozen files.** At checkpoint 1, `proof.lock` records SHA-256 hashes of pin.txt, upstream/, GOAL.md, AGENTS.md, CLAUDE.md, agents/, PROPERTIES.md, TRUSTED.md, UB-CLASSES.md, proofs/spec/, proofs/CHECKS, proofs/CONFIGS, proofs/MUTANTS, tools/ and the gate's Makefile targets, and the gate checks them. The one exception in tools/ is `sessions.toml`, because CLI flags change; it may hold only command lines, model names and usage-limit patterns. Changing a frozen file afterwards needs my approval: write the patch and its evidence under `evidence/approvals/`, ask me, and leave it unapplied until I answer.
 4. **Never weaken.** No agent weakens a property, check, configuration, mutant, gate or ledger statement to make a proof pass. Propose the change under §0.3 instead.
 5. **Name the kind of claim.** *Proved*: CBMC verified it under the frozen checks. *Tested*: runtime evidence. *Assumed*: a LEDGER.md entry. *Trusted*: listed in TRUSTED.md (CBMC, its C semantics and library models, the preprocessor). Every status line, report and result uses these four words, and uses them exactly.
-6. **Roles stay separate.** Builders write proofs and reviewers judge them. campaign.py schedules sessions, commits their work, merges and gates; you decide what it can't. Nobody reviews their own work. A reviewer runs in a fresh session, on the other vendor from the one that built the round it judges, and sees only the artifacts, never the builder's transcript. campaign.py refuses to start one otherwise.
+6. **Roles stay separate.** Builders write proofs and reviewers judge them; you never write or fix one, not even in the pilot. campaign.py schedules sessions, commits their work, merges and gates; you decide what it can't. Nobody reviews their own work. A reviewer runs in a fresh session, on the other vendor from the one that built the round it judges, and sees only the artifacts, never the builder's transcript. campaign.py refuses to start one otherwise.
 7. **Nothing leaves the machine.** Don't push, publish, post to the SQLite forum, email anyone or file bug reports. Findings stay in FINDINGS.md until I decide. Add no license file; I'll decide licensing after a legal review.
 8. **Budgets.** Every card has a token cap (Appendix B), and the milestone's cap is 1B tokens. A token is anything a CLI reports: input, cache reads and writes, and output. campaign.py stops a session at its card's cap and records every session it starts in `evidence/tokens.csv`. Record your own sessions in `evidence/orchestrator/tokens.csv` at each checkpoint.
 9. **The machine.** Run CBMC and agent sessions under `nice -n 10`. Run at most 4 builder and reviewer sessions at once, together, and fewer if CBMC makes the machine swap. Give every CBMC run a timeout, starting at 10 minutes per configuration.
-10. **Subscriptions.** Sessions run on my Claude and ChatGPT subscriptions, through each vendor's own CLI signed in with my account: `claude -p` and `codex exec`. Use no API keys. A key in the environment can take precedence over the login, so campaign.py strips API-key variables from every session's environment, and no session uses a flag that needs a key, such as claude's `--bare`. Drive neither model through any other tool. Usage limits set the pace: a session stopped by a limit resumes after the reset, and that doesn't count against its card.
+10. **Models and subscriptions.** Builders run on Codex with GPT-6 Astra (`gpt-6-astra`): xhigh reasoning effort on high-tier cards, high on standard ones. Reviewers run on Claude Code, Opus 5.5 on high-tier cards and Sonnet 5.5 on standard ones. The ledger agent, both orchestrator sessions and the auditor run on Claude Code with Opus 5.5. Every session runs on my Claude or ChatGPT subscription, through that vendor's own CLI signed in with my account: `claude -p` and `codex exec`. Use no API keys. A key in the environment can take precedence over the login, so campaign.py strips API-key variables from every session's environment, and no session uses a flag that needs a key, such as claude's `--bare`. Drive neither model through any other tool. Usage limits set the pace: a session stopped by a limit resumes after the reset, and that doesn't count against its card.
 11. **Who commits to main.** `tools/campaign.py start` moves your checkout to branch `orch` and gives main its own checkout at `../proving-sqlite-wt/main`; `tools/campaign.py finish` reverses that. In between, only campaign.py commits to main. You commit on orch and send your commits with `tools/campaign.py land`. Every commit campaign.py makes carries a `Campaign:` trailer saying what it is and what checked it.
 
 ## 1. Bring-up and pilot
@@ -53,7 +53,7 @@ Set up the repo (Appendix D), pins and tools, and test what this plan assumes ab
     4. it can run a 15-minute command and read the result, following the long-run rule in agents/builder/GOAL.md;
     5. a Codex session can run CBMC and write in its worktree, but can't write .git or reach the network.
 
-    Also record what each CLI prints, and its exit status, when a usage limit stops it, from its documentation or a real occurrence, and put the patterns in sessions.toml.
+    Also record what each CLI prints, and its exit status, when a usage limit stops it, from its documentation or a real occurrence, and put the patterns in sessions.toml. If a CLI reports token usage only when a run ends, find a running count elsewhere, such as the session log Codex writes as it goes. If there is none, campaign.py enforces that CLI's caps as time limits instead: each card's cap divided by the tokens per hour the pilot measured for its tier. Record which applies.
 11. **Coordinator.** Write `tools/campaign.py` as §3.1 describes. Test it in a scratch clone with fake CLIs: scripts in `tools/fakecli/` that stand in for claude and codex and leave canned reports and verdicts. Show that it handles:
     - a card approved and merged, and a rejection whose second round answers the review;
     - three rejections, a crash that it resumes, and three crashes in one round;
@@ -64,9 +64,9 @@ Set up the repo (Appendix D), pins and tools, and test what this plan assumes ab
     - `kill -9` mid-session and mid-merge, then a restart that neither loses nor repeats work.
 
     `tools/campaign.py selftest` reruns all of these in a scratch directory of its own, so it can run from any clone without touching a live campaign.
-12. **Pilot.** Run `tools/campaign.py start --cards C-01,C-02 --self C-01`. Build C-01 yourself in its worktree, following agents/builder/GOAL.md, and hand it over with `tools/campaign.py submit C-01`. campaign.py builds C-02 with a builder session, starts reviewers for both, and merges what they approve. Kill C-02's builder once mid-session and show that it resumes. Plant a bug in a scratch copy of putVarint64 and show that a proof fails. Then run `tools/campaign.py finish`. PROPERTIES.md doesn't exist yet, so both cards quote their property from §2. If a tool needs fixing mid-pilot, run finish, fix it on main, and start again; card state carries over.
+12. **Pilot.** Run `tools/campaign.py start --cards C-01,C-02`. campaign.py builds both cards with Astra builder sessions, starts Claude reviewers for them, and merges what they approve. Kill C-02's builder once mid-session and show that it resumes. Plant a bug in a scratch copy of putVarint64 and show that a proof fails. Then run `tools/campaign.py finish`. PROPERTIES.md doesn't exist yet, so both cards quote their property from §2. If a tool needs fixing mid-pilot, run finish, fix it on main, and start again; card state carries over. If Astra can't finish a pilot card in three rounds, say so at checkpoint 0 rather than building it yourself.
 
-**Checkpoint 0.** Stop and wait for me. PROGRESS.md lists each item above with its result and evidence, the contract-location choice, the pilot's numbers (CBMC time per configuration, properties checked, coverage, tokens per session), and anything in this file that bring-up showed to be wrong. Print its status block and the selftest's output.
+**Checkpoint 0.** Stop and wait for me. PROGRESS.md lists each item above with its result and evidence, the contract-location choice, the pilot's numbers (CBMC time per configuration, properties checked, coverage, rounds, and tokens and hours per session), and anything in this file that bring-up showed to be wrong. Print its status block and the selftest's output.
 
 ## 2. Properties and freeze
 
@@ -95,19 +95,28 @@ Also prepare:
 
 **Checkpoint 1.** Stop for my review with all of the above ready, and print the list with each item's file. Don't write proof.lock or start §3.
 
+**The handoff.** When I approve checkpoint 1, commit proof.lock, then write and commit HANDOFF.md. It holds everything a fresh session needs besides this file, AGENTS.md and PROGRESS.md, on one screen plus links:
+- **State:** each checkpoint and when I approved it, the proof.lock commit, and what `tools/campaign.py status` shows (C-01 and C-02 merged; the rest waiting or ready).
+- **What bring-up decided or found:** the contract-location choice, the CBMC version and solvers, how each CLI's usage is counted, the usage-limit patterns, the pilot's numbers, and anything in this file it showed to be wrong.
+- **Checks for the campaign session to run first:** `make gate CARD=C-02` passes, lock check included; `tools/campaign.py selftest` passes; `tools/campaign.py status` matches the state above.
+- **Open questions and known issues.**
+- **Where everything is,** by path.
+
+Then print HANDOFF.md and stop. The setup session ends there, and the campaign session does §3 onward.
+
 ## 3. The proof campaign
 
-When I approve checkpoint 1, commit proof.lock and run `tools/campaign.py start`. campaign.py runs the loop below unattended, in a tmux session named `campaign`, and you handle its triage queue.
+The campaign session starts here. Read HANDOFF.md and run the checks it lists; if any fails, stop and tell me. Then run `tools/campaign.py start`. campaign.py runs the loop below unattended, in a tmux session named `campaign`, and you handle its triage queue.
 
 1. **What campaign.py does.** It's a plain program with no model in its loop, frozen with tools/ at checkpoint 1. Appendix E lists the card states.
    - **Order.** A card is ready when every card on its Depends on line is merged. Ready cards start in card order, within §0.9's limit, and never on a vendor that is waiting out a usage limit.
    - **Worktrees.** A builder works in `../proving-sqlite-wt/C-NN` on branch `card/C-NN`, and each round starts by merging main into that branch; a conflict sends the card to triage. A reviewer gets a fresh worktree, detached at the commit it judges, which is deleted afterwards.
-   - **Sessions.** Each starts from tools/sessions.toml, detached in its own process group under `nice -n 10`, with its output streamed to `../proving-sqlite-wt/state/` and its exit status written beside it, so it outlives a restart of campaign.py. Builders run on the vendor sessions.toml names and reviewers on the other, at the card's tier. The prompt is fixed in campaign.py: the role's GOAL file, the card, the round and any reviews to answer. `tools/campaign.py session` starts a one-off session the same way, for the §2 spec review and the ledger agent. It commits what the session writes, checked against the paths that role may write, on a branch of its own, and during a campaign lands it on main.
+   - **Sessions.** Each starts from tools/sessions.toml, detached in its own process group under `nice -n 10`, with its output streamed to `../proving-sqlite-wt/state/` and its exit status written beside it, so it outlives a restart of campaign.py. Builders run on Codex and reviewers on Claude, at the card's tier, as §0.10 says and sessions.toml implements. The prompt is fixed in campaign.py: the role's GOAL file, the card, the round and any reviews to answer. `tools/campaign.py session` starts a one-off session the same way, for the §2 spec review and the ledger agent. It commits what the session writes, checked against the paths that role may write, on a branch of its own, and during a campaign lands it on main.
    - **Commits.** Sessions don't write git. When a builder ends, campaign.py checks every change since the round started, committed or not, including new files git doesn't ignore. If all are on the card's May change line, it commits them with a message naming the card and round; otherwise it commits nothing and sends the card to triage. When a reviewer ends, it commits only the review file: onto the card branch, or onto main for a re-review of a merged card. A reviewer that changed a tracked file is discarded and run once more, and if that one does too, the card goes to triage.
    - **Verdicts.** The first line of the report or review decides. DONE and FINDING start a reviewer. APPROVE sends the card to merge, or, on a FINDING, to triage with the finding reproduced. REJECT starts the next builder round, up to three. Anything else goes to triage: STUCK, NEEDS-DECISION, NEEDS-ZACH, a third REJECT, or a missing first line.
    - **Merges,** one at a time. campaign.py merges only the commit the reviewer approved, plus the review. In a scratch worktree at main's head, it merges them with `--no-ff`, checks that the merge touches only the card's May change paths and its own reviews, and runs `make gate CARD=C-NN`. If that passes, it regenerates RESULTS.md, results.csv, CAMPAIGN.md and evidence/tokens.csv, adds the gate log under evidence/gate/, commits them, and fast-forwards main. If not, the card goes to triage with the gate log. After the last card merges, it runs the full `make gate`.
    - **Interruptions.** A session that ends without its report or verdict is resumed in the same worktree. If its output matches its vendor's usage-limit pattern, no session starts on that vendor until the reset time it printed, or, if it printed none, for 30 minutes, doubling up to 4 hours; that doesn't count against the card. Any other interruption counts, and the third in a round sends the card to triage. Output that matches no pattern is logged verbatim, so the patterns can be fixed.
-   - **Caps.** It counts each session's tokens as §0.8 defines them and keeps the running total in `.campaign/usage` in the session's worktree, where builders read it. At the card's cap it ends the session, commits a builder's allowed changes, and sends the card to triage.
+   - **Caps.** It counts each session's tokens as §0.8 defines them, or its time where §1.10 found no running count, and keeps the running total in `.campaign/usage` in the session's worktree, where builders read it. At the card's cap it ends the session, commits a builder's allowed changes, and sends the card to triage.
    - **Restarts.** It journals each step in `../proving-sqlite-wt/state/` before taking it. On restart it reconciles the journal with git and the running sessions, so a crash at any point neither loses nor repeats a session or a merge. `tools/campaign.py stop` stops it starting anything new; running sessions carry on, and `start` picks up where it left off.
    - **Status.** `tools/campaign.py status` prints each card's state, round, vendor, tokens against cap and what it is waiting on, then the triage queue, the merge queue, any vendor pause and the last full gate's result. CAMPAIGN.md holds the same.
 2. **What you do.**
@@ -154,6 +163,8 @@ When the boundary contracts and A-001 have settled, install the ledger agent's b
 - **One thread.** Data races are undefined behavior, and the default build is threadsafe, but proving race freedom is a different kind of proof. P1 assumes single-threaded use, as Anthropic's binary proofs did, and UB-CLASSES.md says so.
 - **The ledger is the product.** It's the only place a spec can be wrong, which is Hipp's objection. The answer is to keep it short and explicit, and to test it.
 - **A script runs the loop, not a model.** Over days, a model polling sessions drifts and spends its context on waiting. A script doesn't, and its merge rule can be frozen and audited. It also runs outside Codex's sandbox and keeps each vendor in its own CLI, signed in as me. The models do what needs judgment: proofs, reviews and triage.
+- **A fresh session runs the campaign.** The setup session's context fills with bring-up detail the campaign doesn't need, and a session that starts from HANDOFF.md alone proves the handoff is complete.
+- **Astra builds, Claude judges.** Builders spend the most tokens, so this puts the heaviest load on the ChatGPT subscription, and every proof is judged by a different model family from the one that wrote it.
 
 ## Appendix A. Scope
 
@@ -208,7 +219,7 @@ Facts read from the source on 2026-11-04, for card notes. The §1.8 probes check
 ## Appendix B. Cards
 
 A card is `cards/C-NN.md`:
-```
+~~~
 # C-NN: <functions>
 - Property: P1 | P2 | P3
 - Functions: <name> (upstream/sqlite3.c:<line>), ...
@@ -219,13 +230,13 @@ A card is `cards/C-NN.md`:
 - May change: <each path builder §1 allows this card, spelled out>
 - Cap: builder <tokens>; reviewer half that. Tier: high | standard
 - Notes: the relevant Appendix A facts; open issues from earlier rounds
-```
-Tier *high* is each vendor's strongest model at high effort, e.g. Opus 5.5 or Astra; *standard* is a cheaper model or a lower effort, e.g. Sonnet 5.5. tools/sessions.toml maps tiers to models. campaign.py reads the Depends on, May change, Cap and Tier lines, so keep their format.
+~~~
+Tier *high* means Astra at xhigh effort for the builder and Opus 5.5 for the reviewer; *standard* means Astra at high effort and Sonnet 5.5 (§0.10). tools/sessions.toml maps tiers to models. campaign.py reads the Depends on, May change, Cap and Tier lines, so keep their format.
 
 | Card | Functions | Property | Cap | Tier |
 |---|---|---|---|---|
-| C-01 | sqlite3PutVarint, putVarint64 (pilot: you build it) | P1 | 10M | standard |
-| C-02 | round-trip harness (pilot: a builder session) | P2 | 10M | standard |
+| C-01 | sqlite3PutVarint, putVarint64 (pilot) | P1 | 10M | standard |
+| C-02 | round-trip harness (pilot) | P2 | 10M | standard |
 | C-03 | sqlite3GetVarint | P1 | 20M | high |
 | C-04 | sqlite3GetVarint32 | P1 | 10M | standard |
 | C-05 | sqlite3VarintLen | P1 | 5M | standard |
@@ -247,7 +258,7 @@ Tier *high* is each vendor's strongest model at high effort, e.g. Opus 5.5 or As
 
 ## Appendix C. Ledger and finding entries
 
-```
+~~~
 ## A-NNN <short name>
 - Function(s):
 - Clause, as CBMC states it:
@@ -256,21 +267,21 @@ Tier *high* is each vendor's strongest model at high effort, e.g. Opus 5.5 or As
 - Who must make it true: callers in milestone N | the application | the allocator or OS
 - Evidence: none | tested (ledger agent run <date>: N checks, 0 violations; sites reached)
 - Status: draft | reviewed | tested | violated | retired
-```
-```
+~~~
+~~~
 ## F-NNN <short name>
 - Function, line, failing check, configuration:
 - Counterexample (arguments and bytes):
 - Repro: tests/repro/F-NNN.c, built natively against unmodified upstream with ASan/UBSan; command:
 - Reachable from SQL or the public API? unknown | yes (how) | only if ledger entry A-NNN is violated
 - Status: draft | reproduced | not a bug (why)
-```
+~~~
 
 ## Appendix D. Layout
 
-```
-GOAL.md AGENTS.md CLAUDE.md PROGRESS.md CAMPAIGN.md PROPERTIES.md LEDGER.md
-FINDINGS.md RESULTS.md results.csv TRUSTED.md UB-CLASSES.md README.md pin.txt proof.lock
+~~~
+GOAL.md AGENTS.md CLAUDE.md PROGRESS.md HANDOFF.md CAMPAIGN.md PROPERTIES.md
+LEDGER.md FINDINGS.md RESULTS.md results.csv TRUSTED.md UB-CLASSES.md README.md pin.txt proof.lock
 upstream/         sqlite3.c, sqlite3.h and the source release, at the pin
 overlay/          sqlite3.c with PROOF spans only
 proofs/           CHECKS, CONFIGS, MUTANTS, Makefile.common
@@ -282,7 +293,7 @@ cards/ reports/ reviews/
 tests/repro/      F-NNN.c
 tools/            check_overlay.py, scan.py, mutate.py, campaign.py, sessions.toml, fakecli/
 validation/       the ledger agent's instrumented build
-evidence/         including bringup/, gate/, tokens.csv, approvals/, orchestrator/, ledger/
+evidence/         including handover/, bringup/, gate/, tokens.csv, approvals/, orchestrator/, ledger/
 agents/           builder/GOAL.md, reviewer/GOAL.md, ledger/GOAL.md
 
 ../proving-sqlite-wt/   outside the repo
@@ -291,7 +302,7 @@ agents/           builder/GOAL.md, reviewer/GOAL.md, ledger/GOAL.md
   C-NN-r<k>/      reviewer worktrees, detached
   merge/          scratch for merge gates
   state/          campaign.py's journal and the session logs
-```
+~~~
 
 ## Appendix E. Card states
 
