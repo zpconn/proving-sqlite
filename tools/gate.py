@@ -111,9 +111,10 @@ def main():
         if a.card:
             if a.card in have:
                 step('mutants %s' % a.card, [py, 'tools/mutate.py', '--card', a.card,
-                                             '--with', ','.join(c for c in todo if c != a.card)], results)
+                                             '--with', ','.join(c for c in todo if c != a.card),
+                                             '--json', os.path.join('proofs', a.card, 'build', 'mutants.json')], results)
         elif have:
-            step('mutants all', [py, 'tools/mutate.py', '--all'], results)
+            step('mutants all', [py, 'tools/mutate.py', '--all', '--json', os.path.join('proofs', 'build', 'mutants-all.json')], results)
     failed = [n for n, ok, _, _ in results if not ok]
     print('==== summary')
     for n, ok, last, secs in results:

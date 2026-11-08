@@ -1,0 +1,39 @@
+== lp64-le: goto-cc -m64 -E overlay/sqlite3.c
+int ptr = 8; int lng = 8; int bo = 1234; int be = 0; int ps = 8; 
+   sqlite3Get4byte body after preprocessing:
+     static u32 sqlite3Get4byte(const u8 *p){
+       u32 x;
+       memcpy(&x,p,4);
+       return __builtin_bswap32(x);
+     # 38242 "/home/zpconn/code/proving-sqlite/overlay/sqlite3.c"
+     }
+== ilp32-le: goto-cc -m32 -E overlay/sqlite3.c
+int ptr = 4; int lng = 4; int bo = 1234; int be = 0; int ps = 4; 
+   sqlite3Get4byte body after preprocessing:
+     static u32 sqlite3Get4byte(const u8 *p){
+       u32 x;
+       memcpy(&x,p,4);
+       return __builtin_bswap32(x);
+     # 38242 "/home/zpconn/code/proving-sqlite/overlay/sqlite3.c"
+     }
+== lp64-be: goto-cc --big-endian -DSQLITE_BYTEORDER=4321 -E overlay/sqlite3.c
+int ptr = 8; int lng = 8; int bo = 4321; int be = 1; int ps = 8; 
+   sqlite3Get4byte body after preprocessing:
+     static u32 sqlite3Get4byte(const u8 *p){
+       u32 x;
+       memcpy(&x,p,4);
+       return x;
+     # 38242 "/home/zpconn/code/proving-sqlite/overlay/sqlite3.c"
+     }
+== probe on wrong configurations (scratch copy of the repo)
+   CONFIGS line 'lp64-be -m64 --big-endian -DSQLITE_BYTEORDER=4321': byte order of memory (low byte of 0x01020304): FAILURE;sqlite3Get4byte decodes big-endian on this config: FAILURE;RESULT probe all FAIL;
+   CONFIGS line 'lp64-be --big-endian': SQLITE_BYTEORDER: FAILURE;SQLITE_BIGENDIAN: FAILURE;sqlite3Get4byte decodes big-endian on this config: FAILURE;RESULT probe all FAIL;
+   CONFIGS line 'ilp32-le -m64': pointer width: FAILURE;long width: FAILURE;SQLITE_PTRSIZE: FAILURE;RESULT probe all FAIL;
+   CONFIGS line 'lp64-le -m32': pointer width: FAILURE;long width: FAILURE;SQLITE_PTRSIZE: FAILURE;RESULT probe all FAIL;
+== §1.6 goto-cc on the whole overlay, per configuration
+   lp64-le: 5.74 s wall, 608280 KB max RSS
+   lp64-le: goto binary 16238540 bytes
+   ilp32-le: 5.60 s wall, 604076 KB max RSS
+   ilp32-le: goto binary 16179925 bytes
+   lp64-be: 5.85 s wall, 608364 KB max RSS
+   lp64-be: goto binary 16236699 bytes

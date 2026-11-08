@@ -1,0 +1,25 @@
+  probe lp64-le: pointer width: SUCCESS
+  probe lp64-le: long width: SUCCESS
+  probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+  probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+  probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+  probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+  probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+RESULT probe lp64-le PASS
+  probe ilp32-le: pointer width: SUCCESS
+  probe ilp32-le: long width: SUCCESS
+  probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+  probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+  probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+  probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+  probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+RESULT probe ilp32-le PASS
+  probe lp64-be: pointer width: SUCCESS
+  probe lp64-be: long width: SUCCESS
+  probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+  probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+  probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+  probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+  probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+RESULT probe lp64-be PASS
+RESULT probe all PASS

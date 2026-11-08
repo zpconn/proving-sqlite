@@ -1,0 +1,72 @@
+# tools/sessions.toml: how tools/campaign.py starts headless sessions (GOAL.md §1.10).
+# Not frozen by proof.lock, because CLI flags change. It may hold only command lines, model names and
+# usage-limit patterns (GOAL.md §0.3). The prompt always goes on standard input; campaign.py fixes its text.
+# Placeholders: {dir} the session's worktree, {model}, {effort}, {session} the CLI's session or thread id,
+# {home} the user's home directory.
+# Every session runs under `nice -n 10` with API-key variables removed from its environment (campaign.py).
+# Evidence for every flag: evidence/bringup/10-cli.md.
+
+[vendors.codex]
+# workspace-write sandbox: writes only in {dir} and /tmp, no network, .git outside the workspace read-only.
+# --ignore-user-config: no user plugins or model defaults leak in; auth still comes from ~/.codex.
+start = ["codex", "exec", "--json", "--ignore-user-config",
+         "-c", "sandbox_mode=\"workspace-write\"", "-c", "approval_policy=\"never\"",
+         "-m", "{model}", "-c", "model_reasoning_effort=\"{effort}\"", "-"]
+resume = ["codex", "exec", "resume", "{session}", "--json", "--ignore-user-config",
+          "-c", "sandbox_mode=\"workspace-write\"", "-c", "approval_policy=\"never\"",
+          "-m", "{model}", "-c", "model_reasoning_effort=\"{effort}\"", "-"]
+login_check = ["codex", "login", "status"]
+# Printed when a ChatGPT plan's limit stops a session (strings in codex-cli 0.166.0; the apostrophe may be U+2019).
+usage_limit_patterns = ["(?i)you.{1,3}ve hit your usage limit", "usage_limit_reached", "(?i)usage limit reached",
+                        "(?i)rate_limit_reached"]
+
+[vendors.claude]
+# Inside bubblewrap: the filesystem is read-only except {dir}, /tmp and Claude Code's own state, so a reviewer
+# cannot write the project or another worktree. Auto permission mode: no prompts; unsafe actions are refused.
+start = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--bind", "/tmp", "/tmp",
+         "--bind", "{home}/.claude", "{home}/.claude", "--bind", "{home}/.claude.json", "{home}/.claude.json",
+         "--bind", "{dir}", "{dir}", "--chdir", "{dir}",
+         "claude", "-p", "--model", "{model}", "--effort", "{effort}", "--permission-mode", "auto",
+         "--output-format", "stream-json", "--verbose", "--include-partial-messages"]
+resume = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--bind", "/tmp", "/tmp",
+          "--bind", "{home}/.claude", "{home}/.claude", "--bind", "{home}/.claude.json", "{home}/.claude.json",
+          "--bind", "{dir}", "{dir}", "--chdir", "{dir}",
+          "claude", "-p", "--resume", "{session}", "--model", "{model}", "--effort", "{effort}",
+          "--permission-mode", "auto", "--output-format", "stream-json", "--verbose", "--include-partial-messages"]
+login_check = ["claude", "auth", "status"]
+# Printed when a Claude subscription limit stops a session (strings in Claude Code 2.1.319), plus the
+# stream-json rate_limit_event whose status is "rejected".
+usage_limit_patterns = ["(?i)you.{1,3}ve hit your (usage )?limit", "(?i)usage limit reached", "(?i)claude ai usage limit",
+                        "\"status\":\\s*\"rejected\"", "(?i)5-hour limit", "(?i)weekly limit"]
+
+# Roles and tiers (GOAL.md §0.10). campaign.py refuses a reviewer on the vendor that built the round.
+[roles.builder.high]
+vendor = "codex"
+model = "gpt-6-astra"
+effort = "xhigh"
+
+[roles.builder.standard]
+vendor = "codex"
+model = "gpt-6-astra"
+effort = "high"
+
+[roles.reviewer.high]
+vendor = "claude"
+model = "claude-opus-5-5"
+effort = "high"
+
+[roles.reviewer.standard]
+vendor = "claude"
+model = "claude-sonnet-5-5"
+effort = "high"
+
+[roles.ledger.high]
+vendor = "claude"
+model = "claude-opus-5-5"
+effort = "high"
+
+# The file-format spec is written by Claude (the setup session), so Astra reviews it.
+[roles.spec-review.standard]
+vendor = "codex"
+model = "gpt-6-astra"
+effort = "high"

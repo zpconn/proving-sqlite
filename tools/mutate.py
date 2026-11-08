@@ -5,7 +5,9 @@ never written; its hash is checked before and after every mutant, and it is rest
 if it ever differs.
 
 proofs/MUTANTS, one mutant per line ('#' comments):
-  M-NNN <function> <upstream line> '<from>' '<to>' [equivalent='<argument>' review=<reviews/file>]
+  M-NNN <function> <upstream line> '<from>' '<to>' card=C-NN [equivalent='<argument>' review=<reviews/file>]
+card= names the card whose proofs must kill it (a P1 card for UB-relevant mutants, the P2/P3 card for functional
+ones), so a card's gate never depends on a card that merges later. The full gate runs every mutant against every proof.
 `from` must occur exactly once on that line (outside PROOF spans); it is replaced by `to`.
 
 Usage:
@@ -55,10 +57,10 @@ def parse_mutant(s, where='adhoc'):
     if len(parts) < 5:
         raise MutantError('%s: need id function line from to' % where)
     m = {'id': parts[0], 'function': parts[1], 'line': int(parts[2]), 'from': parts[3], 'to': parts[4],
-         'equivalent': None, 'review': None}
+         'equivalent': None, 'review': None, 'card': None}
     for kv in parts[5:]:
         k, _, v = kv.partition('=')
-        if k in ('equivalent', 'review'):
+        if k in ('equivalent', 'review', 'card'):
             m[k] = v
         else:
             raise MutantError('%s: unknown field %r' % (where, k))
@@ -163,7 +165,7 @@ def main():
             if a.card not in all_cards:
                 raise MutantError('no cards/%s.md' % a.card)
             fns = set(all_cards[a.card].functions)
-            muts = [m for m in muts if m['function'] in fns]
+            muts = [m for m in muts if m['card'] == a.card or (m['card'] is None and m['function'] in fns)]
         for m in muts:
             check_function(upstream, m)
         cids = []
@@ -213,6 +215,7 @@ def main():
         print('MUTANT %s %s %s' % (desc, v, detail))
         sys.stdout.flush()
     if a.json:
+        os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
         with open(a.json, 'w') as f:
             json.dump(results, f, indent=1)
     print('RESULT mutate %s %s %d/%d killed %d equivalent' % (label, 'PASS' if ok else 'FAIL', killed, len(muts), equiv))
