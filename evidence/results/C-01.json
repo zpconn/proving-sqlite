@@ -1,0 +1,334 @@
+{
+ "card": "C-01",
+ "coverage_summary": [
+  {
+   "card": "C-01",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "putVarint64": {
+     "blocks": 36,
+     "blocks_failed": 0,
+     "goal_lines": [
+      37968,
+      37969,
+      37970,
+      37971,
+      37972,
+      37973,
+      37974,
+      37975,
+      37977,
+      37979,
+      37981,
+      37982,
+      37983,
+      37984,
+      37986,
+      37987,
+      37989,
+      37990
+     ],
+     "uncovered": []
+    }
+   },
+   "proof": "put64",
+   "seconds": 0
+  },
+  {
+   "card": "C-01",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3PutVarint": {
+     "blocks": 25,
+     "blocks_failed": 0,
+     "goal_lines": [
+      37992,
+      37993,
+      37994,
+      37996,
+      37997,
+      37998,
+      37999,
+      38001,
+      38002
+     ],
+     "uncovered": []
+    }
+   },
+   "proof": "put",
+   "seconds": 0
+  },
+  {
+   "card": "C-01",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "putVarint64": {
+     "blocks": 36,
+     "blocks_failed": 0,
+     "goal_lines": [
+      37968,
+      37969,
+      37970,
+      37971,
+      37972,
+      37973,
+      37974,
+      37975,
+      37977,
+      37979,
+      37981,
+      37982,
+      37983,
+      37984,
+      37986,
+      37987,
+      37989,
+      37990
+     ],
+     "uncovered": []
+    }
+   },
+   "proof": "put64",
+   "seconds": 0
+  },
+  {
+   "card": "C-01",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3PutVarint": {
+     "blocks": 25,
+     "blocks_failed": 0,
+     "goal_lines": [
+      37992,
+      37993,
+      37994,
+      37996,
+      37997,
+      37998,
+      37999,
+      38001,
+      38002
+     ],
+     "uncovered": []
+    }
+   },
+   "proof": "put",
+   "seconds": 0
+  },
+  {
+   "card": "C-01",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "putVarint64": {
+     "blocks": 36,
+     "blocks_failed": 0,
+     "goal_lines": [
+      37968,
+      37969,
+      37970,
+      37971,
+      37972,
+      37973,
+      37974,
+      37975,
+      37977,
+      37979,
+      37981,
+      37982,
+      37983,
+      37984,
+      37986,
+      37987,
+      37989,
+      37990
+     ],
+     "uncovered": []
+    }
+   },
+   "proof": "put64",
+   "seconds": 0
+  },
+  {
+   "card": "C-01",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3PutVarint": {
+     "blocks": 25,
+     "blocks_failed": 0,
+     "goal_lines": [
+      37992,
+      37993,
+      37994,
+      37996,
+      37997,
+      37998,
+      37999,
+      38001,
+      38002
+     ],
+     "uncovered": []
+    }
+   },
+   "proof": "put",
+   "seconds": 0
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-01/put64 lp64-le: 27 failed: [putVarint64.assigns.1] Check that p[(signed long int)9] is assignable; [putVarint64.pointer_dereference.5] dereference failure: pointer outside object bounds in p[(signed long int)9]; [putVarint64.pointer_dereference.6] dereference failure: invalid integer address in p[(signed long int)9]; [putVarint64.overflow.1] arithmetic overflow on signed - in i - 1; [putVarint64.assigns.2] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.13] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.14] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.15] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.16] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.17] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.18] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.19] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.20] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.21] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.22] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.23] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.24] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.7] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.8] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.9] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.10] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.11] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.12] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0",
+   "mutant": {
+    "card": "C-01",
+    "equivalent": null,
+    "from": "p[8]",
+    "function": "putVarint64",
+    "id": "M-001",
+    "line": 37971,
+    "review": null,
+    "to": "p[9]"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-01/put64 lp64-le: 25 failed: [putVarint64.overflow.1] arithmetic overflow on signed + in i + 1; [putVarint64.unwind.0] unwinding assertion loop 0; [putVarint64.assigns.2] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.13] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.14] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.15] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.16] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.17] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.18] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.19] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.20] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.21] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.22] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.23] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.24] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.7] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.8] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.9] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.10] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.11] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.12] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0",
+   "mutant": {
+    "card": "C-01",
+    "equivalent": null,
+    "from": "i--",
+    "function": "putVarint64",
+    "id": "M-002",
+    "line": 37973,
+    "review": null,
+    "to": "i++"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-01/put64 lp64-le: 28 failed: [putVarint64.overflow.4] arithmetic overflow on signed - in j - 1; [putVarint64.overflow.5] arithmetic overflow on signed + in i + 1; [putVarint64.unwind.2] unwinding assertion loop 2; [putVarint64.array_bounds.3] array 'buf' lower bound in buf[(signed long int)j]; [putVarint64.array_bounds.4] array 'buf' upper bound in buf[(signed long int)j]; [putVarint64.assigns.3] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.25] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.26] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.27] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.28] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.29] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.30] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.31] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.32] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.33] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.34] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.35] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.36] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.13] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.14] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.15] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.16] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0",
+   "mutant": {
+    "card": "C-01",
+    "equivalent": null,
+    "from": "v >>= 7",
+    "function": "putVarint64",
+    "id": "M-003",
+    "line": 37982,
+    "review": null,
+    "to": "v >>= 6"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-01/put lp64-le: 4 failed: [sqlite3PutVarint.assigns.3] Check that p[(signed long int)9] is assignable; [sqlite3PutVarint.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)9]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size",
+   "mutant": {
+    "card": "C-01",
+    "equivalent": null,
+    "from": "p[1]",
+    "function": "sqlite3PutVarint",
+    "id": "M-006",
+    "line": 37998,
+    "review": null,
+    "to": "p[9]"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-01/put lp64-le: 4 failed: [sqlite3PutVarint.assigns.1] Check that p[(signed long int)9] is assignable; [sqlite3PutVarint.pointer_dereference.5] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.6] dereference failure: invalid integer address in p[(signed long int)9]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size",
+   "mutant": {
+    "card": "C-01",
+    "equivalent": null,
+    "from": "p[0]",
+    "function": "sqlite3PutVarint",
+    "id": "M-007",
+    "line": 37993,
+    "review": null,
+    "to": "p[9]"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-01",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "put64",
+   "properties": 110,
+   "seconds": 15,
+   "status": "PASS"
+  },
+  {
+   "card": "C-01",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "put",
+   "properties": 115,
+   "seconds": 15,
+   "status": "PASS"
+  },
+  {
+   "card": "C-01",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "put64",
+   "properties": 110,
+   "seconds": 15,
+   "status": "PASS"
+  },
+  {
+   "card": "C-01",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "put",
+   "properties": 115,
+   "seconds": 15,
+   "status": "PASS"
+  },
+  {
+   "card": "C-01",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "put64",
+   "properties": 110,
+   "seconds": 15,
+   "status": "PASS"
+  },
+  {
+   "card": "C-01",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "put",
+   "properties": 115,
+   "seconds": 15,
+   "status": "PASS"
+  }
+ ]
+}
