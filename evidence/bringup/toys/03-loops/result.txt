@@ -1,0 +1,26 @@
+while_good     [expect SUCCESSFUL] VERIFICATION SUCCESSFUL    
+[w.loop_assigns.1] line 6 Check assigns clause inclusion for loop w.0: SUCCESS
+[w.loop_assigns.2] line 6 Check assigns clause inclusion for loop w.0: SUCCESS
+[w.loop_decreases.1] line 6 Check variant decreases after step for loop w.0: SUCCESS
+[w.loop_invariant_base.1] line 6 Check invariant before entry for loop w.0: SUCCESS
+[w.loop_invariant_base.2] line 6 Check invariant before entry for loop w.0: SUCCESS
+[w.loop_invariant_step.1] line 6 Check invariant after step for loop w.0: SUCCESS
+while_badinv   [expect FAILED    ] VERIFICATION FAILED        [main.assertion.1] line 42 w returns n: FAILURE [w.loop_invariant_step.2] line 6 Check invariant after step for loop w.0: FAILURE 
+while_baddec   [expect FAILED    ] VERIFICATION FAILED        [w.loop_decreases.1] line 6 Check variant decreases after step for loop w.0: FAILURE 
+do_good        [expect SUCCESSFUL] VERIFICATION SUCCESSFUL    
+[d.assigns.1] line 34 Check that i is assignable: SUCCESS
+[d.assigns.2] line 34 Check that i is assignable: SUCCESS
+[d.loop_assigns.1] line 34 Check assigns clause inclusion for loop d.0: SUCCESS
+[d.loop_assigns.2] line 34 Check assigns clause inclusion for loop d.0: SUCCESS
+[d.loop_decreases.1] line 34 Check variant decreases after step for loop d.0: SUCCESS
+[d.loop_invariant_base.1] line 34 Check invariant before entry for loop d.0: SUCCESS
+do_badinv      [expect FAILED    ] VERIFICATION FAILED        [d.loop_invariant_step.1] line 34 Check invariant after step for loop d.0: FAILURE 
+do_baddec      [expect FAILED    ] VERIFICATION FAILED        [d.loop_decreases.1] line 34 Check variant decreases after step for loop d.0: FAILURE 
+== do-while with clauses after the condition, as GOAL.md says: does it parse?
+after.c:1:1: error: syntax error before '__CPROVER_assigns'
+== unconstrained-assigns sanity: a loop writing a variable not in its assigns is caught
+[w.assigns.1] line 1 Check that s is assignable: FAILURE
+[w.assigns.3] line 1 Check that s is assignable: FAILURE
+== do-while invariant that holds only after the body (1 <= i): CBMC checks it before entry, so it fails
+[d.loop_invariant_base.2] line 34 Check invariant before entry for loop d.0: FAILURE
+VERIFICATION FAILED

@@ -1,0 +1,12 @@
+== non-static f, clauses on separate declarations c_true / c_false / c_weak (toy.c)
+A_enforce_true                 [expect SUCCESSFUL] VERIFICATION SUCCESSFUL    
+B_enforce_false                [expect FAILED    ] VERIFICATION FAILED        [c_false.postcondition.1] line 12 Check ensures clause of contract contract::c_false for function f: FAILURE
+C_replace_weak                 [expect FAILED    ] VERIFICATION FAILED        [caller.assertion.1] line 21 caller: r == x+1: FAILURE
+D_no_replace                   [expect SUCCESSFUL] VERIFICATION SUCCESSFUL    
+E_replace_true                 [expect SUCCESSFUL] VERIFICATION SUCCESSFUL    
+F_callsite_req                 [expect FAILED    ] VERIFICATION FAILED        [c_true.precondition.1] line 2 Check requires clause of contract contract::c_true for function f: FAILURE
+== static g in another TU (lib.c), built with --export-file-local-symbols, as overlay/sqlite3.c will be
+H_static_true                  [expect SUCCESSFUL] VERIFICATION SUCCESSFUL    
+I_static_false                 [expect FAILED    ] VERIFICATION FAILED        [c_g_false.postcondition.1] line 4 Check ensures clause of contract contract::c_g_false for function __CPROVER_file_local_lib_c_g: FAILURE
+J_static_replace               [expect SUCCESSFUL] VERIFICATION SUCCESSFUL    
+K_static_weak                  [expect FAILED    ] VERIFICATION FAILED        [main.assertion.1] line 3 r==2x: FAILURE

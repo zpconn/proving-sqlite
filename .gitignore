@@ -1,0 +1,9 @@
+# Everything builds write (GOAL.md §1.6): proof builds, probe builds, scratch.
+proofs/*/build/
+proofs/build/
+validation/src/
+validation/build/
+.campaign/
+__pycache__/
+*.pyc
+/tmp/

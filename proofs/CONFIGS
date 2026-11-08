@@ -1,0 +1,12 @@
+# proofs/CONFIGS: the platform configurations every proof runs on.
+# One per line: <name> <goto-cc flags...>. tools/prove.py passes the flags to goto-cc only; cbmc takes the word size
+# and byte order from the goto binary goto-cc writes. `make probe` checks each line does what its name says.
+#
+# lp64-le: x86_64 (goto-cc's default; -m64 is spelled out).
+# ilp32-le: i386. goto-cc -m32 preprocesses with the native gcc -m32, which needs 32-bit libc headers (gcc-multilib).
+# lp64-be: 64-bit big-endian. Do NOT add -m64 here: goto-cc's -m64 resets the architecture to x86_64 little-endian
+#   whatever its position (evidence/bringup/05-configs.md). The preprocessor still sees x86_64's __BYTE_ORDER__, so
+#   SQLITE_BYTEORDER=4321 is passed, as GOAL.md §1.5 says, to put SQLite on its big-endian branches.
+lp64-le   -m64
+ilp32-le  -m32
+lp64-be   --big-endian -DSQLITE_BYTEORDER=4321

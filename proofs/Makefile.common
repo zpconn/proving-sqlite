@@ -1,0 +1,21 @@
+# proofs/Makefile.common: included by every proofs/C-NN/Makefile. Frozen with the gate at checkpoint 1.
+# A card's Makefile only sets variables (see tools/prove.py's docstring); this file supplies the targets.
+#   make -C proofs/C-NN prove [CONFIG=<name>]      every proof of the card, every configuration (or one)
+#   make -C proofs/C-NN coverage [CONFIG=<name>]   line coverage of the card's functions
+#   make -C proofs/C-NN clean
+# Each target's last line of standard output is its RESULT line. On FAIL make exits nonzero and prints its own
+# "make: *** ... Error" line on standard error.
+MAKEFLAGS += --no-print-directory
+PROOF_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))..)
+CONFIG ?= all
+OVERLAY ?= $(PROOF_ROOT)/overlay
+BUILD ?= $(CURDIR)/build
+PY := python3
+
+.PHONY: prove coverage clean
+prove:
+	@$(PY) $(PROOF_ROOT)/tools/prove.py prove --card-dir $(CURDIR) --config $(CONFIG) --overlay $(OVERLAY) --build-dir $(BUILD)
+coverage:
+	@$(PY) $(PROOF_ROOT)/tools/prove.py coverage --card-dir $(CURDIR) --config $(CONFIG) --overlay $(OVERLAY) --build-dir $(BUILD)
+clean:
+	@rm -rf $(BUILD)

@@ -1,0 +1,19 @@
+# proofs/CHECKS: the CBMC options every proof uses, one per line.
+# Each was confirmed in `cbmc --help` (CBMC 6.11.0); evidence/bringup/04-checks.md shows each firing on a toy.
+# tools/prove.py passes every option line to cbmc. Lines starting with '%' are directives tools/prove.py implements.
+--bounds-check
+--pointer-check
+--pointer-overflow-check
+--pointer-primitive-check
+--signed-overflow-check
+--undefined-shift-check
+--div-by-zero-check
+--float-div-by-zero-check
+--malloc-may-fail
+--malloc-fail-null
+--unwinding-assertions
+# Float-to-integer conversion (C11 6.3.1.4p1). CBMC has no option for it alone: --conversion-check also flags
+# signed->unsigned conversions (defined, 6.3.1.3p2) and narrowing to a signed type (implementation-defined,
+# 6.3.1.3p3), which are not UB. So tools/prove.py runs a second pass with --conversion-check, checking only the
+# properties whose description matches the pattern below, whenever the program has any.
+%float-to-int --conversion-check float to (signed|unsigned) integer type conversion

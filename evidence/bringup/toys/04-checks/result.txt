@@ -1,0 +1,40 @@
+POINTER            --pointer-check           
+    all:   dereference failure: dead object in *p: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+BOUNDS             --bounds-check            
+    all:   array 'a' upper bound in a[(signed long int)n]: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+POINTER_OVERFLOW   --pointer-overflow-check  
+    all:   pointer arithmetic: pointer outside object bounds in q + (signed long int)n: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+POINTER_PRIMITIVE  --pointer-primitive-check 
+    all:   deallocated dynamic object in R_OK(d, (unsigned long int)1): FAILURE
+    minus: VERIFICATION SUCCESSFUL
+SIGNED_OVERFLOW    --signed-overflow-check   
+    all:   arithmetic overflow on signed + in s + 1: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+UNDEFINED_SHIFT    --undefined-shift-check   
+    all:   shift distance too large in 1u << n: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+NEG_SHIFT          --undefined-shift-check   
+    all:   shift operand is negative in ns << 1: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+SHL_OVERFLOW       --signed-overflow-check   
+    all:   arithmetic overflow on signed shl in 1 << n: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+DIV_BY_ZERO        --div-by-zero-check       
+    all:   division by zero in 10 / z: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+FLOAT_DIV_BY_ZERO  --float-div-by-zero-check 
+    all:   floating-point division by zero in 1.0 / fz: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+MALLOC_MAY_FAIL    --malloc-may-fail         
+    all:   dereference failure: pointer NULL in *m: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+UNWINDING          --unwinding-assertions    
+    all:   unwinding assertion loop 0: FAILURE
+    minus: VERIFICATION SUCCESSFUL
+FLOAT_TO_INT       %float-to-int (second pass: --conversion-check, float properties only)
+    float-to-int properties: main.overflow.1
+    pass 2: arithmetic overflow on float to signed integer type conversion in (signed long long int)r: FAILURE
+    pass 1 only (CHECKS options): VERIFICATION SUCCESSFUL
