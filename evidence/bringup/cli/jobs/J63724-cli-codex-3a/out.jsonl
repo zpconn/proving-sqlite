@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a1bc7d-b730-7cf3-8609-83c08ffa5c3e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll wait for the foreground command to finish, then write the code word to `resume.txt`.\n"}}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'sleep 90'","aggregated_output":"","exit_code":null,"status":"in_progress"}}

@@ -1,0 +1,7 @@
+Run each of these shell commands exactly as written, one at a time, and append each command and its full output to sandbox.txt (in the current directory) as you go. Do not try to work around any failure; a failure is the expected result for some of them.
+1. `cbmc toy.c --bounds-check > cbmc.txt 2>&1; echo "cbmc exit $?" >> cbmc.txt`
+2. `echo inside > inside.txt`
+3. `touch /home/zpconn/code/proving-sqlite/.git/worktrees/cli-codex-5/sandbox-probe 2>&1; echo "git-dir write exit $?"`
+4. `touch /home/zpconn/code/proving-sqlite/sandbox-probe 2>&1; echo "project write exit $?"`
+5. `curl -sS -m 10 https://example.com -o /dev/null 2>&1; echo "network exit $?"`
+Then reply done.

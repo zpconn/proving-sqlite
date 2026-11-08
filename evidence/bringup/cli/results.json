@@ -1,0 +1,397 @@
+{
+ "claude": {
+  "1-runs-headless": {
+   "apiKeySource": "none",
+   "api_key_vars_seen_by_session": "0",
+   "exit": {
+    "ended": 1794163723.662237,
+    "rc": 0
+   },
+   "hello": "hello",
+   "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63727-cli-claude-1",
+   "login_check": "claude auth status",
+   "login_output": "{\n  \"loggedIn\": true,\n  \"authMethod\": \"claude.ai\",\n  \"apiProvider\": \"firstParty\",\n  \"analyticsDisabled\": false,\n  \"projectsDirectory\": \"/home/zpconn/.claude/projects\",\n  \"configDirectory\": \"/home/zpconn/.claude\",\n  \"loginExpiresAt\": \"2026-11-15T00:37:19.456Z\",\n  \"email\": \"zpconn@gmail.com\",\n  \"orgId\": \"e62a1f0b-a727-403e-aa3d-50ddc176400f\",\n  \"orgName\": \"zpconn@gmail.com's Organization\",\n  \"subscr",
+   "permissionMode": "auto",
+   "usage": {
+    "cache_read": 34124,
+    "cache_write": 9789,
+    "input": 4,
+    "output": 119,
+    "total": 44036
+   }
+  },
+  "2-usage-while-running": {
+   "distinct_values_while_running": 4,
+   "exit": {
+    "ended": 1794165704.2223146,
+    "rc": 0
+   },
+   "file": "one\ntwo\nthree",
+   "final": {
+    "cache_read": 185431,
+    "cache_write": 1468,
+    "input": 20,
+    "output": 560,
+    "total": 187479
+   },
+   "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J65610-cli-claude-2",
+   "nonzero_before_end": 18,
+   "samples": [
+    [
+     0,
+     0
+    ],
+    [
+     5,
+     43992
+    ],
+    [
+     10,
+     90508
+    ],
+    [
+     15,
+     90508
+    ],
+    [
+     20,
+     90508
+    ],
+    [
+     25,
+     90508
+    ],
+    [
+     30,
+     90508
+    ],
+    [
+     35,
+     90508
+    ],
+    [
+     40,
+     90508
+    ],
+    [
+     45,
+     90508
+    ],
+    [
+     50,
+     90508
+    ],
+    [
+     55,
+     138400
+    ],
+    [
+     60,
+     138400
+    ],
+    [
+     65,
+     138400
+    ],
+    [
+     70,
+     138400
+    ],
+    [
+     75,
+     138400
+    ],
+    [
+     80,
+     138400
+    ],
+    [
+     85,
+     138400
+    ],
+    [
+     90,
+     138400
+    ],
+    [
+     95,
+     187479
+    ]
+   ]
+  },
+  "3-kill-and-resume": {
+   "first_exit": {
+    "ended": 1794163744.4754214,
+    "rc": -9
+   },
+   "jobs": [
+    "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63720-cli-claude-3a",
+    "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63728-cli-claude-3b"
+   ],
+   "killed_after_s": 27,
+   "resume_argv": [
+    "bwrap",
+    "--ro-bind",
+    "/",
+    "/",
+    "--dev",
+    "/dev",
+    "..."
+   ],
+   "resume_exit": {
+    "ended": 1794163847.2081575,
+    "rc": 0
+   },
+   "resume_txt_after": "PELICAN-7",
+   "resume_txt_before_resume": null,
+   "same_session": true,
+   "usage_first": {
+    "cache_read": 57104,
+    "cache_write": 10272,
+    "input": 6,
+    "output": 395,
+    "total": 67777
+   },
+   "usage_resume": {
+    "cache_read": 52840,
+    "cache_write": 586,
+    "input": 6,
+    "output": 203,
+    "total": 53635
+   }
+  },
+  "4-fifteen-minute-command": {
+   "exit": {
+    "ended": 1794164627.8254416,
+    "rc": 0
+   },
+   "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63723-cli-claude-4",
+   "long_txt": "LONG-RUN-FINISHED",
+   "seconds": 910,
+   "usage": {
+    "cache_read": 70575,
+    "cache_write": 768,
+    "input": 8,
+    "output": 204,
+    "total": 71555
+   }
+  },
+  "5-sandbox": {
+   "cbmc": "tent: instance is UNSATISFIABLE\n\n** Results:\ntoy.c function main\n[main.array_bounds.1] line 1 array 'a' lower bound in a[(signed long int)i]: SUCCESS\n[main.array_bounds.2] line 1 array 'a' upper bound in a[(signed long int)i]: FAILURE\n\n** 1 of 2 failed (2 iterations)\nVERIFICATION FAILED\ncbmc exit 10",
+   "exit": {
+    "ended": 1794163729.217876,
+    "rc": 0
+   },
+   "git_dir_probe_exists": false,
+   "inside": "inside",
+   "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63725-cli-claude-5",
+   "project_probe_exists": false,
+   "sandbox_txt": "$ cbmc toy.c --bounds-check > cbmc.txt 2>&1; echo \"cbmc exit $?\" >> cbmc.txt\nCBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux\nType-checking toy\nGenerating GOTO Program\nAdding CPROVER library (x86_64)\nRemoval of function pointers and virtual functions\nGeneric Property Instrumentation\nStarting Bounded Model Checking\nPassing problem to propositional reduction\nconverting SSA\nRunning propositional reduction\nSAT checker: instance is SATISFIABLE\nRunning propositional reduction\nSAT checker inconsistent: instance is UNSATISFIABLE\n\n** Results:\ntoy.c function main\n[main.array_bounds.1] line 1 array 'a' lower bound in a[(signed long int)i]: SUCCESS\n[main.array_bounds.2] line 1 array 'a' upper bound in a[(signed long int)i]: FAILURE\n\n** 1 of 2 failed (2 iterations)\nVERIFICATION FAILED\ncbmc exit 10\n\n$ echo inside > inside.txt\nexit 0\n\n$ touch /home/zpconn/code/proving-sqlite/.git/worktrees/cli-claude-5/sandbox-probe 2>&1; echo \"git-dir write exit $?\"\ntouch: cannot touch '/home/zpconn/code/proving-sqlite/.git/worktrees/cli-claude-5/sandbox-probe': Read-only file system\ngit-dir write exit 1\n\n$ touch /home/zpconn/code/proving-sqlite/sandbox-probe 2>&1; echo \"project write exit $?\"\ntouch: cannot touch '/home/zpconn/code/proving-sqlite/sandbox-probe': Read-only file system\nproject write exit 1\n\n$ curl -sS -m 10 https://example.com -o /dev/null 2>&1; echo \"network exit $?\"\nnetwork exit 0"
+  }
+ },
+ "codex": {
+  "1-runs-headless": {
+   "api_key_vars_seen_by_session": "0",
+   "approval_policy": "never",
+   "exit": {
+    "ended": 1794163727.373682,
+    "rc": 0
+   },
+   "hello": "hello",
+   "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63726-cli-codex-1",
+   "login_check": "codex login status",
+   "login_output": "Logged in using ChatGPT",
+   "rollout": "/home/zpconn/.codex/sessions/2026/11/08/rollout-2026-11-08T12-48-39-01a1bc7d-b733-72f3-ba82-5c39cd4b2874.jsonl",
+   "sandbox_policy": {
+    "exclude_slash_tmp": false,
+    "exclude_tmpdir_env_var": false,
+    "network_access": false,
+    "type": "workspace-write"
+   },
+   "usage": {
+    "cache_read": 30464,
+    "cache_write": 0,
+    "input": 36868,
+    "output": 52,
+    "total": 36920
+   }
+  },
+  "2-usage-while-running": {
+   "distinct_values_while_running": 9,
+   "exit": {
+    "ended": 1794163817.591625,
+    "rc": 0
+   },
+   "file": "one\ntwo\nthree",
+   "final": {
+    "cache_read": 179712,
+    "cache_write": 0,
+    "input": 188157,
+    "output": 324,
+    "total": 188481
+   },
+   "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63718-cli-codex-2",
+   "nonzero_before_end": 19,
+   "samples": [
+    [
+     0,
+     0
+    ],
+    [
+     5,
+     0
+    ],
+    [
+     10,
+     18445
+    ],
+    [
+     15,
+     36976
+    ],
+    [
+     20,
+     55600
+    ],
+    [
+     25,
+     55600
+    ],
+    [
+     30,
+     55600
+    ],
+    [
+     35,
+     55600
+    ],
+    [
+     40,
+     55600
+    ],
+    [
+     45,
+     55600
+    ],
+    [
+     50,
+     74315
+    ],
+    [
+     55,
+     93111
+    ],
+    [
+     60,
+     112032
+    ],
+    [
+     65,
+     112032
+    ],
+    [
+     70,
+     112032
+    ],
+    [
+     75,
+     112032
+    ],
+    [
+     80,
+     112032
+    ],
+    [
+     85,
+     112032
+    ],
+    [
+     90,
+     112032
+    ],
+    [
+     95,
+     131044
+    ],
+    [
+     100,
+     188481
+    ],
+    [
+     105,
+     188481
+    ]
+   ]
+  },
+  "3-kill-and-resume": {
+   "first_exit": {
+    "ended": 1794163744.497907,
+    "rc": -9
+   },
+   "jobs": [
+    "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63724-cli-codex-3a",
+    "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63729-cli-codex-3b"
+   ],
+   "killed_after_s": 27,
+   "resume_argv": [
+    "codex",
+    "exec",
+    "resume",
+    "01a1bc7d-b730-7cf3-8609-83c08ffa5c3e",
+    "--json",
+    "--ignore-user-config",
+    "..."
+   ],
+   "resume_exit": {
+    "ended": 1794163763.3132353,
+    "rc": 0
+   },
+   "resume_txt_after": "PELICAN-7",
+   "resume_txt_before_resume": null,
+   "same_session": true,
+   "usage_first": {
+    "cache_read": 12160,
+    "cache_write": 0,
+    "input": 18398,
+    "output": 61,
+    "total": 18459
+   },
+   "usage_resume": {
+    "cache_read": 75648,
+    "cache_write": 0,
+    "input": 76882,
+    "output": 170,
+    "total": 77052
+   }
+  },
+  "4-fifteen-minute-command": {
+   "exit": {
+    "ended": 1794165587.4172122,
+    "rc": 0
+   },
+   "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63719-cli-codex-4",
+   "long_txt": "LONG-RUN-FINISHED",
+   "note": "cli_check.py stopped waiting at 1800 s; the session ended at 1868 s. Its first attempt backgrounded the command with output in a file; the sandbox killed the background job when that shell command returned. The second attempt ran it in the foreground (`... & wait`), polling 32 times, and read LONG-RUN-FINISHED.",
+   "seconds": 1868,
+   "usage": {
+    "cache_read": 1482112,
+    "cache_write": 0,
+    "input": 1510997,
+    "output": 2665,
+    "total": 1513662
+   }
+  },
+  "5-sandbox": {
+   "cbmc": "tent: instance is UNSATISFIABLE\n\n** Results:\ntoy.c function main\n[main.array_bounds.1] line 1 array 'a' lower bound in a[(signed long int)i]: SUCCESS\n[main.array_bounds.2] line 1 array 'a' upper bound in a[(signed long int)i]: FAILURE\n\n** 1 of 2 failed (2 iterations)\nVERIFICATION FAILED\ncbmc exit 10",
+   "exit": {
+    "ended": 1794163748.9395282,
+    "rc": 0
+   },
+   "git_dir_probe_exists": false,
+   "inside": "inside",
+   "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J63722-cli-codex-5",
+   "project_probe_exists": false,
+   "sandbox_txt": "COMMAND: cbmc toy.c --bounds-check > cbmc.txt 2>&1; echo \"cbmc exit $?\" >> cbmc.txt\nCBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux\nType-checking toy\nGenerating GOTO Program\nAdding CPROVER library (x86_64)\nRemoval of function pointers and virtual functions\nGeneric Property Instrumentation\nStarting Bounded Model Checking\nPassing problem to propositional reduction\nconverting SSA\nRunning propositional reduction\nSAT checker: instance is SATISFIABLE\nRunning propositional reduction\nSAT checker inconsistent: instance is UNSATISFIABLE\n\n** Results:\ntoy.c function main\n[main.array_bounds.1] line 1 array 'a' lower bound in a[(signed long int)i]: SUCCESS\n[main.array_bounds.2] line 1 array 'a' upper bound in a[(signed long int)i]: FAILURE\n\n** 1 of 2 failed (2 iterations)\nVERIFICATION FAILED\ncbmc exit 10\n\nCOMMAND: echo inside > inside.txt\n\nCOMMAND: touch /home/zpconn/code/proving-sqlite/.git/worktrees/cli-codex-5/sandbox-probe 2>&1; echo \"git-dir write exit $?\"\ntouch: cannot touch '/home/zpconn/code/proving-sqlite/.git/worktrees/cli-codex-5/sandbox-probe': Read-only file system\ngit-dir write exit 1\n\nCOMMAND: touch /home/zpconn/code/proving-sqlite/sandbox-probe 2>&1; echo \"project write exit $?\"\ntouch: cannot touch '/home/zpconn/code/proving-sqlite/sandbox-probe': Read-only file system\nproject write exit 1\n\nCOMMAND: curl -sS -m 10 https://example.com -o /dev/null 2>&1; echo \"network exit $?\"\ncurl: (6) Could not resolve host: example.com\nnetwork exit 6"
+  }
+ }
+}

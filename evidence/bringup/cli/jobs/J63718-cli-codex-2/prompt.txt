@@ -1,0 +1,1 @@
+Do these steps in order, one shell command per step: (1) `echo one > a.txt` (2) `sleep 40` (3) `echo two >> a.txt` (4) `sleep 40` (5) `echo three >> a.txt`. Then reply done.

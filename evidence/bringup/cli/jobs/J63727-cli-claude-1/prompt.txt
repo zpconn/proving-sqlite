@@ -1,0 +1,1 @@
+Run this shell command and nothing else: `env | grep -cE "API_KEY|AUTH_TOKEN" > keys.txt; echo hello > hello.txt`. Then reply with the single word done.

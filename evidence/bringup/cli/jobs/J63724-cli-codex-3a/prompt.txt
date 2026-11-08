@@ -1,0 +1,1 @@
+Remember this code word: PELICAN-7. Do these steps in order: (1) run `sleep 90` as a single foreground shell command and wait for it; (2) then write the code word into the file resume.txt. Then reply done.

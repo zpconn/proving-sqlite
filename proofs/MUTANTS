@@ -1,0 +1,29 @@
+# proofs/MUTANTS: one-token mutants (GOAL.md §2.4). tools/mutate.py applies each to a scratch copy of the overlay.
+# A mutant is killed when some proof fails. card= names the card whose proofs must kill it: UB-relevant mutants
+# belong to the P1 card of their function, functional ones (no UB, wrong value) to the P2/P3 card.
+# Format: M-NNN <function> <upstream line> '<from>' '<to>' card=C-NN [equivalent='<argument>' review=<file>]
+# Pilot set (bring-up); §2.4 completes the list for every function.
+#
+# putVarint64 (37967): writes past the 9-byte footprint, or a loop that never ends.
+M-001 putVarint64 37971 'p[8]' 'p[9]' card=C-01
+M-002 putVarint64 37973 'i--' 'i++' card=C-01
+M-003 putVarint64 37982 'v >>= 7' 'v >>= 6' card=C-01
+# putVarint64: wrong encoding, no UB (killed by the P2 round trip).
+M-004 putVarint64 37970 '<<32' '<<33' card=C-02
+M-005 putVarint64 37974 '0x7f' '0x3f' card=C-02
+# sqlite3PutVarint (37991): writes past the footprint.
+M-006 sqlite3PutVarint 37998 'p[1]' 'p[9]' card=C-01
+M-007 sqlite3PutVarint 37993 'p[0]' 'p[9]' card=C-01
+# sqlite3PutVarint: wrong encoding.
+M-008 sqlite3PutVarint 37992 '0x7f' '0xff' card=C-02
+M-009 sqlite3PutVarint 37996 '0x3fff' '0x7fff' card=C-02
+# sqlite3GetVarint (38021): wrong value decoded (P2). UB-relevant mutants for C-03 come in §2.4.
+M-010 sqlite3GetVarint 38029 '<<7' '<<8' card=C-02
+M-011 sqlite3GetVarint 38150 '<<15' '<<14' card=C-02
+M-012 sqlite3GetVarint 38161 'p[-4]' 'p[-5]' card=C-02
+# sqlite3GetVarint32 (38182): wrong value, or the wrong saturation value (P2's getVarint32 clause).
+M-013 sqlite3GetVarint32 38192 '<<7' '<<6' card=C-02
+M-014 sqlite3GetVarint32 38204 '0xffffffff' '0xfffffffe' card=C-02
+# sqlite3VarintLen (38215): wrong length (P2's VarintLen clause).
+M-015 sqlite3VarintLen 38217 'i=1' 'i=0' card=C-02
+M-016 sqlite3VarintLen 38217 '>>= 7' '>>= 8' card=C-02

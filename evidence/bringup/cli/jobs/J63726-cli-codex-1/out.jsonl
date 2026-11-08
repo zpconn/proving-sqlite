@@ -1,0 +1,6 @@
+{"type":"thread.started","thread_id":"01a1bc7d-b733-72f3-ba82-5c39cd4b2874"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"/bin/bash -lc 'env | grep -cE \"API_KEY|AUTH_TOKEN\" > keys.txt; echo hello > hello.txt'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"/bin/bash -lc 'env | grep -cE \"API_KEY|AUTH_TOKEN\" > keys.txt; echo hello > hello.txt'","aggregated_output":"","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"done"}}
+{"type":"turn.completed","usage":{"input_tokens":36868,"cached_input_tokens":30464,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

@@ -1,0 +1,5 @@
+2026-11-08T18:49:11.322497Z ERROR codex_core::util: Custom tool call output is missing for call id: call_56ce8efc4d5d42f29fca8cd437c8ab48
+2026-11-08T18:49:14.809863Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 45790
+2026-11-08T18:49:14.837612Z ERROR codex_core::util: Custom tool call output is missing for call id: call_56ce8efc4d5d42f29fca8cd437c8ab48
+2026-11-08T18:49:17.521991Z ERROR codex_core::util: Custom tool call output is missing for call id: call_56ce8efc4d5d42f29fca8cd437c8ab48
+2026-11-08T18:49:20.352145Z ERROR codex_core::util: Custom tool call output is missing for call id: call_56ce8efc4d5d42f29fca8cd437c8ab48

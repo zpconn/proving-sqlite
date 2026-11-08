@@ -1,0 +1,5 @@
+# §1.6 Builds (2026-11-08)
+
+- goto-cc on the whole overlay: lp64-le 5.74 s and 608 MB, ilp32-le 5.60 s and 604 MB, lp64-be 5.85 s and 608 MB; about 16 MB goto binary each (`toys/05-configs/result.txt`).
+- **How proofs link:** each harness.c starts with `#include "sqlite3.c"` (the overlay through `-I`), so a proof is one translation unit. SQLite's internal types and static functions are visible without copying any SQLite text, and the cost is about 6 s of goto-cc per configuration. tools/prove.py compiles harness.c once per configuration, links each proof's entry with `goto-cc --function`, and then runs `goto-instrument --drop-unused-functions`, `--dfcc` (when the proof uses contracts) and `--slice-global-inits`. Slicing global initializers was needed: without it lp64-be ran out of CBMC object IDs ("too many addressed objects") even at `--object-bits 10`. After slicing, the probe's cbmc run takes 0.3 s.
+- Builds write only `proofs/C-NN/build/` and `proofs/build/` in the worktree they run in, and `.gitignore` covers both (mutants run in `proofs/C-NN/build/mutants/`).

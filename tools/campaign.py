@@ -351,14 +351,16 @@ def codex_rollout(thread_id):
 
 def usage_of(job):
     """Token usage of one job: {'input','cache_read','cache_write','output','total'}, and the CLI session id.
-    claude: sum of message_delta usages (final per message), replaced by the result event's usage at the end.
+    claude: sum of message_delta usages (final per message), or the sum over result events if larger.
     codex: the rollout log's cumulative total_token_usage for the thread, minus its value when the job began
     (a resume appends to the same thread). OpenAI's input_tokens already includes cached_input_tokens."""
     ev = read_jsonl(os.path.join(job['dir'], 'out.jsonl'))
     u = {'input': 0, 'cache_read': 0, 'cache_write': 0, 'output': 0}
     sid = job.get('cli_session')
     if job['vendor'] == 'claude':
-        res = None
+        # Each result event covers one turn (a session that backgrounds a command runs several turns), so the
+        # total is the sum over messages, checked against the sum over results.
+        res = {'input': 0, 'cache_read': 0, 'cache_write': 0, 'output': 0}
         for e in ev:
             if e.get('type') == 'system' and e.get('subtype') == 'init':
                 sid = e.get('session_id') or sid
@@ -369,10 +371,13 @@ def usage_of(job):
                 u['cache_write'] += x.get('cache_creation_input_tokens', 0) or 0
                 u['output'] += x.get('output_tokens', 0) or 0
             if e.get('type') == 'result':
-                res = e.get('usage') or {}
-        if res:
-            u = {'input': res.get('input_tokens', 0) or 0, 'cache_read': res.get('cache_read_input_tokens', 0) or 0,
-                 'cache_write': res.get('cache_creation_input_tokens', 0) or 0, 'output': res.get('output_tokens', 0) or 0}
+                x = e.get('usage') or {}
+                res['input'] += x.get('input_tokens', 0) or 0
+                res['cache_read'] += x.get('cache_read_input_tokens', 0) or 0
+                res['cache_write'] += x.get('cache_creation_input_tokens', 0) or 0
+                res['output'] += x.get('output_tokens', 0) or 0
+        if sum(res.values()) > sum(u.values()):
+            u = res
         u['total'] = u['input'] + u['cache_read'] + u['cache_write'] + u['output']
     else:
         for e in ev:
@@ -481,8 +486,11 @@ def prompt_builder(cid, rnd, reviews, notes, wt):
         'Your token usage so far, against the card\'s cap, is in .campaign/usage; check it after each run.',
         'Work only in this directory (%s) and /tmp. Do not commit, branch or merge: campaign.py commits what you '
         'leave when you exit, and only the paths on your card\'s May change line.' % wt,
-        'CBMC runs can take 10 minutes per configuration: run them in the background with output in a file, or '
-        'with a timeout longer than the run, and trust only output that ends with its RESULT line.',
+        'CBMC runs can take 10 minutes per configuration. In this sandbox a command\'s background children are killed '
+        'when the command returns, so run long commands in the foreground with output in a file (for example '
+        '`make -C proofs/%s prove CONFIG=lp64-le > /tmp/%s.log 2>&1; tail -5 /tmp/%s.log`) and let them finish, or '
+        'give them a timeout longer than the run. Trust only output that ends with its RESULT line. proofs/HOWTO.md '
+        'records how proofs are built here.' % (cid, cid, cid),
     ]
     return '\n\n'.join(lines) + '\n'
 
@@ -1314,8 +1322,11 @@ def cmd_start(a):
                              start_new_session=True, cwd=p.mainwt, env=dict(os.environ))
         else:
             subprocess.run(['tmux', 'kill-session', '-t', 'campaign'], capture_output=True)
+            # the tmux server's environment may predate this shell's PATH (codex lives under nvm), so pass it
+            import shlex
             subprocess.run(['tmux', 'new-session', '-d', '-s', 'campaign', '-c', p.mainwt,
-                            '%s %s daemon; echo "campaign.py daemon exited"; sleep 86400' % (sys.executable, exe)], check=True)
+                            'env PATH=%s %s %s daemon; echo "campaign.py daemon exited"; sleep 86400' % (
+                                shlex.quote(os.environ.get('PATH', '')), sys.executable, exe)], check=True)
         for _ in range(50):
             if daemon_alive(p):
                 break

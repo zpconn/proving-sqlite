@@ -1,0 +1,18 @@
+{
+ "argv": [
+  "codex",
+  "exec",
+  "--json",
+  "--ignore-user-config",
+  "-c",
+  "sandbox_mode=\"workspace-write\"",
+  "-c",
+  "approval_policy=\"never\"",
+  "-m",
+  "gpt-6-astra",
+  "-c",
+  "model_reasoning_effort=\"low\"",
+  "-"
+ ],
+ "cwd": "/home/zpconn/code/proving-sqlite-wt/cli-codex-5"
+}
