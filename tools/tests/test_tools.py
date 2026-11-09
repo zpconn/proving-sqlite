@@ -524,6 +524,17 @@ def main():
 
     # ---- gate (checkpoint 0, decision C4): a preds.h change reruns every card that includes it
     if want('gate'):
+        # follow-up item 1: card Makefiles are parsed by load_card, never evaluated by make
+        r = setup_get(t)
+        marker = os.path.join(r, 'make-ran')
+        t.write(r, 'proofs/C-90/Makefile', MK_GET + 'prove:\n\t@touch %s\ncoverage:\n\t@touch %s\n' % (marker, marker))
+        rc, out, res = t.run(r, [py, 'tools/gate.py', 'gate', '--card', 'C-90'])
+        t.expect('gate: a card Makefile with a rule load_card rejects fails the gate, and make never runs it (no marker)',
+                 rc != 0 and 'FAIL' in res and 'rejected by load_card' in out and 'prove C-90' in res
+                 and not os.path.exists(marker), out + ('\nMARKER EXISTS' if os.path.exists(marker) else ''))
+        rc, out, res = t.run(r, [py, 'tools/gate.py', 'prove'])
+        t.expect('gate: make prove skips the rejected card Makefile too (no marker)',
+                 rc != 0 and 'rejected by load_card' in out and not os.path.exists(marker), out)
         r = setup_get(t)
         t.write(r, 'cards/C-91.md', card_md('C-91', ['toySum']))
         t.write(r, 'proofs/C-91/harness.c', HARNESS_SUM.replace('#include <stdlib.h>', '#include <stdlib.h>\n#include "preds.h"'))

@@ -86,6 +86,8 @@ ok   lock (C7): no proof.lock while HANDOFF.md exists fails
 ok   includes: a harness that includes the overlay, proofs/contracts/ and system headers passes on every configuration
 ok   includes: a shadow proofs/C-90/contracts/toyGet.h (quoted includes resolve there first) fails
 ok   includes: a header that pulls in upstream/ or a nested proofs/include/contracts/ file fails
+ok   gate: a card Makefile with a rule load_card rejects fails the gate, and make never runs it (no marker)
+ok   gate: make prove skips the rejected card Makefile too (no marker)
 ok   gate: preds.h unchanged: make gate CARD=C-90 runs C-90 only, with its includes step
 ok   gate: preds.h changed: make gate CARD=C-90 also reruns C-91, whose harness includes preds.h
 ok   cards.callers_of: two cards sharing functions name each other, never themselves (pilot: "C-02, C-02")
@@ -93,4 +95,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 95/95
+RESULT tool-tests PASS 97/97

@@ -11,6 +11,10 @@ pulls in any file but the overlay's sqlite3.c, proofs/{include,contracts,spec}/*
 make gate (full) runs check_overlay; proof.lock; scan; probe; every proof dir's proofs and coverage on
 every configuration; every mutant in proofs/MUTANTS against every proof; and requires each function
 named by a card with proofs to have at least two mutants.
+Card Makefiles are read only by tools/prove.py's declarative parser (load_card), never evaluated by make
+(checkpoint 0 follow-up, item 1): each card's prove and coverage steps call tools/prove.py directly, with the
+same arguments proofs/Makefile.common would pass, and a card whose Makefile load_card rejects gets a failing
+`prove C-NN` step and no includes, prove or coverage run.
 Each step's output is copied to stdout; the last line is
   RESULT gate <C-NN|all> PASS|FAIL <seconds>s <failed steps>
 """
@@ -52,8 +56,24 @@ def proof_cards():
     return sorted(x for x in os.listdir(d) if re.match(r'^C-[0-9]{2}$', x) and os.path.exists(os.path.join(d, x, 'Makefile')))
 
 
-def make(card, target, config='all'):
-    return ['make', '-C', os.path.join('proofs', card), target, 'CONFIG=%s' % config]
+def prove_cmd(card, target, config='all'):
+    """tools/prove.py <target> for one card, as proofs/Makefile.common runs it, without make."""
+    cd = os.path.join(ROOT, 'proofs', card)
+    return [sys.executable, os.path.join(TOOLS, 'prove.py'), target, '--card-dir', cd, '--config', config,
+            '--overlay', os.path.join(ROOT, 'overlay'), '--build-dir', os.path.join(cd, 'build')]
+
+
+def loadable(card, results, target='prove'):
+    """True if load_card accepts the card's Makefile; otherwise record a failing step and say why."""
+    try:
+        prove.load_card(os.path.join(ROOT, 'proofs', card))
+        return True
+    except (prove.CardError, OSError) as e:
+        msg = 'proofs/%s/Makefile rejected by load_card (not run): %s' % (card, e)
+        print('==== %s %s: %s' % (target, card, msg))
+        print('==== %s %s FAIL (0s)' % (target, card))
+        results.append(('%s %s' % (target, card), False, msg[:200], 0))
+        return False
 
 
 def preds_users(have):
@@ -87,7 +107,8 @@ def main():
     have = proof_cards()
     if a.what in ('prove', 'coverage'):
         for c in have:
-            step('%s %s' % (a.what, c), make(c, a.what, a.config), results)
+            if loadable(c, results, a.what):
+                step('%s %s' % (a.what, c), prove_cmd(c, a.what, a.config), results)
         label = 'all'
     else:
         step('check_overlay', [py, 'tools/check_overlay.py'], results)
@@ -120,9 +141,11 @@ def main():
             label = 'all'
         print('gate: cards to run: %s' % (', '.join(todo) or 'none'))
         for c in todo:
+            if not loadable(c, results):
+                continue
             step('includes %s' % c, [py, 'tools/prove.py', 'includes', '--card-dir', os.path.join('proofs', c)], results)
-            step('prove %s' % c, make(c, 'prove'), results)
-            step('coverage %s' % c, make(c, 'coverage'), results)
+            step('prove %s' % c, prove_cmd(c, 'prove'), results)
+            step('coverage %s' % c, prove_cmd(c, 'coverage'), results)
         # mutants
         muts = mutate.read_mutants(os.path.join(ROOT, 'proofs', 'MUTANTS'))
         fns_with_proofs = set()

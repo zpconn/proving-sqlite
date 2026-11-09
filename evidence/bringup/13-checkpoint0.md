@@ -64,3 +64,13 @@ sessions.toml gains `auth_failure_patterns` per vendor (10-cli.md lists the stri
 
 - `--ignore-user-config` left the ChatGPT connectors switched on in builder sessions: ~300 `mcp__codex_apps__*` tools (Gmail, Sites deploy), plus web search and subagents. They run in codex's own process, outside the shell sandbox. The pilot's builders never called them. They are now disabled (10-cli.md).
 - The selftest fixture moved from /tmp to /var/tmp, and its fake CLIs moved from the fixture's tools/ to its HOME. The reviewer sandbox now hides both /tmp and the primary checkout, as it hides them for real sessions, whose CLIs live outside the repo.
+
+## Follow-up 1 (auditor's re-audit, 2026-11-08 evening): the gate never runs make on a card Makefile
+
+gate.py's prove and coverage steps used to run `make -C proofs/C-NN`, which evaluates the card's Makefile, a file the builder writes. They now call `tools/prove.py prove|coverage --card-dir proofs/C-NN` directly, with the arguments proofs/Makefile.common passes (`--overlay overlay --build-dir proofs/C-NN/build`). A card whose Makefile `prove.load_card` rejects gets a failing `prove C-NN` step, and its includes, prove and coverage steps don't run. campaign.py's run_gate matches that step name, so a land sends the card to triage. `make prove` and `make coverage` at the top level use the same path. Builders can still run `make -C proofs/C-NN prove` inside their own sandbox; only the gate stopped. mutate.py already called prove.py directly.
+
+Tests (tools/tests/test_tools.py, gate section): a card Makefile with a `prove:`/`coverage:` rule after the include, which load_card rejects and which writes a marker file if make runs it.
+- `gate: a card Makefile with a rule load_card rejects fails the gate, and make never runs it (no marker)`
+- `gate: make prove skips the rejected card Makefile too (no marker)`
+
+Against the tools at 1c27db4 both FAIL, with the marker written (make ran the rule). With the fix both pass. Tool tests 97/97 (13-tool-tests.txt). `make gate CARD=C-02 BASE=HEAD` on the real repo passes with the same numbers as before (14-gate-C-02.log): C-02 1350 properties, C-01 675, coverage 399/399 and 81/81, mutants 11/11; the log has no `make -C`.
