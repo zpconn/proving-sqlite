@@ -1,0 +1,165 @@
+selftest fixture: /var/tmp/campaign-selftest-1vmyw5g3
+ok   sessions.toml's codex and claude commands, start and resume, pass the session guards
+ok   session guard refuses codex without the workspace-write sandbox
+ok   session guard refuses codex with approvals on
+ok   session guard refuses codex with the sandbox bypassed
+ok   session guard refuses codex with a second sandbox_mode
+ok   session guard refuses claude without bwrap
+ok   session guard refuses claude with bypassPermissions
+ok   session guard refuses bwrap with a shared /tmp
+ok   session guard refuses bwrap that leaves ~/.codex visible
+ok   session guard refuses bwrap that leaves the other worktrees and state/ visible
+ok   session guard refuses bwrap that binds / writable afterwards
+FAIL session guard refuses codex without sandbox_workspace_write.exclude_slash_tmp=true
+FAIL session guard refuses codex with exclude_slash_tmp=false
+ok   session guard refuses codex with another sandbox_workspace_write key
+FAIL session guard refuses bwrap that leaves /run/user/<uid> visible
+FAIL session guard refuses bwrap that keeps DBUS_SESSION_BUS_ADDRESS
+FAIL session guard refuses bwrap that keeps XDG_RUNTIME_DIR
+FAIL session guard refuses bwrap that leaves ~/.claude visible
+FAIL session guard refuses bwrap that binds ~/.claude writable
+FAIL session guard refuses bwrap that leaves ~/.claude.json readable
+FAIL session guard refuses bwrap that leaves ~/.config/gh visible
+FAIL session guard refuses bwrap that leaves ~/.aws visible
+FAIL session guard refuses bwrap that leaves ~/.docker visible
+ok   session guard refuses bwrap with CLAUDE_CONFIG_DIR set to ~/.claude
+ok   campaign.py refuses a sessions.toml that puts builders on claude
+ok   a re-review is refused when its reviewer would share the vendor that built the card's last round
+FAIL sessions.toml is refused: a codex command without --disable apps (a change the flag guard does not catch)
+FAIL sessions.toml is refused: a codex command with an extra -c setting
+FAIL sessions.toml is refused: a claude command whose --effort is a literal, not {effort}
+FAIL sessions.toml's own codex command starts; its session-start entry records sessions.toml's sha256
+     | (None, [{'job': 'J0020-unit', 'card': 'C-01', 'role': 'builder', 'vendor': 'codex', 'model': 'gpt-6-astra', 'round': 1, 'resume': False, 'kind': 'session-start'}])
+FAIL a codex session gets TMPDIR in its worktree (tmp/, created), not /tmp
+     | [('J0020-unit', ['codex', 'exec', '--json', '--ignore-user-config', '--strict-config', '-c', 'sandbox_mode="workspace-write"', '-c', 'approval_policy="never"', '-c', 'web_search="disabled"', '-c', 'background_terminal_max_timeout=3600000', '-c', 'features.code_mode.default_exec_yield_time_ms=3600000', '--disable', 'apps', '--disable', 'plugins', '--disable', 'remote_plugin', '--disable', 'tool_suggest', '--disable', 'multi_agent', '--disable', 'multi_agent_v2', '--disable', 'image_generation', '--disable', 'browser_use', '--disable', 'browser_use_external', '--disable', 'computer_use', '--disable', 'in_app_browser', '--disable', 'goals', '-m', 'gpt-6-astra', '-c', 'model_reasoning_effort="high"', '-'], {})]
+FAIL a claude session gets its own CLAUDE_CONFIG_DIR under state/claude-config/, mode 700, seeded with the login and only the account keys of ~/.claude.json
+     | (None, '')
+FAIL follow-up 5/6/8 checks ran
+     | NameError: name 'release_claude_config' is not defined
+FAIL follow-up 7 checks ran
+     | TypeError: Campaign.write_usage_file() takes 4 positional arguments but 5 were given
+ok   start: primary checkout moves to orch, main gets its own checkout
+FAIL phase A settles (every card merged, in triage, or waiting)
+     | {
+     | "C-01": [
+     | "merged",
+     | "merged 1451cc5289a0"
+     | ],
+     | "C-02": [
+     | "merged",
+     | "merged c51e4c708f17"
+     | ],
+     | "C-03": [
+     | "triage",
+     | "third REJECT (reviews/C-03-r3.md)"
+     | ],
+     | "C-04": [
+     | "merged",
+     | "merged 55b91c10178c"
+     | ],
+     | "C-05": [
+     | "triage",
+     | "three interruptions in round 1 (last: ended without its report (exit 1)); logs /var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite-wt/state/jobs/J0019-builder"
+     | ],
+     | "C-06": [
+     | "merged",
+     | "merged a7b76217be81"
+     | ],
+     | "C-07": [
+     | "triage",
+     | "builder changed paths outside its May change line (nothing committed): tools/evil.py"
+     | ],
+     | "C-08": [
+     | "triage",
+     | "builder changed paths outside its May change line (nothing committed): tools/evil2.py"
+     | ],
+     | "C-09": [
+     | "triage",
+     | "reviewer changed a tracked file twice (changed tracked files: cards/C-09.md); reviews discarded"
+     | ],
+     | "C-10": [
+     | "merged",
+     | "merged 6e598ae5c514"
+     | ],
+     | "C-11": [
+     | "triage",
+     | "merge failed: gate failed: RESULT gate C-11 FAIL 1s failed: prove C-11 (log /var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite-wt/state/jobs/J0044-merge/gate.log)"
+     | ],
+     | "C-12": [
+     | "triage",
+     | "builder reached its cap (1213500 of 1000000 tokens); allowed changes committed"
+     | ],
+     | "C-13": [
+     | "waiting",
+     | null
+     | ],
+     | "C-14": [
+     | "triage",
+     | "builder changed paths outside its May change line (nothing committed): reviews/C-14-r1.md"
+     | ],
+     | "C-15": [
+     | "triage",
+     | "refused to start a reviewer: sessions.toml puts roles.reviewer.high on codex, but campaign.py runs reviewer sessions on claude only (GOAL.md \u00a70.10)"
+     | ],
+     | "C-16": [
+     | "triage",
+     | "card/C-16 moved or changed after the reviewed commit e
+ok   C-01 approved and merged
+ok   C-02 a rejection whose second round answers the review
+ok   C-03 three rejections go to triage
+ok   C-04 a crash that it resumes (with the CLI's resume command) and merges
+ok   C-05 three crashes in one round go to triage
+ok   C-06 a usage limit pauses the vendor until the reset, without counting against the card
+ok   C-07 a builder that changes a file outside May change: triage, nothing committed
+ok   C-08 a builder that commits a file outside May change: triage
+ok   C-09 a reviewer that changes a tracked file, twice: discarded, rerun once, then triage
+ok   C-10 a reviewer that changes a tracked file once, then is rerun and merges
+ok   C-11 a gate failure after APPROVE: triage with the gate log, main unchanged
+ok   C-12 a session that reaches its cap: stopped at the cap, allowed changes committed, triage
+ok   C-13 a card whose dependency is not merged stays waiting and never starts
+ok   C-14 a builder that writes its own review file: triage
+ok   C-15 a reviewer on the builder's vendor: refused, triage
+ok   C-16 a card branch that gains a commit after its review: triage, not merged
+ok   C-17 a FINDING the reviewer approves goes to triage, not merge
+FAIL C-18 an expired login pauses the vendor with a triage item, not counted against the card; resume-vendor refuses while logged out, then resumes it, and it merges
+     | {'state': 'reviewing', 'auth': {'triage': {'reason': 'codex login failed ({"type": "error", "message": "Your access token could not be refreshed. Please log out and sign in again."}): ask Zach to sign in again (`codex login`), then run `tools/campaign.py resume-vendor codex`', 'seq': 8, 'since': '2026-11-08T20:46:47-06:00'}, 'refused': 1, 'resumed': 0, 'out': '/jobs/J0044-merge/gate.log)); C-12 (builder reached its cap (1213500 of 1000000 tokens); allowed changes committed); C-17 (FINDING approved: the reviewer reproduced the repro (reviews/C-17-r1.md))\nmerge queue: empty\nvendor pauses: none\nrunning jobs: J0041-reviewer(C-16 running), J0043-builder(C-18 auth)\nlast full gate: none\nRESULT status building=1 merged=5 ready=4 reviewing=1 triage=10 waiting=1\n'}, 'starts_in_auth': [], 'pause': [{'job': 'J0043-builder', 'kind': 'vendor-auth-pause', 'line': '{"type": "error", "message": "Your access token could not be refreshed. Please log out and sign in again."}', 'ts': '2026-11-08T20:46:47-06:00', 'vendor': 'codex'}], 'resume': [{'kind': 'vendor-auth-resume', 'login': 'Logged in using ChatGPT', 'ts': '2026-11-08T20:46:50-06:00', 'vendor': 'codex', 'was': True}]}
+ok   C-19 a builder that leaves a symlink on a May change path: triage, nothing committed
+ok   C-20 a builder that leaves an executable harness.c: triage, nothing committed
+FAIL C-25 a builder that leaves .campaign/usage as a symlink to a file outside its worktree: triage, nothing committed, the outside file unchanged
+     |  | 
+FAIL C-26 a builder whose report is a FIFO: triage, nothing committed, and the daemon did not block on it
+     |  | 
+FAIL a reviewer's sandbox hides the host /tmp, state/, main's checkout, other worktrees, ~/.codex, the primary checkout, ~/.claude, ~/.claude.json, /run/user/<uid>, ~/.config/gh, ~/.aws and ~/.docker, unsets DBUS_SESSION_BUS_ADDRESS and XDG_RUNTIME_DIR; its own worktree and its own seeded CLAUDE_CONFIG_DIR are writable, and what it writes to ~/.claude never reaches the real one
+     | {'host /tmp': False, 'state/': False, 'main checkout': False, '~/.codex': False, 'primary checkout files': False, 'other worktree': False, "~/.claude (other sessions' transcripts)": True, '~/.claude login': True, '/run/user/<uid>': True, '~/.config/gh': True, '~/.aws': True, '~/.docker': True, '~/.claude.json readable': True, 'env DBUS_SESSION_BUS_ADDRESS': True, 'env XDG_RUNTIME_DIR': True, 'own worktree writable': True, 'own CLAUDE_CONFIG_DIR writable, with the login': False, 'wrote ~/.claude/.probe-write': True}
+FAIL every claude session had its own CLAUDE_CONFIG_DIR under state/ (16 sessions), and no copy of the login is left once they end
+     | ([None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None], [])
+FAIL every codex session ran with TMPDIR in its own worktree (29 sessions)
+     | [('/var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite-wt/C-01', None), ('/var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite-wt/C-02', None), ('/var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite-wt/C-03', None), ('/var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite-wt/C-04', None), ('/var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite-wt/C-04', None)]
+FAIL every session-start entry in the journal records sessions.toml's sha256 (45 entries)
+     | [None, None, None]
+ok   every commit campaign.py put on main carries a Campaign: trailer (10 commits)
+ok   no reviewer ran on its round's builder vendor
+ok   a land that touches proofs/ is refused
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-home-zpconn-code-proving-sqlite/6615eff2-bd58-433f-bd3d-67fc94571781/scratchpad/old-camp/tools/campaign.py", line 2703, in cmd_selftest
+    t.run()
+  File "/tmp/claude-1000/-home-zpconn-code-proving-sqlite/6615eff2-bd58-433f-bd3d-67fc94571781/scratchpad/old-camp/tools/campaign.py", line 2586, in run
+    p = self.camp('land')
+        ^^^^^^^^^^^^^^^^^
+  File "/tmp/claude-1000/-home-zpconn-code-proving-sqlite/6615eff2-bd58-433f-bd3d-67fc94571781/scratchpad/old-camp/tools/campaign.py", line 2131, in camp
+    p = subprocess.run([sys.executable, os.path.join(self.primary, 'tools', 'campaign.py')] + list(args),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 2116, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+  File "/usr/lib/python3.12/subprocess.py", line 1253, in _check_timeout
+    raise TimeoutExpired(
+subprocess.TimeoutExpired: Command '['/usr/bin/python3', '/var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite/tools/campaign.py', 'land']' timed out after 120 seconds
+FAIL selftest ran to the end without an exception
+     | TimeoutExpired: Command '['/usr/bin/python3', '/var/tmp/campaign-selftest-1vmyw5g3/proving-sqlite/tools/campaign.py', 'land']' timed out after 120 seconds
+RESULT selftest FAIL 38/66

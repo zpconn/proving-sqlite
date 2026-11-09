@@ -34,6 +34,7 @@ import os
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -221,9 +222,73 @@ def log(msg):
 # =============================================================== sessions.toml
 
 def load_sessions(main_dir):
+    """sessions.toml, parsed, with '_sha256' the hash of the bytes it was parsed from (each session-start entry in
+    the journal records it)."""
     path = os.path.join(main_dir, 'tools', 'sessions.toml')
     with open(path, 'rb') as f:
-        return tomllib.load(f)
+        raw = f.read()
+    sess = tomllib.loads(raw.decode('utf-8'))
+    sess['_sha256'] = hashlib.sha256(raw).hexdigest()
+    return sess
+
+
+# The command lines campaign.py accepts (checkpoint 0 follow-up 5). sessions.toml must hold exactly these: a
+# session's command differs from this only where campaign.py fills a placeholder ({model}, {effort}, {session},
+# {dir}, {home}, {wtroot}, {repo}, and {config}, a reviewer's own Claude config directory). A CLI flag change is a
+# change here, to tools/, not to sessions.toml alone. evidence/bringup/10-cli.md and 13-checkpoint0.md justify each.
+_CODEX_SAFE = ['--ignore-user-config', '--strict-config',
+               '-c', 'sandbox_mode="workspace-write"', '-c', 'approval_policy="never"',
+               '-c', 'sandbox_workspace_write.exclude_slash_tmp=true',
+               '-c', 'web_search="disabled"',
+               '-c', 'background_terminal_max_timeout=3600000', '-c', 'features.code_mode.default_exec_yield_time_ms=3600000',
+               '--disable', 'apps', '--disable', 'plugins', '--disable', 'remote_plugin', '--disable', 'tool_suggest',
+               '--disable', 'multi_agent', '--disable', 'multi_agent_v2', '--disable', 'image_generation',
+               '--disable', 'browser_use', '--disable', 'browser_use_external', '--disable', 'computer_use',
+               '--disable', 'in_app_browser', '--disable', 'goals',
+               '-m', '{model}', '-c', 'model_reasoning_effort="{effort}"', '-']
+_BWRAP = ['bwrap', '--ro-bind', '/', '/', '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp',
+          '--tmpfs', '/run/user', '--unsetenv', 'DBUS_SESSION_BUS_ADDRESS', '--unsetenv', 'XDG_RUNTIME_DIR',
+          '--tmpfs', '{home}/.codex', '--tmpfs', '{home}/.claude', '--ro-bind', '/dev/null', '{home}/.claude.json',
+          '--tmpfs', '{home}/.config/gh', '--tmpfs', '{home}/.aws', '--tmpfs', '{home}/.docker',
+          '--tmpfs', '{wtroot}', '--tmpfs', '{repo}', '--ro-bind', '{repo}/.git', '{repo}/.git',
+          '--bind', '{config}', '{config}', '--setenv', 'CLAUDE_CONFIG_DIR', '{config}',
+          '--bind', '{dir}', '{dir}', '--chdir', '{dir}']
+_CLAUDE_TAIL = ['--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
+                '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
+SESSION_COMMANDS = {
+    'codex': {'start': ['codex', 'exec', '--json'] + _CODEX_SAFE,
+              'resume': ['codex', 'exec', 'resume', '{session}', '--json'] + _CODEX_SAFE,
+              'login_check': ['codex', 'login', 'status']},
+    'claude': {'start': _BWRAP + ['claude', '-p'] + _CLAUDE_TAIL,
+               'resume': _BWRAP + ['claude', '-p', '--resume', '{session}'] + _CLAUDE_TAIL,
+               'login_check': ['claude', 'auth', 'status']},
+}
+# bwrap cannot mount over these when they are absent; with nothing there, there is nothing to hide
+OPTIONAL_HIDES = ('{home}/.config/gh', '{home}/.aws', '{home}/.docker')
+
+
+def template_problems(vendor, key, argv):
+    """[] if sessions.toml's `key` command for `vendor` is SESSION_COMMANDS' exactly, else what differs."""
+    want = (SESSION_COMMANDS.get(vendor) or {}).get(key)
+    if want is None:
+        return ['campaign.py has no %s command for %s' % (key, vendor)]
+    if argv == want:
+        return []
+    i = next((k for k in range(min(len(argv), len(want))) if argv[k] != want[k]), min(len(argv), len(want)))
+    got_s = argv[i] if i < len(argv) else '(end)'
+    want_s = want[i] if i < len(want) else '(end)'
+    return ['sessions.toml\'s %s %s command differs from campaign.py\'s at argument %d: %r where campaign.py has %r; '
+            'only placeholders may vary, and campaign.py fills them' % (vendor, key, i, got_s, want_s)]
+
+
+def sessions_problems(sess):
+    """Every command template in sessions.toml that is not SESSION_COMMANDS' (cmd_start refuses to start)."""
+    probs = []
+    for vendor, cmds in SESSION_COMMANDS.items():
+        vc = (sess.get('vendors') or {}).get(vendor) or {}
+        for key in cmds:
+            probs += template_problems(vendor, key, vc.get(key))
+    return probs
 
 
 class SessionRefused(CampaignError):
@@ -243,7 +308,9 @@ def role_config(sess, role, tier):
     if rc.get('vendor', vendor) != vendor:
         raise SessionRefused('sessions.toml puts roles.%s.%s on %s, but campaign.py runs %s sessions on %s only '
                              '(GOAL.md §0.10)' % (role, tier, rc.get('vendor'), role, vendor))
-    return vendor, rc['model'], rc['effort'], sess['vendors'][vendor]
+    vcfg = dict(sess['vendors'][vendor])
+    vcfg['_sessions_sha256'] = sess.get('_sha256')
+    return vendor, rc['model'], rc['effort'], vcfg
 
 
 CODEX_FORBIDDEN = {'--dangerously-bypass-approvals-and-sandbox', '--yolo', '--full-auto', '--approve-for-me', '-s',
@@ -253,11 +320,16 @@ CLAUDE_FORBIDDEN = {'--dangerously-skip-permissions', '--allow-dangerously-skip-
 
 
 def command_problems(vendor, argv, wt, p):
-    """Why a session's command line is refused (checkpoint 0, decisions C5 and C6), or [].
-    codex: `codex exec` with sandbox_mode="workspace-write" and approval_policy="never", each set once, and none of the
-    flags that loosen either. claude: bubblewrap first, with / read-only, a private /tmp, ~/.codex, the worktree root
-    (../<repo>-wt: state/ and every other worktree) and the primary checkout hidden (its .git read-only), and only
-    the session's own worktree, ~/.claude and ~/.claude.json writable, then `claude -p` in auto permission mode."""
+    """Why a filled session command line is refused (checkpoint 0, decisions C5 and C6; follow-ups 6 and 8), or [].
+    A second line behind template_problems, on what will actually run.
+    codex: `codex exec` with sandbox_mode="workspace-write" and approval_policy="never", each set once,
+    sandbox_workspace_write.exclude_slash_tmp=true (no shared /tmp; the session's TMPDIR is in its worktree) and no
+    other sandbox_workspace_write key, and none of the flags that loosen either.
+    claude: bubblewrap first, with / read-only; hidden behind a tmpfs: /tmp, /run/user (desktop services), ~/.codex,
+    ~/.claude, ~/.config/gh, ~/.aws, ~/.docker, the worktree root (../<repo>-wt: state/ and every other worktree) and
+    the primary checkout (its .git read-only); ~/.claude.json covered by /dev/null; DBUS_SESSION_BUS_ADDRESS and
+    XDG_RUNTIME_DIR unset; CLAUDE_CONFIG_DIR the session's own directory under state/claude-config/; writable only
+    that directory and the session's worktree; then `claude -p` in auto permission mode."""
     home = os.path.expanduser('~')
     probs = []
     if vendor == 'codex':
@@ -270,8 +342,12 @@ def command_problems(vendor, argv, wt, p):
             probs.append('codex must set sandbox_mode="workspace-write" exactly once (found %s)' % sb)
         if ap != ['approval_policy="never"']:
             probs.append('codex must set approval_policy="never" exactly once (found %s)' % ap)
-        loose = [x for x in sets if x.split('=', 1)[0].strip().startswith(('sandbox_workspace_write', 'sandbox_permissions',
-                                                                          'permissions', 'default_permissions', 'shell_environment_policy'))]
+        ws = [x for x in sets if x.split('=', 1)[0].strip().startswith('sandbox_workspace_write')]
+        if ws != ['sandbox_workspace_write.exclude_slash_tmp=true']:
+            probs.append('codex must set sandbox_workspace_write.exclude_slash_tmp=true once and no other '
+                         'sandbox_workspace_write key (found %s)' % ws)
+        loose = [x for x in sets if x.split('=', 1)[0].strip().startswith(('sandbox_permissions', 'permissions',
+                                                                          'default_permissions', 'shell_environment_policy'))]
         if loose:
             probs.append('codex settings that loosen the sandbox: %s' % loose)
         bad = [a for a in argv if a in CODEX_FORBIDDEN or a.startswith('--sandbox=') or a.startswith('--profile=')]
@@ -287,12 +363,18 @@ def command_problems(vendor, argv, wt, p):
     except ValueError:
         return ['no claude command after bwrap']
     bw, cl = argv[1:ci], argv[ci:]
-    mounts, i = [], 0
+    mounts, setenv, unsetenv, i = [], [], [], 0
     while i < len(bw):
         a = bw[i]
         if a in ('--ro-bind', '--bind', '--dev-bind', '--ro-bind-try', '--bind-try', '--dev-bind-try', '--symlink'):
             mounts.append((a, bw[i + 1], bw[i + 2]))
             i += 3
+        elif a == '--setenv':
+            setenv.append((bw[i + 1], bw[i + 2]))
+            i += 3
+        elif a == '--unsetenv':
+            unsetenv.append(bw[i + 1])
+            i += 2
         elif a in ('--tmpfs', '--dev', '--proc', '--chdir', '--dir', '--remount-ro', '--perms', '--size'):
             mounts.append((a, bw[i + 1], bw[i + 1]))
             i += 2
@@ -302,13 +384,25 @@ def command_problems(vendor, argv, wt, p):
     real = lambda x: os.path.realpath(x)  # noqa: E731
     if not mounts or mounts[0] != ('--ro-bind', '/', '/'):
         probs.append('bwrap must begin with --ro-bind / /')
-    allowed_rw = {real(wt), real(os.path.join(home, '.claude')), real(os.path.join(home, '.claude.json'))}
+    cfg = [v for k, v in setenv if k == 'CLAUDE_CONFIG_DIR']
+    if len(cfg) != 1 or [k for k, _ in setenv] != ['CLAUDE_CONFIG_DIR']:
+        probs.append('bwrap must set CLAUDE_CONFIG_DIR, once, and no other variable (found %s)' % setenv)
+    cfgdir = real(cfg[0]) if len(cfg) == 1 else None
+    if cfgdir and os.path.dirname(cfgdir) != real(os.path.join(p.state, 'claude-config')):
+        probs.append('CLAUDE_CONFIG_DIR %s is not a session directory under state/claude-config/' % cfg[0])
+    for var in ('DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'):
+        if var not in unsetenv:
+            probs.append('bwrap must unset %s' % var)
+    allowed_rw = {real(wt)} | ({cfgdir} if cfgdir else set())
+    claude_json = real(os.path.join(home, '.claude.json'))
     for kind, src, dst in mounts:
-        if kind in ('--bind', '--dev-bind', '--bind-try', '--dev-bind-try') and real(dst) not in allowed_rw:
-            probs.append('bwrap binds %s writable; only the worktree, ~/.claude and ~/.claude.json may be' % dst)
+        if kind in ('--bind', '--dev-bind', '--bind-try', '--dev-bind-try') and (real(dst) not in allowed_rw or real(src) != real(dst)):
+            probs.append('bwrap binds %s writable; only the worktree and the session\'s own CLAUDE_CONFIG_DIR may be' % dst)
         if kind in ('--ro-bind', '--ro-bind-try') and (src, dst) != ('/', '/') and \
-                (real(src), real(dst)) != (real(os.path.join(p.primary, '.git')),) * 2:
-            probs.append('bwrap read-only binds %s; only / and the primary checkout\'s .git are' % dst)
+                (real(src), real(dst)) != (real(os.path.join(p.primary, '.git')),) * 2 and \
+                (src, real(dst)) != ('/dev/null', claude_json):
+            probs.append('bwrap read-only binds %s; only /, the primary checkout\'s .git and /dev/null over '
+                         '~/.claude.json are' % dst)
         if kind in ('--symlink', '--remount-ro', '--perms', '--size', '--dir') or kind not in (
                 '--ro-bind', '--bind', '--dev-bind', '--ro-bind-try', '--bind-try', '--dev-bind-try', '--tmpfs', '--dev',
                 '--proc', '--chdir', '--die-with-parent', '--new-session', '--unshare-pid', '--unshare-ipc'):
@@ -323,16 +417,23 @@ def command_problems(vendor, argv, wt, p):
             if d and k != '--chdir' and (rp == d or rp.startswith(d.rstrip('/') + '/')):
                 hit = (k, d)
         return hit
-    for hidden in ('/tmp', os.path.join(home, '.codex'), p.wt, p.primary, os.path.join(p.wt, 'state'),
-                   os.path.join(p.wt, 'main'), os.path.join(p.wt, 'merge')):
+    must_hide = ['/tmp', '/run/user/%d' % os.getuid(), os.path.join(home, '.codex'), os.path.join(home, '.claude'),
+                 p.wt, p.primary, os.path.join(p.wt, 'state'), os.path.join(p.wt, 'main'), os.path.join(p.wt, 'merge')]
+    must_hide += [x for x in (os.path.join(home, '.config', 'gh'), os.path.join(home, '.aws'), os.path.join(home, '.docker'))
+                  if os.path.exists(x)]
+    for hidden in must_hide:
         if real(hidden) in (real(wt),):
             continue
         hit = last_mount_at(hidden)
         if not hit or hit[0] != '--tmpfs':
             probs.append('bwrap must hide %s behind a --tmpfs (last mount there: %s)' % (hidden, hit))
+    if os.path.exists(claude_json) and last_mount_at(claude_json) != ('--ro-bind', claude_json):
+        probs.append('bwrap must cover ~/.claude.json with /dev/null (last mount there: %s)' % (last_mount_at(claude_json),))
     hit = last_mount_at(wt)
     if not hit or hit != ('--bind', real(wt)):
         probs.append('the worktree %s must be the last mount at its path, writable (found %s)' % (wt, hit))
+    if cfgdir and last_mount_at(cfgdir) != ('--bind', cfgdir):
+        probs.append('CLAUDE_CONFIG_DIR %s must be the last mount at its path, writable (found %s)' % (cfgdir, last_mount_at(cfgdir)))
     if len(cl) < 2 or cl[1] != '-p':
         probs.append('claude must run as `claude -p`')
     if 'bypassPermissions' in cl or any(a in CLAUDE_FORBIDDEN for a in cl):
@@ -348,6 +449,40 @@ def fill(argv, **kw):
         for k, v in kw.items():
             a = a.replace('{%s}' % k, str(v))
         out.append(a)
+    return out
+
+
+def prepare_mounts(argv, home):
+    """Make a filled bwrap command line mountable: each --tmpfs destination by its real path (bwrap resolves an
+    absolute symlink inside its own new root, where its target may not be mounted yet), created if missing; and
+    drop a hide of an optional config directory, or the /dev/null over ~/.claude.json, when nothing is there."""
+    if not argv or os.path.basename(argv[0]) != 'bwrap':
+        return argv
+    optional = {os.path.realpath(x.replace('{home}', home)) for x in OPTIONAL_HIDES}
+    out, i = [], 0
+    try:
+        ci = [os.path.basename(a) for a in argv].index('claude')
+    except ValueError:
+        ci = len(argv)
+    while i < len(argv):
+        a = argv[i]
+        if i < ci and a == '--tmpfs' and i + 1 < len(argv):
+            d = argv[i + 1]
+            r = os.path.realpath(d)
+            if not os.path.exists(r):
+                if r in optional or os.path.islink(d):
+                    i += 2
+                    continue
+                os.makedirs(r, exist_ok=True)   # bwrap cannot create a mount point under a read-only /
+            out += [a, r]
+            i += 2
+            continue
+        if i < ci and a == '--ro-bind' and i + 2 < len(argv) and argv[i + 1] == '/dev/null':
+            if not os.path.exists(argv[i + 2]):
+                i += 3
+                continue
+        out.append(a)
+        i += 1
     return out
 
 
@@ -375,7 +510,7 @@ def spawn_runner(p, job, argv, cwd, stdin_text):
     with open(os.path.join(job['dir'], 'prompt.txt'), 'w') as f:
         f.write(stdin_text)
     with open(os.path.join(job['dir'], 'cmd.json'), 'w') as f:
-        json.dump({'argv': argv, 'cwd': cwd}, f, indent=1)
+        json.dump({'argv': argv, 'cwd': cwd, 'env': job.get('env') or {}}, f, indent=1)
     devnull = open(os.devnull, 'r+')
     subprocess.Popen([sys.executable, os.path.join(TOOLS, 'campaign.py'), '_job', job['dir']],
                      stdin=devnull, stdout=devnull, stderr=devnull, start_new_session=True, env=session_env(),
@@ -394,7 +529,8 @@ def cmd_job(jdir):
     err = open(os.path.join(jdir, 'err.log'), 'ab')
     inp = open(os.path.join(jdir, 'prompt.txt'), 'rb')
     try:
-        proc = subprocess.Popen(['nice', '-n', '10'] + c['argv'], cwd=c['cwd'], stdin=inp, stdout=out, stderr=err)
+        env = dict(os.environ, **(c.get('env') or {}))
+        proc = subprocess.Popen(['nice', '-n', '10'] + c['argv'], cwd=c['cwd'], stdin=inp, stdout=out, stderr=err, env=env)
         with open(os.path.join(jdir, 'child.pid'), 'w') as f:
             f.write('%d\n' % proc.pid)
         rc = proc.wait()
@@ -588,6 +724,8 @@ def login_ok(sess, vendor):
     cmd = sess['vendors'][vendor].get('login_check')
     if not cmd:
         return False, 'sessions.toml has no login_check for %s' % vendor
+    if template_problems(vendor, 'login_check', cmd):
+        return False, '; '.join(template_problems(vendor, 'login_check', cmd))
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=60, env=session_env())
     except (OSError, subprocess.TimeoutExpired) as e:
@@ -639,15 +777,188 @@ def mode_problems(wt, base, paths):
     return probs
 
 
-def first_line(path):
-    if not os.path.exists(path):
+def first_word(text):
+    """The verdict word of a report or review: its first non-blank line's first word, markup removed."""
+    if text is None:
         return None
-    with open(path, errors='replace') as f:
-        for line in f:
-            s = line.strip()
-            if s:
-                return re.sub(r'[*#`_]', '', s).strip().split()[0].rstrip(':.') if s else None
+    if isinstance(text, bytes):
+        text = text.decode('utf-8', 'replace')
+    for line in text.split('\n'):
+        s = re.sub(r'[*#`_]', '', line).strip()
+        if s:
+            return s.split()[0].rstrip(':.')
     return None
+
+
+class WorktreeFileError(Exception):
+    """A file campaign.py reads or writes in a session's worktree is not what it must be (checkpoint 0 follow-up 7)."""
+
+
+def _dir_fd(wt, parts, create=False):
+    """An fd for wt/<parts...>, each part opened with O_NOFOLLOW: None if a part is missing (and not created);
+    WorktreeFileError if a part is a symlink or not a directory."""
+    fd = os.open(wt, os.O_RDONLY | os.O_DIRECTORY)
+    for part in parts:
+        if create:
+            try:
+                os.mkdir(part, 0o755, dir_fd=fd)
+            except FileExistsError:
+                pass
+        try:
+            nfd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+        except FileNotFoundError:
+            os.close(fd)
+            return None
+        except OSError as e:
+            os.close(fd)
+            raise WorktreeFileError('%s in the worktree is not a real directory (%s)' % (part, e.strerror))
+        os.close(fd)
+        fd = nfd
+    return fd
+
+
+def read_worktree_file(wt, rel, limit=4 << 20):
+    """The bytes of wt/rel, or None if it does not exist. Raises WorktreeFileError unless every directory on the way
+    is a real one and the file is a regular file: lstat first, then open with O_NOFOLLOW|O_NONBLOCK (a FIFO would
+    otherwise block the daemon) and check again on the open file."""
+    parts = rel.split('/')
+    dfd = _dir_fd(wt, parts[:-1])
+    if dfd is None:
+        return None
+    try:
+        try:
+            st_ = os.stat(parts[-1], dir_fd=dfd, follow_symlinks=False)
+        except FileNotFoundError:
+            return None
+        if not stat.S_ISREG(st_.st_mode):
+            raise WorktreeFileError('%s is not a regular file (%s)' % (rel, filetype(st_.st_mode)))
+        try:
+            fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=dfd)
+        except OSError as e:
+            raise WorktreeFileError('%s cannot be opened as a regular file (%s)' % (rel, e.strerror))
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                raise WorktreeFileError('%s is not a regular file' % rel)
+            chunks, n = [], 0
+            while n <= limit:
+                b = os.read(fd, 1 << 16)
+                if not b:
+                    break
+                chunks.append(b)
+                n += len(b)
+            if n > limit:
+                raise WorktreeFileError('%s is larger than %d bytes' % (rel, limit))
+            return b''.join(chunks)
+        finally:
+            os.close(fd)
+    finally:
+        os.close(dfd)
+
+
+def write_worktree_usage(wt, text):
+    """Write wt/.campaign/usage, only if .campaign is a real directory in the worktree and usage, if present, is a
+    regular file with one link; opened with O_NOFOLLOW (checkpoint 0 follow-up 7). Raises WorktreeFileError."""
+    dfd = _dir_fd(wt, ['.campaign'], create=True)
+    try:
+        try:
+            st_ = os.stat('usage', dir_fd=dfd, follow_symlinks=False)
+            if not stat.S_ISREG(st_.st_mode) or st_.st_nlink != 1:
+                raise WorktreeFileError('.campaign/usage is not a regular file with one link (%s, %d links)' % (
+                    filetype(st_.st_mode), st_.st_nlink))
+        except FileNotFoundError:
+            pass
+        try:
+            fd = os.open('usage', os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o644, dir_fd=dfd)
+        except OSError as e:
+            raise WorktreeFileError('.campaign/usage cannot be opened as a regular file (%s)' % e.strerror)
+        try:
+            fs = os.fstat(fd)
+            if not stat.S_ISREG(fs.st_mode) or fs.st_nlink != 1:
+                raise WorktreeFileError('.campaign/usage is not a regular file with one link')
+            os.ftruncate(fd, 0)
+            os.write(fd, text.encode())
+        finally:
+            os.close(fd)
+    finally:
+        os.close(dfd)
+
+
+def filetype(mode):
+    for test, name in ((stat.S_ISLNK, 'symlink'), (stat.S_ISFIFO, 'FIFO'), (stat.S_ISDIR, 'directory'),
+                       (stat.S_ISSOCK, 'socket'), (stat.S_ISCHR, 'character device'), (stat.S_ISBLK, 'block device')):
+        if test(mode):
+            return name
+    return 'regular file' if stat.S_ISREG(mode) else 'unknown type'
+
+
+# A reviewer's Claude config directory (checkpoint 0 follow-up 6): fresh for each session chain, under state/ (hidden
+# from every session), holding only a copy of the login. Nothing a reviewer writes there reaches another session.
+CLAUDE_JSON_KEYS = ('oauthAccount', 'userID', 'hasCompletedOnboarding')
+CRED_KEYS = {'accessToken', 'refreshToken', 'expiresAt', 'scopes', 'subscriptionType', 'subscriptionTypeSource',
+             'rateLimitTier', 'refreshTokenExpiresAt'}
+
+
+def _write_private(path, data):
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+    try:
+        os.write(fd, data)
+    finally:
+        os.close(fd)
+
+
+def seed_claude_config(cfg):
+    """Create cfg (mode 700) and copy in the login: ~/.claude/.credentials.json, and from ~/.claude.json only the
+    account keys a signed-in session needs. A resumed session keeps its own .claude.json and transcripts."""
+    home = os.path.expanduser('~')
+    os.makedirs(os.path.dirname(cfg), exist_ok=True)
+    os.makedirs(cfg, mode=0o700, exist_ok=True)
+    os.chmod(cfg, 0o700)
+    src = os.path.join(home, '.claude', '.credentials.json')
+    if os.path.exists(src):
+        _write_private(os.path.join(cfg, '.credentials.json'), open(src, 'rb').read())
+    cj = os.path.join(cfg, '.claude.json')
+    if not os.path.lexists(cj):
+        try:
+            full = json.load(open(os.path.join(home, '.claude.json')))
+        except (OSError, ValueError):
+            full = {}
+        _write_private(cj, json.dumps({k: full[k] for k in CLAUDE_JSON_KEYS if k in full}).encode())
+
+
+def release_claude_config(job):
+    """After a reviewer session: if it refreshed the login (same account, a later expiry, only known keys), copy the
+    new tokens back to ~/.claude/.credentials.json, since a refresh can retire the old ones; then remove the
+    session's copy. Returns what it did."""
+    cfg = job.get('config')
+    if not cfg:
+        return None
+    mine = os.path.join(cfg, '.credentials.json')
+    main = os.path.join(os.path.expanduser('~'), '.claude', '.credentials.json')
+    did = 'removed'
+    try:
+        st_ = os.lstat(mine)
+    except FileNotFoundError:
+        return 'none'
+    try:
+        if stat.S_ISREG(st_.st_mode) and st_.st_size < 65536:
+            new = json.loads(open(mine, 'rb').read()).get('claudeAiOauth')
+            old = json.load(open(main)).get('claudeAiOauth')
+            if (isinstance(new, dict) and isinstance(old, dict) and set(new) <= CRED_KEYS and set(new) == set(old)
+                    and all(isinstance(new[k], str) for k in ('accessToken', 'refreshToken'))
+                    and isinstance(new.get('expiresAt'), (int, float)) and new['expiresAt'] > old.get('expiresAt', 0)
+                    and new.get('subscriptionType') == old.get('subscriptionType')
+                    and (new['accessToken'], new['refreshToken']) != (old['accessToken'], old['refreshToken'])):
+                tmp = main + '.campaign-tmp'
+                _write_private(tmp, json.dumps({'claudeAiOauth': new}).encode())
+                os.replace(tmp, main)
+                did = 'refreshed login copied back'
+    except (OSError, ValueError, AttributeError):
+        pass
+    try:
+        os.remove(mine)
+    except OSError:
+        pass
+    return did
 
 
 # =============================================================== prompts (fixed here, frozen with tools/)
@@ -678,7 +989,8 @@ def prompt_builder(cid, rnd, reviews, notes, wt):
     lines += [
         'Write your report to reports/%s-b%d.md; its first line is DONE, STUCK, FINDING or NEEDS-DECISION.' % (cid, rnd),
         'Your token usage so far, against the card\'s cap, is in .campaign/usage; check it after each run.',
-        'Work only in this directory (%s) and /tmp. Do not commit, branch or merge: campaign.py commits what you '
+        'Work only in this directory (%s). /tmp is not writable: put scratch files in $TMPDIR, which is tmp/ here '
+        '(git ignores it). Do not commit, branch or merge: campaign.py commits what you '
         'leave when you exit, and only the paths on your card\'s May change line.' % wt,
         LONG_RUN_CODEX + ' proofs/HOWTO.md records how proofs are built here.',
     ]
@@ -788,14 +1100,32 @@ class Campaign:
         sc = st.d.get('scope')
         return [k for k in sorted(cards) if sc is None or k in sc]
 
-    def write_usage_file(self, wt, used, cap):
-        d = os.path.join(wt, '.campaign')
-        os.makedirs(d, exist_ok=True)
+    @staticmethod
+    def usage_text(wt, used, cap):
         pct = 100.0 * used / cap if cap else 0
-        with open(os.path.join(d, 'usage'), 'w') as f:
-            f.write('tokens_used %d\ncap %d\npercent %.1f\n' % (used, cap, pct))
-            f.write('# %d of %d tokens (%.1f%%) used by this card\'s %s sessions so far; at 80%% report STUCK.\n' % (
-                used, cap, pct, 'builder' if '-r' not in os.path.basename(wt) else 'reviewer'))
+        return ('tokens_used %d\ncap %d\npercent %.1f\n' % (used, cap, pct) +
+                '# %d of %d tokens (%.1f%%) used by this card\'s %s sessions so far; at 80%% report STUCK.\n' % (
+                    used, cap, pct, 'builder' if '-r' not in os.path.basename(wt) else 'reviewer'))
+
+    def write_usage_before(self, wt, used, cap):
+        """Before a session starts: refuse it (the card goes to triage) if .campaign/usage cannot be written safely."""
+        try:
+            write_worktree_usage(wt, self.usage_text(wt, used, cap))
+        except WorktreeFileError as e:
+            raise SessionRefused('not starting a session: %s' % e)
+
+    def write_usage_file(self, st, job, used, cap):
+        """Write .campaign/usage in the job's worktree. If .campaign or usage has been replaced by something that is
+        not a real directory or a regular file, write nothing, stop the session and mark it for triage."""
+        wt = job['wt']
+        if job.get('tamper'):
+            return
+        try:
+            write_worktree_usage(wt, self.usage_text(wt, used, cap))
+        except WorktreeFileError as e:
+            job['tamper'] = str(e)
+            st.journal('tamper', job=job['id'], card=job.get('card'), why=str(e))
+            kill_job(job)
 
     def record_tokens(self, job):
         path = os.path.join(self.p.state, 'tokens.csv')
@@ -814,23 +1144,38 @@ class Campaign:
 
     # ---------------------------------------------------------- starting sessions
     def start_session(self, st, job, vendor, model, effort, vcfg, wt, prompt, resume_of=None):
-        """Start a session, or raise SessionRefused if its command line fails command_problems."""
+        """Start a session, or raise SessionRefused if sessions.toml's command is not campaign.py's
+        (template_problems) or the filled command line fails command_problems."""
         job.update(vendor=vendor, model=model, effort=effort, wt=wt)
-        places = dict(dir=wt, model=model, effort=effort, home=os.path.expanduser('~'), wtroot=self.p.wt,
-                      repo=self.p.primary)
-        if resume_of and resume_of.get('cli_session'):
-            argv = fill(vcfg['resume'], session=resume_of['cli_session'], **places)
-        else:
-            argv = fill(vcfg['start'], session='', **places)
-        probs = command_problems(vendor, argv, wt, self.p)
+        key = 'resume' if resume_of and resume_of.get('cli_session') else 'start'
+        probs = template_problems(vendor, key, vcfg.get(key))
+        cfg = ''
+        if vendor == 'claude' and not probs:
+            cfg = (resume_of or {}).get('config') or os.path.join(self.p.state, 'claude-config', job['id'])
+            seed_claude_config(cfg)
+            job['config'] = cfg
+        home = os.path.expanduser('~')
+        places = dict(dir=wt, model=model, effort=effort, home=home, wtroot=self.p.wt, repo=self.p.primary, config=cfg,
+                      session=(resume_of or {}).get('cli_session') or '')
+        argv = prepare_mounts(fill(vcfg.get(key) or [], **places), home) if not probs else []
+        if not probs:
+            probs = command_problems(vendor, argv, wt, self.p)
         if probs:
             job['state'] = 'refused'
             job['outcome'] = 'refused: ' + '; '.join(probs)
+            release_claude_config(job)
             st.journal('session-refused', job=job['id'], card=job.get('card'), vendor=vendor, why='; '.join(probs))
             raise SessionRefused('refused to start a %s session: %s' % (vendor, '; '.join(probs)))
-        for i, a in enumerate(argv[:-1]):
-            if a == '--tmpfs' and not os.path.exists(argv[i + 1]):
-                os.makedirs(argv[i + 1], exist_ok=True)   # bwrap cannot create a mount point under a read-only /
+        if vendor == 'codex':
+            # its own scratch space (checkpoint 0 follow-up 8): /tmp is not writable, TMPDIR is tmp/ in the worktree,
+            # which .gitignore ignores; a new round starts with it empty
+            tmpd = os.path.join(wt, 'tmp')
+            if not resume_of and os.path.isdir(tmpd) and not os.path.islink(tmpd):
+                shutil.rmtree(tmpd, ignore_errors=True)
+            if os.path.islink(tmpd):
+                os.remove(tmpd)
+            os.makedirs(tmpd, exist_ok=True)
+            job['env'] = {'TMPDIR': tmpd}
         if resume_of and resume_of.get('cli_session'):
             job['resumed_from'] = resume_of['id']
             job['cli_session'] = resume_of['cli_session']
@@ -838,7 +1183,8 @@ class Campaign:
                 job['codex_base'] = resume_of.get('codex_last_total') or {}
                 job['rollout'] = resume_of.get('rollout')
         st.journal('session-start', job=job['id'], card=job.get('card'), role=job.get('role'), vendor=vendor,
-                   model=model, round=job.get('round'), resume=bool(resume_of))
+                   model=model, round=job.get('round'), resume=bool(resume_of),
+                   sessions_sha256=vcfg.get('_sessions_sha256'))
         spawn_runner(self.p, job, argv, wt, prompt)
 
     def ensure_card_wt(self, cid):
@@ -881,7 +1227,7 @@ class Campaign:
             c['interruptions'] = 0
             c['review_attempt'] = 0
             c['round_base'] = git(['rev-parse', 'HEAD'], cwd=wt)
-        self.write_usage_file(wt, c['tokens_builder'], card.cap_builder)
+        self.write_usage_before(wt, c['tokens_builder'], card.cap_builder)
         reviews = sorted(os.path.relpath(x, wt) for x in glob.glob(os.path.join(wt, 'reviews', '%s-r*.md' % cid)))
         job = new_job(st, 'builder', card=cid, role='builder', round=c['round'], tier=card.tier)
         if resume_job and resume_job.get('cli_session'):
@@ -919,7 +1265,7 @@ class Campaign:
                 git(['worktree', 'remove', '--force', wt], cwd=self.p.main_dir(), check=False)
                 shutil.rmtree(wt, ignore_errors=True)
             git(['worktree', 'add', '--detach', wt, commit], cwd=self.p.main_dir())
-        self.write_usage_file(wt, c['tokens_reviewer'], card.cap_reviewer)
+        self.write_usage_before(wt, c['tokens_reviewer'], card.cap_reviewer)
         job = new_job(st, 'reviewer', card=cid, role='reviewer', round=c['round'], tier=card.tier, commit=commit,
                       rereview=rereview)
         if resume_job and resume_job.get('cli_session'):
@@ -994,7 +1340,7 @@ class Campaign:
             c['tokens_builder'] = used
         else:
             c['tokens_reviewer'] = used
-        self.write_usage_file(job['wt'], used, cap)
+        self.write_usage_file(st, job, used, cap)
         ex = job_exit(job)
         alive = job_alive(job)
         if ex is None and alive:
@@ -1016,6 +1362,17 @@ class Campaign:
         job['usage'] = u
         if sid:
             job['cli_session'] = sid
+        rel = release_claude_config(job)
+        if rel and rel.startswith('refreshed'):
+            st.journal('claude-login-refreshed', job=job['id'])
+        if job.get('tamper'):
+            c['job'] = None
+            job['outcome'] = 'tamper: ' + job['tamper']
+            if job['role'] == 'reviewer':
+                self.remove_wt(job['wt'])
+            self.set_state(st, c, 'triage', '%s session stopped: %s (nothing committed)' % (job['role'], job['tamper']))
+            self.record_tokens(job)
+            return
         if job['role'] == 'builder':
             self.builder_ended(st, c, card, job, sess)
         else:
@@ -1059,8 +1416,12 @@ class Campaign:
                 job['outcome'] = 'symlink or mode change'
                 self.set_state(st, c, 'triage', 'builder left a symlink or a file-mode change (nothing committed): %s' % '; '.join(modes[:5]))
                 return
-        report = os.path.join(wt, 'reports', '%s-b%d.md' % (cid, c['round']))
-        verdict = first_line(report)
+        try:
+            verdict = first_word(read_worktree_file(wt, 'reports/%s-b%d.md' % (cid, c['round'])))
+        except WorktreeFileError as e:
+            job['outcome'] = 'report not a regular file'
+            self.set_state(st, c, 'triage', 'builder\'s report: %s (nothing committed)' % e)
+            return
         if job.get('cap_reached'):
             if bad:
                 job['outcome'] = 'cap; changes outside May change'
@@ -1145,13 +1506,18 @@ class Campaign:
             else:
                 self.start_reviewer(st, c, card, sess, rereview=job.get('rereview'))
             return
-        rpath = os.path.join(wt, rname)
-        verdict = first_line(rpath)
+        try:
+            text = read_worktree_file(wt, rname)
+        except WorktreeFileError as e:
+            job['outcome'] = 'review not a regular file'
+            self.remove_wt(wt)
+            self.set_state(st, c, 'triage', 'reviewer\'s verdict: %s (review discarded)' % e)
+            return
+        verdict = first_word(text)
         if verdict is None:
             self.interrupted(st, c, card, job, sess, 'ended without its verdict (exit %s)' % job['rc'])
             return
         job['outcome'] = verdict
-        text = open(rpath, 'rb').read()
         if job.get('rereview'):
             sha = self.commit_review_on_main(st, c, rname, text, job, verdict)
             self.remove_wt(wt)
@@ -1542,6 +1908,9 @@ def reconcile_merged(p, st, camp, scope):
 def cmd_start(a):
     p = P()
     camp = Campaign(p)
+    sp = sessions_problems(load_sessions(p.main_dir()))
+    if sp:
+        raise CampaignError('tools/sessions.toml: ' + '; '.join(sp))
     with State(p) as st:
         if not st.d['started']:
             if current_branch(p.primary) != 'main':
@@ -1911,6 +2280,7 @@ def cmd_session(a):
                 continue
             job['rc'] = (ex or {}).get('rc', 'lost')
             job['ended'] = (ex or {}).get('ended', now())
+            release_claude_config(job)
             auth = hit_auth_failure(job, sess)
             if auth:
                 camp.auth_pause(st, vendor, job, auth)
@@ -1944,6 +2314,14 @@ def cmd_session(a):
     if not paths:
         print('session ended (exit %s) without writing anything; worktree %s' % (job['rc'], wt))
         return 1
+    verdicts = {}
+    for x in paths:
+        if x.endswith('.md') and (x.startswith('reviews/') or x.startswith('reports/')):
+            try:
+                verdicts[x] = first_word(read_worktree_file(wt, x))
+            except WorktreeFileError as e:
+                print('%s: %s; nothing committed (worktree %s kept)' % (x, e, wt))
+                return 1
     git(['add', '-A', '--'] + paths, cwd=wt)
     git(['commit', '-q', '-m', 'Session %s %d\n\nCampaign: one-off %s session %s (%s/%s); paths checked against %s: %s' % (
         role, n, role, jid, vendor, model, ROLE_PATHS[role], ', '.join(paths[:20]))], cwd=wt)
@@ -1956,10 +2334,9 @@ def cmd_session(a):
         else:
             print('committed %s on %s (campaign not started: merge it into main yourself)' % (sha[:12], branch))
     first = None
-    for x in paths:
-        if x.endswith('.md') and (x.startswith('reviews/') or x.startswith('reports/')):
-            first = first_line(os.path.join(wt, x))
-            print('verdict line of %s: %s' % (x, first))
+    for x, v in verdicts.items():
+        first = v
+        print('verdict line of %s: %s' % (x, first))
     print('RESULT session %s %s %s' % (role, jid, first or 'written'))
     return 0
 
@@ -1996,6 +2373,11 @@ def fixture_card(cid, deps='none', tier='standard', cap='10M'):
         cid, cid[2:], cid[2:], deps, cid, cid, cid, cid, cap, tier)
 
 
+def tempfile_dir(base):
+    import tempfile
+    return tempfile.mkdtemp(prefix='unit-', dir=base)
+
+
 class SelfTest:
     PHASE_A = {
         'C-01': ('approved and merged', {}),
@@ -2019,6 +2401,9 @@ class SelfTest:
                  {'C-18/builder/1': ['auth', 'done']}),
         'C-19': ('a builder that leaves a symlink on a May change path', {'C-19/builder/1': ['symlink']}),
         'C-20': ('a builder that leaves an executable harness.c', {'C-20/builder/1': ['exec-mode']}),
+        'C-25': ('a builder that leaves .campaign/usage as a symlink to a file outside its worktree',
+                 {'C-25/builder/1': ['usage-symlink']}),
+        'C-26': ('a builder whose report is a FIFO', {'C-26/builder/1': ['report-fifo']}),
     }
     PHASE_B = {
         'C-21': ('kill -9 the daemon mid-session', {'C-21/builder/1': ['slow:5', 'done']}),
@@ -2038,8 +2423,49 @@ class SelfTest:
         self.results = []
         self.ctl = os.path.join(self.base, 'fake-control.json')
         self.gctl = os.path.join(self.base, 'gate-control.json')
-        self.fstate = os.path.join(self.home, '.claude', 'fakecli')    # writable inside a reviewer's sandbox
+        self.fstate = os.path.join(self.base, 'fakecli-state')    # the fake CLIs reach it through self.sock
+        self.sock = os.path.join(self.base, 'fakecli.sock')
+        self.server = None
+        self.outside = os.path.join(self.base, 'outside-target.txt')   # C-25's symlink points here
         self.marker = os.path.join('/tmp', 'campaign-selftest-marker-%d' % os.getpid())
+
+    def start_fake_server(self):
+        """Attempt counters and the fake CLIs' log, behind a unix socket: a reviewer's sandbox can connect to it
+        (the fixture is visible read-only) but can write no shared file."""
+        import socketserver
+        import threading
+        lock = threading.Lock()
+        test = self
+        os.makedirs(self.fstate, exist_ok=True)
+
+        class Handler(socketserver.StreamRequestHandler):
+            def handle(self):
+                line = self.rfile.readline()
+                if not line:
+                    return
+                with lock:
+                    resp = test.fake_op(json.loads(line))
+                self.wfile.write((json.dumps(resp) + '\n').encode())
+
+        class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
+            daemon_threads = True
+        self.server = Server(self.sock, Handler)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def fake_op(self, req):
+        sf = os.path.join(self.fstate, 'fakecli.state')
+        s = json.load(open(sf)) if os.path.exists(sf) else {'counters': {}, 'sessions': {}}
+        if req['op'] == 'log':
+            with open(os.path.join(self.fstate, 'fakecli.log'), 'a') as f:
+                f.write(json.dumps(req['entry']) + '\n')
+            return {}
+        if req['op'] == 'session':
+            return {'info': s['sessions'].get(req['sid'])}
+        n = s['counters'].get(req['key'], 0)
+        s['counters'][req['key']] = n + 1
+        s['sessions'][req['sid']] = req['info']
+        json.dump(s, open(sf, 'w'))
+        return {'n': n}
 
     def ok(self, name, cond, detail=''):
         self.results.append((name, bool(cond)))
@@ -2051,12 +2477,22 @@ class SelfTest:
         e['PATH'] = os.path.join(self.home, 'bin') + ':' + e.get('PATH', '')
         e['HOME'] = self.home
         e['FAKECLI_CONTROL'] = self.ctl
-        e['FAKECLI_STATE'] = self.fstate
+        e['FAKECLI_SOCKET'] = self.sock
+        e['FAKECLI_OUTSIDE'] = self.outside
         e['FAKECLI_PROBE'] = json.dumps({
             'host /tmp': self.marker, 'state/': os.path.join(self.wt, 'state', 'state.json'),
             'main checkout': os.path.join(self.wt, 'main', 'cards'), '~/.codex': os.path.join(self.home, '.codex', 'sessions'),
             'primary checkout files': os.path.join(self.primary, 'PROGRESS.md'),
-            'other worktree': os.path.join(self.wt, 'C-02', 'cards')})
+            'other worktree': os.path.join(self.wt, 'C-02', 'cards'),
+            '~/.claude (other sessions\' transcripts)': os.path.join(self.home, '.claude', 'projects', 'orchestrator.jsonl'),
+            '~/.claude login': os.path.join(self.home, '.claude', '.credentials.json'),
+            '/run/user/<uid>': '/run/user/%d' % os.getuid(),
+            '~/.config/gh': os.path.join(self.home, '.config', 'gh', 'hosts.yml'),
+            '~/.aws': os.path.join(self.home, '.aws', 'credentials'),
+            '~/.docker': os.path.join(self.home, '.docker', 'config.json')})
+        # present in campaign.py's environment, as on a desktop session: a reviewer's sandbox must unset them
+        e['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=/run/user/%d/bus' % os.getuid()
+        e['XDG_RUNTIME_DIR'] = '/run/user/%d' % os.getuid()
         e['FAKEGATE_CONTROL'] = self.gctl
         e['CAMPAIGN_TICK'] = '0.3'
         for k in list(e):
@@ -2086,9 +2522,22 @@ class SelfTest:
         return read_jsonl(os.path.join(self.fstate, 'fakecli.log'))
 
     def build_fixture(self):
-        os.makedirs(os.path.join(self.home, '.claude'))
+        os.makedirs(os.path.join(self.home, '.claude', 'projects'))
         os.makedirs(os.path.join(self.home, '.codex', 'sessions'))
-        open(os.path.join(self.home, '.claude.json'), 'w').write('{}')
+        open(os.path.join(self.home, '.claude', 'projects', 'orchestrator.jsonl'), 'w').write('{"orchestrator": 1}\n')
+        open(os.path.join(self.home, '.claude', 'settings.json'), 'w').write('{"hooks": {}}\n')
+        open(os.path.join(self.home, '.claude', '.credentials.json'), 'w').write(json.dumps({'claudeAiOauth': {
+            'accessToken': 'fake-access', 'refreshToken': 'fake-refresh', 'expiresAt': 4102444800000,
+            'scopes': ['user:inference'], 'subscriptionType': 'max'}}))
+        open(os.path.join(self.home, '.claude.json'), 'w').write(json.dumps({
+            'oauthAccount': {'emailAddress': 'selftest@example.invalid'}, 'userID': 'fake', 'hasCompletedOnboarding': True,
+            'projects': {'/elsewhere': {'note': 'another project'}}}))
+        for rel, text in (('.config/gh/hosts.yml', 'github.com:\n  oauth_token: fake\n'),
+                          ('.aws/credentials', '[default]\naws_secret_access_key = fake\n'),
+                          ('.docker/config.json', '{"auths": {}}\n')):
+            os.makedirs(os.path.dirname(os.path.join(self.home, rel)), exist_ok=True)
+            open(os.path.join(self.home, rel), 'w').write(text)
+        open(self.outside, 'w').write('outside the worktree\n')
         # the fake CLIs live outside the repo, as the real ones do: a reviewer's sandbox hides the primary checkout
         shutil.copytree(os.path.join(TOOLS, 'fakecli'), os.path.join(self.home, 'bin'), ignore=shutil.ignore_patterns('__pycache__'))
         open(self.marker, 'w').write('host /tmp marker\n')
@@ -2163,7 +2612,8 @@ class SelfTest:
             role = 'builder' if vendor == 'codex' else 'reviewer'
             v, m, e, cfg = role_config(sess, role, 'standard')
             a = fill(cfg[key], dir=rwt if vendor == 'claude' else os.path.join(p.wt, 'C-01'), model=m, effort=e,
-                     session='S', home=home, wtroot=p.wt, repo=p.primary)
+                     session='S', home=home, wtroot=p.wt, repo=p.primary,
+                     config=os.path.join(p.state, 'claude-config', 'J0000-unit'))
             return edit(a) if edit else a
 
         def probs(vendor, edit=None):
@@ -2187,9 +2637,35 @@ class SelfTest:
             ('bwrap that leaves ~/.codex visible', 'claude', drop(('--tmpfs', os.path.join(home, '.codex'))), '.codex'),
             ('bwrap that leaves the other worktrees and state/ visible', 'claude', drop(('--tmpfs', p.wt)), 'state'),
             ('bwrap that binds / writable afterwards', 'claude', lambda a: a[:a.index('--chdir')] + ['--bind', '/', '/'] + a[a.index('--chdir'):], 'writable'),
+            # checkpoint 0 follow-up 8
+            ('codex without sandbox_workspace_write.exclude_slash_tmp=true', 'codex',
+             drop(('-c', 'sandbox_workspace_write.exclude_slash_tmp=true')), 'exclude_slash_tmp'),
+            ('codex with exclude_slash_tmp=false', 'codex',
+             lambda a: [x.replace('exclude_slash_tmp=true', 'exclude_slash_tmp=false') for x in a], 'exclude_slash_tmp'),
+            ('codex with another sandbox_workspace_write key', 'codex',
+             lambda a: a[:-1] + ['-c', 'sandbox_workspace_write.network_access=true', '-'], 'sandbox_workspace_write'),
+            # checkpoint 0 follow-up 6
+            ('bwrap that leaves /run/user/<uid> visible', 'claude', drop(('--tmpfs', '/run/user')), '/run/user'),
+            ('bwrap that keeps DBUS_SESSION_BUS_ADDRESS', 'claude', drop(('--unsetenv', 'DBUS_SESSION_BUS_ADDRESS')), 'DBUS_SESSION_BUS_ADDRESS'),
+            ('bwrap that keeps XDG_RUNTIME_DIR', 'claude', drop(('--unsetenv', 'XDG_RUNTIME_DIR')), 'XDG_RUNTIME_DIR'),
+            ('bwrap that leaves ~/.claude visible', 'claude', drop(('--tmpfs', os.path.join(home, '.claude'))), '.claude'),
+            ('bwrap that binds ~/.claude writable', 'claude', lambda a: a[:a.index('--chdir')] + [
+                '--bind', os.path.join(home, '.claude'), os.path.join(home, '.claude')] + a[a.index('--chdir'):], 'writable'),
+            ('bwrap that leaves ~/.claude.json readable', 'claude', lambda a: [x for i, x in enumerate(a) if not (
+                a[i:i + 3] == ['--ro-bind', '/dev/null', os.path.join(home, '.claude.json')] or
+                a[max(0, i - 1):i + 2] == ['--ro-bind', '/dev/null', os.path.join(home, '.claude.json')] or
+                a[max(0, i - 2):i + 1] == ['--ro-bind', '/dev/null', os.path.join(home, '.claude.json')])], '.claude.json'),
+            ('bwrap that leaves ~/.config/gh visible', 'claude', drop(('--tmpfs', os.path.join(home, '.config', 'gh'))), '.config/gh'),
+            ('bwrap that leaves ~/.aws visible', 'claude', drop(('--tmpfs', os.path.join(home, '.aws'))), '.aws'),
+            ('bwrap that leaves ~/.docker visible', 'claude', drop(('--tmpfs', os.path.join(home, '.docker'))), '.docker'),
+            ('bwrap with CLAUDE_CONFIG_DIR set to ~/.claude', 'claude', lambda a: a[:a.index('CLAUDE_CONFIG_DIR') + 1] + [
+                os.path.join(home, '.claude')] + a[a.index('CLAUDE_CONFIG_DIR') + 2:], 'CLAUDE_CONFIG_DIR'),
         ]
         for name, vendor, edit, needle in cases:
-            pr = probs(vendor, edit)
+            try:
+                pr = probs(vendor, edit)
+            except ValueError as ex:      # the command line lacks what the case edits
+                pr = ['case not applicable: %s' % ex]
             self.ok('session guard refuses %s' % name, pr and any(needle in x for x in pr), pr)
         bad_sess = json.loads(json.dumps(sess))
         bad_sess['roles']['builder']['standard']['vendor'] = 'claude'
@@ -2215,10 +2691,122 @@ class SelfTest:
         self.ok('a re-review is refused when its reviewer would share the vendor that built the card\'s last round',
                 c['state'] == 'triage' and 'refused to start a reviewer' in (c.get('reason') or '') and 're-review' in c['reason'], c)
 
+    def followup_checks(self):
+        """Checkpoint 0 follow-ups 5, 7 and 8, in process: no daemon; sessions are not spawned."""
+        p = P(self.primary)
+        sess = load_sessions(self.primary)
+        g = globals()
+        uwt = os.path.join(self.base, 'unit-wt')
+        os.makedirs(uwt, exist_ok=True)
+
+        class FakeSt:
+            d = {'triage_seq': 0, 'jobs': {}, 'job_seq': 0}
+            entries = []
+
+            def journal(self, kind, **k):
+                self.entries.append(dict(k, kind=kind))
+        spawned = []
+        orig = g['spawn_runner']
+        g['spawn_runner'] = lambda p_, job, argv, cwd, text: spawned.append((job['id'], argv, dict(job.get('env') or {})))
+        try:
+            def start(vendor, key, edit, n):
+                role = 'builder' if vendor == 'codex' else 'reviewer'
+                v, m, e, cfg = role_config(sess, role, 'standard')
+                cfg = dict(cfg)
+                cfg[key] = edit(list(cfg[key]))
+                st = FakeSt()
+                st.entries = []
+                job = {'id': 'J%04d-unit' % n, 'kind': 'session', 'role': role, 'card': 'C-01', 'round': 1}
+                try:
+                    Campaign(p).start_session(st, job, v, m, e, cfg, uwt, 'prompt')
+                    return None, job, st
+                except SessionRefused as ex:
+                    return str(ex), job, st
+            same = lambda a: a  # noqa: E731
+            for n, (name, vendor, edit, needle) in enumerate([
+                    ('a codex command without --disable apps (a change the flag guard does not catch)', 'codex',
+                     lambda a: [x for i, x in enumerate(a) if not (x == 'apps' or (x == '--disable' and a[i + 1] == 'apps'))], 'differs'),
+                    ('a codex command with an extra -c setting', 'codex', lambda a: a[:-1] + ['-c', 'model_verbosity="high"', '-'], 'differs'),
+                    ('a claude command whose --effort is a literal, not {effort}', 'claude',
+                     lambda a: [x if x != '{effort}' else 'max' for x in a], 'differs')]):
+                refused, job, st = start(vendor, 'start', edit, 10 + n)
+                self.ok('sessions.toml is refused: %s' % name, refused and needle in refused
+                        and not any(s[0] == job['id'] for s in spawned), refused)
+            refused, job, st = start('codex', 'start', same, 20)
+            sp = [s for s in spawned if s[0] == job['id']]
+            ss = [x for x in st.entries if x['kind'] == 'session-start']
+            self.ok('sessions.toml\'s own codex command starts; its session-start entry records sessions.toml\'s sha256',
+                    not refused and sp and ss and ss[0].get('sessions_sha256') == sess.get('_sha256') and sess.get('_sha256'),
+                    (refused, ss))
+            self.ok('a codex session gets TMPDIR in its worktree (tmp/, created), not /tmp',
+                    sp and sp[0][2].get('TMPDIR') == os.path.join(uwt, 'tmp') and os.path.isdir(os.path.join(uwt, 'tmp')),
+                    sp[:1])
+            refused, job, st = start('claude', 'start', same, 21)
+            cfgd = job.get('config') or ''
+            self.ok('a claude session gets its own CLAUDE_CONFIG_DIR under state/claude-config/, mode 700, seeded with '
+                    'the login and only the account keys of ~/.claude.json',
+                    not refused and cfgd.startswith(os.path.join(p.state, 'claude-config') + '/')
+                    and stat.S_IMODE(os.stat(cfgd).st_mode) == 0o700
+                    and os.path.exists(os.path.join(cfgd, '.credentials.json'))
+                    and sorted(json.load(open(os.path.join(cfgd, '.claude.json')))) == ['hasCompletedOnboarding', 'oauthAccount', 'userID'],
+                    (refused, cfgd))
+            release_claude_config(job)     # no session ran: remove the copy of the login
+            # sessions.toml as shipped passes; the campaign refuses to start on one that differs
+            self.ok('the shipped sessions.toml has exactly campaign.py\'s command lines', not sessions_problems(sess),
+                    sessions_problems(sess))
+        except Exception as ex:   # an older campaign.py lacks these functions
+            self.ok('follow-up 5/6/8 checks ran', False, '%s: %s' % (type(ex).__name__, ex))
+        finally:
+            g['spawn_runner'] = orig
+        # follow-up 7: the usage file and verdict files, directly
+        try:
+            target = os.path.join(self.base, 'unit-outside.txt')
+            open(target, 'w').write('outside\n')
+            cases = []
+            for name, setup in [
+                    ('.campaign/usage is a symlink to a file outside', lambda w: (os.makedirs(os.path.join(w, '.campaign')),
+                                                                         os.symlink(target, os.path.join(w, '.campaign', 'usage')))),
+                    ('.campaign/usage is a hard link to a file outside', lambda w: (os.makedirs(os.path.join(w, '.campaign')),
+                                                                           os.link(target, os.path.join(w, '.campaign', 'usage')))),
+                    ('.campaign is a symlink to a directory outside', lambda w: os.symlink(self.base, os.path.join(w, '.campaign')))]:
+                w = tempfile_dir(self.base)
+                setup(w)
+                job = {'id': 'J0030-unit', 'wt': w, 'card': 'C-01', 'dir': w}
+                FakeSt.entries = []
+                Campaign(p).write_usage_file(FakeSt(), job, 5, 10)
+                cases.append((name, bool(job.get('tamper')), open(target).read() == 'outside\n'
+                              and not os.path.exists(os.path.join(self.base, 'usage'))))
+            for name, tampered, untouched in cases:
+                self.ok('campaign.py writes nothing when %s, and stops the session for triage' % name, tampered and untouched,
+                        (tampered, untouched))
+            w = tempfile_dir(self.base)
+            os.makedirs(os.path.join(w, 'reports'))
+            os.mkfifo(os.path.join(w, 'reports', 'C-01-b1.md'))
+            os.symlink(target, os.path.join(w, 'reports', 'C-01-b2.md'))
+            os.symlink(self.base, os.path.join(w, 'reviews'))
+            got = []
+            for rel in ('reports/C-01-b1.md', 'reports/C-01-b2.md', 'reviews/fakecli.sock'):
+                try:
+                    read_worktree_file(w, rel)
+                    got.append('read')
+                except WorktreeFileError as ex:
+                    got.append(str(ex))
+            self.ok('a report that is a FIFO or a symlink, or a review under a symlinked reviews/, is refused, not read',
+                    all(x != 'read' for x in got), got)
+        except Exception as ex:
+            self.ok('follow-up 7 checks ran', False, '%s: %s' % (type(ex).__name__, ex))
+
     def run(self):
         self.build_fixture()
+        self.start_fake_server()
         print('selftest fixture: %s' % self.base)
-        self.unit_checks()
+        real_home = os.environ.get('HOME')
+        os.environ['HOME'] = self.home      # the guards and seeding see the fixture's home, never the real login
+        try:
+            self.unit_checks()
+            self.followup_checks()
+        finally:
+            os.environ['HOME'] = real_home
         a_cards = sorted(self.PHASE_A)
         p = self.camp('start', '--no-tmux', '--cards', ','.join(a_cards))
         self.ok('start: primary checkout moves to orch, main gets its own checkout',
@@ -2323,12 +2911,35 @@ class SelfTest:
                 S('C-19') == 'triage' and 'symlink' in R('C-19') and 'builder round' not in cb('C-19'), R('C-19') + ' | ' + cb('C-19'))
         self.ok('C-20 %s: triage, nothing committed' % self.PHASE_A['C-20'][0],
                 S('C-20') == 'triage' and '100755' in R('C-20') and 'builder round' not in cb('C-20'), R('C-20') + ' | ' + cb('C-20'))
+        self.ok('C-25 %s: triage, nothing committed, the outside file unchanged' % self.PHASE_A['C-25'][0],
+                S('C-25') == 'triage' and '.campaign/usage' in R('C-25') and 'builder round' not in cb('C-25')
+                and open(self.outside).read() == 'outside the worktree\n', R('C-25') + ' | ' + cb('C-25'))
+        self.ok('C-26 %s: triage, nothing committed, and the daemon did not block on it' % self.PHASE_A['C-26'][0],
+                S('C-26') == 'triage' and 'FIFO' in R('C-26') and 'builder round' not in cb('C-26'), R('C-26') + ' | ' + cb('C-26'))
         pr_ = [x for x in self.fakelog() if x.get('probe') is not None]
         seen = pr_[0]['probe'] if pr_ else {}
-        self.ok('a reviewer\'s sandbox hides the host /tmp, state/, main\'s checkout, other worktrees, ~/.codex and the '
-                'primary checkout, and its own worktree is writable',
-                pr_ and seen.get('own worktree writable') and not any(v for k, v in seen.items() if k != 'own worktree writable'),
-                seen)
+        positive = ('own worktree writable', 'own CLAUDE_CONFIG_DIR writable, with the login', 'wrote ~/.claude/.probe-write')
+        self.ok('a reviewer\'s sandbox hides the host /tmp, state/, main\'s checkout, other worktrees, ~/.codex, the '
+                'primary checkout, ~/.claude, ~/.claude.json, /run/user/<uid>, ~/.config/gh, ~/.aws and ~/.docker, unsets '
+                'DBUS_SESSION_BUS_ADDRESS and XDG_RUNTIME_DIR; its own worktree and its own seeded CLAUDE_CONFIG_DIR are '
+                'writable, and what it writes to ~/.claude never reaches the real one',
+                pr_ and all(seen.get(k) for k in positive[:2]) and len(seen) >= 17
+                and not any(v for k, v in seen.items() if k not in positive)
+                and not os.path.exists(os.path.join(self.home, '.claude', '.probe-write')), seen)
+        cfgs = [j.get('config') for j in st['jobs'].values() if j.get('vendor') == 'claude' and j['kind'] != 'oneoff']
+        fresh = [j.get('config') for j in st['jobs'].values() if j.get('vendor') == 'claude' and not j.get('resumed_from')]
+        left = glob.glob(os.path.join(self.wt, 'state', 'claude-config', '*', '.credentials.json'))
+        self.ok('every claude session had its own CLAUDE_CONFIG_DIR under state/ (%d sessions), and no copy of the '
+                'login is left once they end' % len(cfgs),
+                cfgs and all(cfgs) and len(set(fresh)) == len(fresh) and not left, (cfgs, left))
+        tm = [x for x in fl if x.get('vendor') == 'codex' and 'tmpdir' in x]
+        self.ok('every codex session ran with TMPDIR in its own worktree (%d sessions)' % len(tm),
+                tm and all(x['tmpdir'] == os.path.join(x['cwd'], 'tmp') for x in tm), [(x['cwd'], x['tmpdir']) for x in tm][:5])
+        raw = subprocess.run(['git', 'show', 'main:tools/sessions.toml'], cwd=self.primary, capture_output=True).stdout
+        h = hashlib.sha256(raw).hexdigest()
+        ss = [e for e in jr if e['kind'] == 'session-start']
+        self.ok('every session-start entry in the journal records sessions.toml\'s sha256 (%d entries)' % len(ss),
+                ss and all(e.get('sessions_sha256') == h for e in ss), [e.get('sessions_sha256') for e in ss][:3])
         # every commit on main's first-parent history since start carries a Campaign: trailer
         recs = [r for r in git(['log', '--first-parent', '--format=%H%x00%B%x01', '%s..main' % start_sha], cwd=self.primary).split('\x01') if r.strip()]
         bad = [r.strip()[:60] for r in recs if 'Campaign:' not in r]
@@ -2444,6 +3055,8 @@ class SelfTest:
                 fl and not leaked, leaked)
 
     def cleanup(self):
+        if self.server:
+            self.server.shutdown()
         try:
             os.remove(self.marker)
         except OSError:

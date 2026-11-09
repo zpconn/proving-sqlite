@@ -1,4 +1,4 @@
-selftest fixture: /var/tmp/campaign-selftest-g26devix
+selftest fixture: /var/tmp/campaign-selftest-0h2893i6
 ok   sessions.toml's codex and claude commands, start and resume, pass the session guards
 ok   session guard refuses codex without the workspace-write sandbox
 ok   session guard refuses codex with approvals on
@@ -10,8 +10,32 @@ ok   session guard refuses bwrap with a shared /tmp
 ok   session guard refuses bwrap that leaves ~/.codex visible
 ok   session guard refuses bwrap that leaves the other worktrees and state/ visible
 ok   session guard refuses bwrap that binds / writable afterwards
+ok   session guard refuses codex without sandbox_workspace_write.exclude_slash_tmp=true
+ok   session guard refuses codex with exclude_slash_tmp=false
+ok   session guard refuses codex with another sandbox_workspace_write key
+ok   session guard refuses bwrap that leaves /run/user/<uid> visible
+ok   session guard refuses bwrap that keeps DBUS_SESSION_BUS_ADDRESS
+ok   session guard refuses bwrap that keeps XDG_RUNTIME_DIR
+ok   session guard refuses bwrap that leaves ~/.claude visible
+ok   session guard refuses bwrap that binds ~/.claude writable
+ok   session guard refuses bwrap that leaves ~/.claude.json readable
+ok   session guard refuses bwrap that leaves ~/.config/gh visible
+ok   session guard refuses bwrap that leaves ~/.aws visible
+ok   session guard refuses bwrap that leaves ~/.docker visible
+ok   session guard refuses bwrap with CLAUDE_CONFIG_DIR set to ~/.claude
 ok   campaign.py refuses a sessions.toml that puts builders on claude
 ok   a re-review is refused when its reviewer would share the vendor that built the card's last round
+ok   sessions.toml is refused: a codex command without --disable apps (a change the flag guard does not catch)
+ok   sessions.toml is refused: a codex command with an extra -c setting
+ok   sessions.toml is refused: a claude command whose --effort is a literal, not {effort}
+ok   sessions.toml's own codex command starts; its session-start entry records sessions.toml's sha256
+ok   a codex session gets TMPDIR in its worktree (tmp/, created), not /tmp
+ok   a claude session gets its own CLAUDE_CONFIG_DIR under state/claude-config/, mode 700, seeded with the login and only the account keys of ~/.claude.json
+ok   the shipped sessions.toml has exactly campaign.py's command lines
+ok   campaign.py writes nothing when .campaign/usage is a symlink to a file outside, and stops the session for triage
+ok   campaign.py writes nothing when .campaign/usage is a hard link to a file outside, and stops the session for triage
+ok   campaign.py writes nothing when .campaign is a symlink to a directory outside, and stops the session for triage
+ok   a report that is a FIFO or a symlink, or a review under a symlinked reviews/, is refused, not read
 ok   start: primary checkout moves to orch, main gets its own checkout
 ok   phase A settles (every card merged, in triage, or waiting)
 ok   C-01 approved and merged
@@ -34,7 +58,12 @@ ok   C-17 a FINDING the reviewer approves goes to triage, not merge
 ok   C-18 an expired login pauses the vendor with a triage item, not counted against the card; resume-vendor refuses while logged out, then resumes it, and it merges
 ok   C-19 a builder that leaves a symlink on a May change path: triage, nothing committed
 ok   C-20 a builder that leaves an executable harness.c: triage, nothing committed
-ok   a reviewer's sandbox hides the host /tmp, state/, main's checkout, other worktrees, ~/.codex and the primary checkout, and its own worktree is writable
+ok   C-25 a builder that leaves .campaign/usage as a symlink to a file outside its worktree: triage, nothing committed, the outside file unchanged
+ok   C-26 a builder whose report is a FIFO: triage, nothing committed, and the daemon did not block on it
+ok   a reviewer's sandbox hides the host /tmp, state/, main's checkout, other worktrees, ~/.codex, the primary checkout, ~/.claude, ~/.claude.json, /run/user/<uid>, ~/.config/gh, ~/.aws and ~/.docker, unsets DBUS_SESSION_BUS_ADDRESS and XDG_RUNTIME_DIR; its own worktree and its own seeded CLAUDE_CONFIG_DIR are writable, and what it writes to ~/.claude never reaches the real one
+ok   every claude session had its own CLAUDE_CONFIG_DIR under state/ (16 sessions), and no copy of the login is left once they end
+ok   every codex session ran with TMPDIR in its own worktree (29 sessions)
+ok   every session-start entry in the journal records sessions.toml's sha256 (45 entries)
 ok   every commit campaign.py put on main carries a Campaign: trailer (12 commits)
 ok   no reviewer ran on its round's builder vendor
 ok   a land that touches proofs/ is refused
@@ -47,5 +76,5 @@ ok   kill -9 of a session: it is resumed in the same worktree and the card merge
 ok   kill -9 of daemon and merge job mid-merge: the merge is redone once, never twice (C-23)
 ok   kill -9 of the daemon mid-merge: the surviving merge job's result is taken once (C-24)
 ok   finish: primary checkout back on main with orch merged, main's checkout removed
-ok   no session saw the API-key or CLAUDE_CODE_ variables planted in campaign.py's environment (53 sessions)
-RESULT selftest PASS 49/49
+ok   no session saw the API-key or CLAUDE_CODE_ variables planted in campaign.py's environment (55 sessions)
+RESULT selftest PASS 78/78

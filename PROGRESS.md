@@ -29,6 +29,7 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 - D: Codex can block: two sessions.toml settings plus the builder's wait advice. 15-minute wait: 748,078 tokens before, 36,925 after.
 - E: auth-failure patterns pause the vendor, add a triage item, resume with `campaign.py resume-vendor`.
 - Tests: tool tests 95/95, selftest 49/49, full gate PASS (13-tool-tests.txt, 13-selftest.txt, 13-full-gate.log).
+- Auditor follow-ups 5–8 done: sessions.toml's commands must be campaign.py's exactly, with its hash in the journal; reviewers get their own seeded CLAUDE_CONFIG_DIR, no /run/user, DBus or XDG variables, ~/.claude, ~/.claude.json, gh, aws or docker; usage, report and review files only as regular files; builders get TMPDIR in the worktree and no /tmp. Selftest 78/78; real reviewer session in the new sandbox logs in and runs.
 - Auditor follow-up 4 done: preds.h, contracts/ and spec/ may #define only their include guard (scan rule 15); tool tests 112/112.
 - Auditor follow-up 3 done: "## Unreached lines" entries are one line or a range within one uncovered stretch, with a reason, and fail if the run covers them; tool tests 104/104.
 - Auditor follow-up 1 done: the gate calls tools/prove.py instead of make on card Makefiles and skips one load_card rejects; tool tests 97/97, `make gate CARD=C-02` PASS (13-checkpoint0.md).
@@ -37,6 +38,7 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 1. SQLite 3.54.1 is out; the pin stays 3.53.4 per §1.1.
 2. Codex builders had ChatGPT connectors (Gmail, Sites deploy, ~300 tools), web search and subagents available despite `--ignore-user-config`; the pilot never used them, and they are now disabled. Anything else to turn off?
 3. Claude's login now expires 2026-12-07 22:27 UTC. An expired login now pauses the vendor with a triage item instead of failing cards.
+4. A reviewer can still read the rest of / (other ~/.config dirs, /mnt/c) and reach host sockets such as the system DBus, with network on. Hide $HOME and /mnt wholesale, binding back what Claude needs? (13-checkpoint0.md, follow-up 6)
 
 ## What bring-up showed GOAL.md or the plan got wrong
 
@@ -70,3 +72,4 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 - Evening: auditor's re-audit. Follow-up item 1 (gate never evaluates card Makefiles) done with two tests that fail on 1c27db4.
 - Follow-up item 3 (coverage explanations) done with six tests that fail on 8822461.
 - Follow-up item 4 (no macros in shared headers but the include guard) done with six tests that fail on ae6421e.
+- Follow-up items 5–8 (session commands, reviewer sandbox, worktree files, builder TMPDIR) done; the new selftest steps fail on 9dc55a3 (38/66), pass now (78/78); real sandbox check run (48,875 tokens).

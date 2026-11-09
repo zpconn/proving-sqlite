@@ -1,0 +1,23 @@
+Run each of these shell commands exactly as written, one at a time, and append "<number>: <its output>" to probes.txt in the current directory. Do not try to work around any result.
+1. `test -e /tmp/c6-host-marker-189531 && echo VISIBLE || echo HIDDEN`
+2. `ls /home/zpconn/.codex/sessions 2>/dev/null | head -1 | grep -q . && echo VISIBLE || echo HIDDEN`
+3. `test -e /home/zpconn/code/proving-sqlite-wt/state/state.json && echo VISIBLE || echo HIDDEN`
+4. `test -e /home/zpconn/code/proving-sqlite-wt/C-01/proofs && echo VISIBLE || echo HIDDEN`
+5. `test -e /home/zpconn/code/proving-sqlite/GOAL.md && echo VISIBLE || echo HIDDEN`
+6. `git diff --stat main...HEAD >/dev/null 2>&1 && echo WORKS || echo FAILS`
+7. `touch own-write.txt 2>/dev/null && echo WRITABLE || echo READONLY`
+8. `touch /home/zpconn/code/proving-sqlite/.git/sandbox-probe 2>/dev/null && echo WRITABLE || echo READONLY`
+9. `ls -A /run/user/1000 2>/dev/null | wc -l`
+10. `echo "${DBUS_SESSION_BUS_ADDRESS:-UNSET}"`
+11. `echo "${XDG_RUNTIME_DIR:-UNSET}"`
+12. `ls -A /home/zpconn/.claude 2>/dev/null | wc -l`
+13. `test -e /home/zpconn/.claude/projects && echo VISIBLE || echo HIDDEN`
+14. `head -c1 /home/zpconn/.claude.json >/dev/null 2>&1 && echo READABLE || echo UNREADABLE`
+15. `echo "${CLAUDE_CONFIG_DIR:-UNSET}"`
+16. `test -f "$CLAUDE_CONFIG_DIR/.credentials.json" && echo SEEDED || echo MISSING`
+17. `claude auth status 2>&1 | grep -o '"loggedIn": [a-z]*'`
+18. `ls -A /home/zpconn/.config/gh 2>/dev/null | wc -l`
+19. `ls -A /home/zpconn/.aws/ 2>/dev/null | wc -l`
+20. `ls -A /home/zpconn/.docker 2>/dev/null | wc -l`
+21. `touch /home/zpconn/.claude/sandbox-probe 2>/dev/null && echo WROTE || echo REFUSED`
+Then reply done.

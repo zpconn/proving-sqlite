@@ -118,3 +118,90 @@ preds.h may only gain predicates (rule 13), but the check compared file-scope it
 - Rejected under `scan`: a macro in a contract; a #define in proofs/spec/; an include guard named after a SQLite function.
 
 All six rejections pass with the fix and FAIL against the tools at ae6421e; the accepted cases pass on both. Tool tests 112/112. The repository's scan passes (preds.h has guard PREDS_H; the two contracts have no directives). Builder §1, proofs/HOWTO.md and GOAL.md §3.4 state the rule.
+
+## Follow-ups 5–8: how campaign.py starts and isolates sessions
+
+All in tools/campaign.py and tools/sessions.toml, plus the fake CLIs (tools/fakecli/fake.py). Selftest 78/78 (13-selftest.txt). The selftest's new steps were also run against the committed tools at 9dc55a3: the selftest section and fake CLIs of the fix, with 9dc55a3's campaign.py logic and sessions.toml. They fail there (38/66, 13-selftest-followups-5-8-on-9dc55a3.txt).
+
+**5. Exact command lines.**
+- campaign.py's `SESSION_COMMANDS` holds each vendor's start, resume and login_check argv. `template_problems` accepts a sessions.toml command only if it equals that argv token for token; the only parts that vary are the placeholders, which campaign.py fills.
+- start_session refuses any other command (SessionRefused: triage), `start` refuses to start the campaign, and login_ok fails.
+- command_problems still checks the filled command line as a second line.
+- load_sessions hashes the file it parsed, and every session-start journal entry records `sessions_sha256`.
+- One new placeholder, `{config}`, for item 6's per-session config directory.
+- Consequence: a CLI flag change is now a change to tools/campaign.py, which is frozen at checkpoint 1, not to sessions.toml alone.
+- Selftest:
+  - refused, and never spawned: a codex command without `--disable apps` (command_problems alone accepts it); a codex command with an extra `-c`; a claude command with a literal `--effort max`;
+  - accepted: the shipped commands, with the hash in the session-start entry;
+  - in the full run, all 45 session-start entries carry the hash of main's sessions.toml.
+
+**6. Reviewer bubblewrap profile.** New mounts and settings:
+- `--tmpfs /run/user`, which covers /run/user/<uid>. This is all of /run/user, not just the uid directory, because the uid would have been one more placeholder.
+- `--unsetenv DBUS_SESSION_BUS_ADDRESS` and `--unsetenv XDG_RUNTIME_DIR`.
+- `--tmpfs` over ~/.claude, ~/.config/gh, ~/.aws and ~/.docker.
+- `--ro-bind /dev/null ~/.claude.json`.
+- `--bind {config} {config}` with `--setenv CLAUDE_CONFIG_DIR {config}`.
+
+How the config directory works:
+- campaign.py creates `{config}` as state/claude-config/<job>/ (mode 700, under state/, which every session's sandbox hides).
+- It seeds the directory with a copy of ~/.claude/.credentials.json, plus a .claude.json holding only oauthAccount, userID and hasCompletedOnboarding.
+- A resumed session gets its own directory back, so `claude --resume` finds its transcript.
+- When the session ends, `release_claude_config` removes the copy of the login.
+- If the session refreshed the login, the new tokens are copied back to ~/.claude/.credentials.json, because a refresh can retire the old ones. They are copied only with the same keys, a later expiry and the same subscription.
+
+Mounting details:
+- The tmpfs destinations are resolved with realpath before bwrap runs. ~/.aws here is a symlink to /mnt/c/Users/zpcon/.aws, and bwrap resolves an absolute symlink inside its own new root, where /mnt/c isn't mounted yet, so `--tmpfs ~/.aws` failed.
+- A hide of gh, aws or docker that has nothing to hide is dropped, because bwrap cannot mount on an absent path.
+
+command_problems now requires each of these mounts and settings. It allows writable binds only of the worktree and that one config directory, and read-only binds only of /, the primary checkout's .git and /dev/null over ~/.claude.json. Selftest guard cases refuse each one left out, ~/.claude bound writable, and CLAUDE_CONFIG_DIR pointed at ~/.claude.
+
+The fake reviewer's probe checks every hide. Because ~/.claude is now hidden, the fake CLIs keep their counters behind a unix socket the selftest serves, instead of in ~/.claude.
+
+**Real session (cli/sandbox_check.py, cli/sandbox_results.json, cli/sandbox_check.log, job J93193-sandbox-c6).**
+- The session was a claude-sonnet-5-5 reviewer, started through campaign.py's start_session and runner. It exited 0 with a `success` result and used 48,875 tokens.
+- Inside the sandbox:
+  - /run/user/1000 had 0 entries;
+  - DBUS_SESSION_BUS_ADDRESS and XDG_RUNTIME_DIR were unset;
+  - ~/.claude had 0 entries (the host has 19), and its projects/ was hidden;
+  - ~/.claude.json was unreadable;
+  - CLAUDE_CONFIG_DIR was state/claude-config/J93193-sandbox-c6, seeded, and `claude auth status` there said `"loggedIn": true`;
+  - ~/.config/gh had 0 entries (host 2) and ~/.docker 0 (host 6). ~/.aws is empty on the host too, so that probe shows nothing either way.
+- The earlier probes still held: the host /tmp, ~/.codex, state/, other worktrees and the primary checkout were hidden, git diff worked, the worktree was writable and .git was read-only.
+- On the host afterwards:
+  - the session's write to ~/.claude/sandbox-probe went to its tmpfs, and the real file doesn't exist;
+  - the copy of the login was removed;
+  - the host login is still valid.
+
+**What a reviewer can still read** (not in the auditor's list; not changed):
+- the rest of / read-only, including the rest of ~/.config (e.g. configstore and Chrome-for-testing profiles) and /mnt/c, the whole Windows drive;
+- host sockets on paths it can see, e.g. /run/dbus/system_bus_socket and /mnt/wslg/PulseServer.
+
+Network stays on. A tmpfs over $HOME and /mnt, binding back only what Claude Code and git need, would close most of this. That is a larger change to propose separately.
+
+**7. Files in a session's worktree.**
+- `write_worktree_usage` opens .campaign with O_DIRECTORY|O_NOFOLLOW from the worktree's fd. It requires an existing usage file to be a regular file with one link, opens it with O_NOFOLLOW|O_NONBLOCK, and checks the open file again before truncating.
+- Anything else writes nothing. While a session runs, the session is stopped and the card goes to triage. Before a session starts, it is refused, which also sends the card to triage.
+- `read_worktree_file` reads reports and reviews:
+  - each directory on the way is opened with O_NOFOLLOW;
+  - the file is lstat'ed, then opened with O_NOFOLLOW|O_NONBLOCK and fstat'ed;
+  - it must be a regular file of at most 4 MB, otherwise the card goes to triage. A one-off session's commit happens only after its reports and reviews pass this check.
+- Before the fix:
+  - a symlinked usage made campaign.py overwrite the file it pointed to. Demonstrated directly on 9dc55a3's write_usage_file: the outside file's contents became `tokens_used 5 / cap 10 / percent 50.0`.
+  - a FIFO report blocked the daemon in open() while it held the state lock. In the 9dc55a3 run, phase A never settled, C-16 and C-18 stayed in reviewing, and `campaign.py land` timed out after 120 s.
+- Selftest:
+  - C-25 (usage replaced by a symlink to a file outside the worktree) goes to triage with nothing committed, and the outside file is unchanged;
+  - C-26 (report is a FIFO) goes to triage with nothing committed, and the daemon carries on;
+  - unit cases: usage as a symlink, usage as a hard link to an outside file, .campaign as a symlink to an outside directory, and a FIFO report, a symlinked report and a review under a symlinked reviews/.
+
+**8. Builder scratch space.**
+- Codex commands set `-c sandbox_workspace_write.exclude_slash_tmp=true`. command_problems requires exactly that string and no other sandbox_workspace_write key.
+- campaign.py sets TMPDIR to tmp/ in the worktree; .gitignore's `/tmp/` already ignores it. It is created at session start and emptied at the start of each new round, not on a resume.
+- Checked with `codex sandbox` (the same Linux sandbox, no model) in a scratch worktree:
+  - with the key, /tmp is not writable while $TMPDIR and the worktree are, and Python's tempfile uses $TMPDIR;
+  - without the key, /tmp is writable;
+  - with it, `make -C proofs/C-01 prove CONFIG=lp64-le` passes with 225 properties, 0 failed: CBMC follows TMPDIR, and no tool in tools/ uses /tmp.
+- The builder prompt, builder §1 and §2.9, AGENTS.md and HOWTO now say $TMPDIR instead of /tmp.
+- Selftest:
+  - guard cases refuse a missing key, `=false`, and another sandbox_workspace_write key;
+  - a unit start gives TMPDIR in the worktree;
+  - all 29 fake codex sessions in the full run saw TMPDIR = their worktree's tmp/.

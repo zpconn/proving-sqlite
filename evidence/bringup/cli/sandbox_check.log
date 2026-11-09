@@ -6,6 +6,62 @@
 6: WORKS
 7: WRITABLE
 8: READONLY
-9: WRITABLE
+9: 0
+10: UNSET
+11: UNSET
+12: 0
+13: HIDDEN
+14: UNREADABLE
+15: /home/zpconn/code/proving-sqlite-wt/state/claude-config/J93193-sandbox-c6
+16: SEEDED
+17: "loggedIn": true
+18: 0
+19: 0
+20: 0
+21: WROTE
 
+{
+ "exit": {
+  "rc": 0,
+  "ended": 1794193205.9221163
+ },
+ "probes": [
+  "host /tmp marker visible",
+  "~/.codex/sessions visible",
+  "state/ visible",
+  "other worktree C-01 visible",
+  "primary checkout files visible",
+  "git diff main...HEAD works",
+  "own worktree writable",
+  "git dir writable",
+  "/run/user/<uid> entries",
+  "DBUS_SESSION_BUS_ADDRESS",
+  "XDG_RUNTIME_DIR",
+  "~/.claude entries (the host has 19)",
+  "~/.claude/projects (transcripts) visible",
+  "~/.claude.json readable",
+  "CLAUDE_CONFIG_DIR",
+  "login seeded in CLAUDE_CONFIG_DIR",
+  "claude auth status inside",
+  "~/.config/gh entries (the host has 2)",
+  "~/.aws entries (the host has 0)",
+  "~/.docker entries (the host has 6)",
+  "write to ~/.claude/sandbox-probe"
+ ],
+ "job": "/home/zpconn/code/proving-sqlite/evidence/bringup/cli/jobs/J93193-sandbox-c6",
+ "usage": {
+  "input": 4,
+  "cache_read": 33357,
+  "cache_write": 14040,
+  "output": 1474,
+  "total": 48875
+ },
+ "host ~/.claude/sandbox-probe exists after": false,
+ "config released": "removed",
+ "login copy left in the config dir": false,
+ "host claude auth status loggedIn": true,
+ "result event": [
+  "success"
+ ]
+}
 RESULT sandbox-check done

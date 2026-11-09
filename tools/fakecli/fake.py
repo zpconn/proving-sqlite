@@ -7,12 +7,14 @@ codex --json events plus a rollout log under $HOME/.codex/sessions (running toke
 Behaviors: done, approve, reject, needs-zach, finding, stuck, crash, limit, auth (the login has expired), outside,
 commit-outside, own-review, symlink (a May change path left as a symlink), exec-mode (an executable harness.c),
 touch-tracked, probe (a reviewer records what its sandbox lets it see, then approves), burn, slow:<seconds>,
-answer-review, missing (exit 0, no report). `codex login status` and `claude auth status` report logged in unless
-$HOME/.fakecli-logged-out exists. State and the log live in $FAKECLI_STATE (a directory a sandboxed reviewer can
-write: the fixture's ~/.claude).
+answer-review, missing (exit 0, no report), usage-symlink (a builder replaces .campaign/usage with a symlink to
+$FAKECLI_OUTSIDE, waits for campaign.py to write it, then reports DONE), report-fifo (a builder's report is a FIFO).
+`codex login status` and `claude auth status` report logged in unless $HOME/.fakecli-logged-out exists. Attempt
+counters and the log are kept by the selftest, reached through the unix socket $FAKECLI_SOCKET: a sandboxed reviewer
+can write nothing outside its worktree and its own config directory.
 """
-import fcntl
 import json
+import socket
 import os
 import re
 import subprocess
@@ -30,10 +32,26 @@ if argv[:2] in (['login', 'status'], ['auth', 'status']):
     sys.exit(0)
 CTRL = os.environ.get('FAKECLI_CONTROL')
 ctrl = json.load(open(CTRL)) if CTRL and os.path.exists(CTRL) else {}
-SDIR = os.environ.get('FAKECLI_STATE') or os.path.dirname(CTRL or '/tmp/fakecli')
-os.makedirs(SDIR, exist_ok=True)
-STATE = os.path.join(SDIR, 'fakecli.state')
-LOG = os.path.join(SDIR, 'fakecli.log')
+
+
+def rpc(op, **kw):
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(os.environ['FAKECLI_SOCKET'])
+    s.sendall((json.dumps(dict(kw, op=op)) + '\n').encode())
+    buf = b''
+    while not buf.endswith(b'\n'):
+        b = s.recv(65536)
+        if not b:
+            break
+        buf += b
+    s.close()
+    return json.loads(buf or b'{}')
+
+
+def log(entry):
+    rpc('log', entry=entry)
+
+
 prompt = sys.stdin.read()
 cwd = os.getcwd()
 resume = (vendor == 'codex' and argv[:2] == ['exec', 'resume']) or (vendor == 'claude' and '--resume' in argv)
@@ -42,22 +60,12 @@ if resume:
     sid = argv[2] if vendor == 'codex' else argv[argv.index('--resume') + 1]
 
 
-def locked_state(update):
-    with open(STATE + '.lock', 'w') as lf:
-        fcntl.flock(lf, fcntl.LOCK_EX)
-        s = json.load(open(STATE)) if os.path.exists(STATE) else {'counters': {}, 'sessions': {}}
-        r = update(s)
-        with open(STATE, 'w') as f:
-            json.dump(s, f)
-        return r
-
-
 m = re.search(r'cards/(C-[0-9]{2})\.md', prompt)
 role = 'builder' if 'builder session' in prompt else ('reviewer' if 'reviewer session' in prompt else None)
 rm = re.search(r'This is round (\d+)', prompt) or re.search(r'builder round (\d+)', prompt) or re.search(r'reviews/C-[0-9]{2}-r(\d+)\.md', prompt)
 card, rnd = (m.group(1) if m else None), (int(rm.group(1)) if rm else None)
 if resume:
-    info = locked_state(lambda s: s['sessions'].get(sid))
+    info = rpc('session', sid=sid).get('info')
     if info:
         card, role, rnd = info['card'], info['role'], info['round']
         if role is None:
@@ -67,22 +75,14 @@ if sid is None:
 key = '%s/%s/%s' % (card, role, rnd)
 
 
-def bump(s):
-    n = s['counters'].get(key, 0)
-    s['counters'][key] = n + 1
-    s['sessions'][sid] = {'card': card, 'role': role, 'round': rnd}
-    return n
-
-
-attempt = locked_state(bump)
+attempt = rpc('bump', key=key, sid=sid, info={'card': card, 'role': role, 'round': rnd})['n']
 default = 'done' if role == 'builder' else 'approve'
 seq = ctrl.get(key) or ctrl.get('%s/%s/*' % (card, role)) or [default]
 beh = seq[attempt] if attempt < len(seq) else seq[-1]
-with open(LOG, 'a') as f:
-    f.write(json.dumps({'t': time.time(), 'vendor': vendor, 'argv': argv, 'key': key, 'attempt': attempt, 'behavior': beh,
-                        'resume': resume, 'sid': sid, 'cwd': cwd, 'pid': os.getpid(), 'prompt': prompt[:400],
-                        'apikeys': sorted(k for k in os.environ if k.endswith('_API_KEY') or k == 'ANTHROPIC_AUTH_TOKEN'),
-                        'claude_vars': sorted(k for k in os.environ if k.startswith('CLAUDE_CODE_') or k == 'CLAUDECODE')}) + '\n')
+log({'t': time.time(), 'vendor': vendor, 'argv': argv, 'key': key, 'attempt': attempt, 'behavior': beh,
+     'resume': resume, 'sid': sid, 'cwd': cwd, 'pid': os.getpid(), 'prompt': prompt[:400], 'tmpdir': os.environ.get('TMPDIR'),
+     'apikeys': sorted(k for k in os.environ if k.endswith('_API_KEY') or k == 'ANTHROPIC_AUTH_TOKEN'),
+     'claude_vars': sorted(k for k in os.environ if k.startswith('CLAUDE_CODE_') or k == 'CLAUDECODE')})
 
 home = os.path.expanduser('~')
 rollout = os.path.join(home, '.codex', 'sessions', '2026', '01', '01', 'rollout-2026-01-01T00-00-00-%s.jsonl' % sid)
@@ -180,6 +180,19 @@ if role == 'builder':
         builder_files('DONE')
         os.remove(os.path.join(cwd, 'proofs', card, 'NOTES.md'))
         os.symlink('/etc/hostname', os.path.join(cwd, 'proofs', card, 'NOTES.md'))
+    elif beh == 'usage-symlink':
+        u = os.path.join(cwd, '.campaign', 'usage')
+        os.makedirs(os.path.dirname(u), exist_ok=True)
+        if os.path.lexists(u):
+            os.remove(u)
+        os.symlink(os.environ['FAKECLI_OUTSIDE'], u)
+        time.sleep(3)             # campaign.py writes usage every tick
+        builder_files('DONE')
+    elif beh == 'report-fifo':
+        builder_files('DONE')
+        r = os.path.join(cwd, 'reports', '%s-b%s.md' % (card, rnd))
+        os.remove(r)
+        os.mkfifo(r)
     elif beh == 'exec-mode':
         builder_files('DONE')
         os.chmod(os.path.join(cwd, 'proofs', card, 'harness.c'), 0o755)
@@ -201,12 +214,31 @@ else:
         for name, path in json.loads(os.environ.get('FAKECLI_PROBE') or '{}').items():
             seen[name] = os.path.exists(path)
         try:
+            seen['~/.claude.json readable'] = bool(open(os.path.join(home, '.claude.json')).read())
+        except OSError:
+            seen['~/.claude.json readable'] = False
+        for k in ('DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'):
+            seen['env ' + k] = k in os.environ
+        try:
             open(os.path.join(cwd, '.probe-write'), 'w').write('x')
             seen['own worktree writable'] = True
         except OSError:
             seen['own worktree writable'] = False
-        with open(LOG, 'a') as f:
-            f.write(json.dumps({'t': time.time(), 'vendor': vendor, 'key': key, 'probe': seen, 'cwd': cwd}) + '\n')
+        cfg = os.environ.get('CLAUDE_CONFIG_DIR') or ''
+        try:
+            if not cfg:
+                raise OSError('CLAUDE_CONFIG_DIR unset')
+            open(os.path.join(cfg, '.probe-write'), 'w').write('x')
+            os.remove(os.path.join(cfg, '.probe-write'))
+            seen['own CLAUDE_CONFIG_DIR writable, with the login'] = bool(cfg) and os.path.exists(os.path.join(cfg, '.credentials.json'))
+        except OSError:
+            seen['own CLAUDE_CONFIG_DIR writable, with the login'] = False
+        try:
+            open(os.path.join(home, '.claude', '.probe-write'), 'w').write('x')
+            seen['wrote ~/.claude/.probe-write'] = True     # into a tmpfs: the selftest checks the host's stays absent
+        except OSError:
+            seen['wrote ~/.claude/.probe-write'] = False
+        log({'t': time.time(), 'vendor': vendor, 'key': key, 'probe': seen, 'cwd': cwd, 'config': cfg})
         os.remove(os.path.join(cwd, '.probe-write'))
     if beh == 'touch-tracked':
         with open(os.path.join(cwd, 'cards', '%s.md' % card), 'a') as f:

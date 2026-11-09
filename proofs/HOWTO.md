@@ -45,7 +45,7 @@ Shared headers (contracts, `proofs/include/preds.h`, `proofs/spec/`) #define not
 - `make -C proofs/C-NN prove [CONFIG=lp64-le|ilp32-le|lp64-be]`, `make -C proofs/C-NN coverage`, `tools/mutate.py --card C-NN`, `tools/check_overlay.py`, `tools/scan.py --card C-NN --base main`.
 - **Long runs under Codex (builders):** wait once, never poll (builder §2.9). In one exec cell:
   ~~~
-  const r = await tools.exec_command({cmd: "make -C proofs/C-NN prove CONFIG=lp64-le > /tmp/C-NN.log 2>&1; tail -5 /tmp/C-NN.log", yield_time_ms: 1000});
+  const r = await tools.exec_command({cmd: "make -C proofs/C-NN prove CONFIG=lp64-le > $TMPDIR/C-NN.log 2>&1; tail -5 $TMPDIR/C-NN.log", yield_time_ms: 1000});
   // if r is still running (it has a session_id and no exit code):
   text(await tools.write_stdin({session_id: <its session_id>, chars: "", yield_time_ms: 3600000}));
   ~~~

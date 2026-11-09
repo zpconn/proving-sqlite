@@ -22,7 +22,7 @@ This project proves, with CBMC, that functions in SQLite 3.53.4's varint and rec
 ## 2. Frozen files
 
 - At checkpoint 1, `proof.lock` records SHA-256 hashes of pin.txt, upstream/, GOAL.md, AGENTS.md, CLAUDE.md, agents/, PROPERTIES.md, TRUSTED.md, UB-CLASSES.md, proofs/spec/, proofs/CHECKS, proofs/CONFIGS, proofs/MUTANTS, tools/ and the gate's Makefile targets. The gate checks them.
-- The one exception in tools/ is `tools/sessions.toml`. It may hold only command lines, model names and usage-limit patterns.
+- The one exception in tools/ is `tools/sessions.toml`. It may hold only command lines, model names and usage-limit patterns, and its command lines must be campaign.py's own exactly, but for the placeholders campaign.py fills, so a CLI flag change is a change to tools/.
 - Changing a frozen file needs Zach's approval: the patch and its evidence go under `evidence/approvals/`, unapplied until he answers.
 
 ## 3. Never weaken
@@ -70,7 +70,7 @@ Don't push, add a git remote, publish, post to the SQLite forum, email anyone or
 - At most 4 builder and reviewer sessions at once, together; fewer if CBMC makes the machine swap.
 - Every CBMC run has a timeout, starting at 10 minutes per configuration.
 - Long runs: builders wait for them in one blocking call, as agents/builder/GOAL.md §2.9 says, because Codex's sandbox kills background jobs. Claude sessions start them in the background with output in a file, or give the command a timeout longer than the run. Trust only output that ends with its `RESULT` line. A run a shell cut off is not a result.
-- Keep scratch files under /tmp, never in tracked paths. A reviewer's /tmp is private to its session.
+- Keep scratch files out of tracked paths. A builder's go in `$TMPDIR`, tmp/ in its worktree, which git ignores; /tmp is not writable to it, so concurrent builders share no scratch space. A reviewer's go under /tmp, which is private to its session.
 
 ## 10. Models and subscriptions
 
