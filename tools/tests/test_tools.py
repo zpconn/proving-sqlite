@@ -283,6 +283,29 @@ def main():
         rc, out, res = t.run(r, ['make', '-C', 'proofs/C-90', 'prove', cfg])
         t.expect('prove: ENFORCE pairing f with another function\'s contract fails', rc != 0 and 'contract_<fn>' in out, out)
 
+        # auditor 2026-11-09 evening: a card-call argument narrowed by its declared type (u32 value for a u64
+        # parameter) fails the proof; checked on the linked goto program, so on the real C-01 and C-02 (lp64-le)
+        real = os.path.join(t.base, 'real-prove')
+        for d in ('tools', 'proofs', 'cards', 'overlay'):
+            shutil.copytree(os.path.join(REPO, d), os.path.join(real, d),
+                            ignore=shutil.ignore_patterns('__pycache__', 'tests', 'fakecli', 'build'))
+        for c in ('C-01', 'C-02'):
+            rc, out, res = t.run(real, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + c, '--config', 'lp64-le'])
+            t.expect('prove (argument types): %s as merged passes' % c, rc == 0 and 'RESULT prove %s lp64-le PASS' % c in res, out)
+        h01 = open(os.path.join(REPO, 'proofs/C-01/harness.c')).read()
+        k = h01.index('void harness_sqlite3PutVarint')
+        for ty, shown in (('u32', 'unsignedbv[32]'), ('int', 'signedbv[32]'), ('u8', 'unsignedbv[8]')):
+            t.write(real, 'proofs/C-01/harness.c', h01[:k] + h01[k:].replace('  u64 value;\n', '  %s value;\n' % ty, 1))
+            rc, out, res = t.run(real, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-01', '--config', 'lp64-le'])
+            t.expect('prove rejects (argument types): C-01 with %s value in harness_sqlite3PutVarint' % ty,
+                     rc != 0 and 'RESULT prove C-01/put lp64-le FAIL' in out and 'RESULT prove C-01 lp64-le FAIL' in res
+                     and 'argument 2 of sqlite3PutVarint: value has type %s before any cast; the parameter has '
+                         'unsignedbv[64]' % shown in out, out)
+        t.write(real, 'proofs/C-01/harness.c', h01[:k] + h01[k:].replace('  size_t extent, offset;\n', '  size_t extent;\n  u32 offset;\n', 1))
+        rc, out, res = t.run(real, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-01', '--config', 'lp64-le'])
+        t.expect('prove rejects (argument types): C-01 with a u32 offset in output + offset (k must be size_t)',
+                 rc != 0 and 'the offset offset has type unsignedbv[32]; it must be size_t (unsignedbv[64])' in out, out)
+
     # ---- coverage
     if want('coverage'):
         r = t.fresh()

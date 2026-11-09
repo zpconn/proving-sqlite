@@ -129,7 +129,7 @@ The campaign session starts here. Read HANDOFF.md and run the checks it lists; i
    - check_overlay;
    - proof.lock's hashes; after the freeze, a missing proof.lock fails;
    - each harness, preprocessed on every configuration, includes only overlay/sqlite3.c, proofs/include/*.h, proofs/contracts/*.h, proofs/spec/*.h and system headers;
-   - every merged proof, on every configuration, with proofs/CHECKS;
+   - every merged proof, on every configuration, with proofs/CHECKS; a proof also fails if an entry function passes a card function an argument whose type before any cast is not the parameter's (k in `p + k` must be size_t), checked on the linked goto program;
    - coverage of every proof, with each unreached line of the function under proof listed under "Unreached lines" in its NOTES.md (one line, or a range within one uncovered block, with a reason; an entry naming a line the run covers fails), and every function of each card in some proof's COVER;
    - every mutant in proofs/MUTANTS killed, or shown equivalent by a reviewed argument;
    - `tools/scan.py`, which rejects:

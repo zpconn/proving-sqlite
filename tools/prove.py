@@ -11,13 +11,16 @@ configuration the pipeline is:
   goto-cc <CONFIGS flags> -include proof.h -I overlay -I proofs/include -I proofs -c harness.c
   goto-cc --function <entry>                     (link; one goto program per proof)
   goto-instrument --drop-unused-functions
+  goto-instrument --show-goto-functions --json-ui (card-call argument types; see card_call_type_problems)
   goto-instrument --dfcc <entry> [--enforce-contract f/contract_f] [--replace-call-with-contract g/contract_g]...
                   [--apply-loop-contracts]       (only if the proof uses contracts)
   goto-instrument --slice-global-inits
   cbmc <every option in proofs/CHECKS> [--unwindset ...] [solver] [--object-bits n]
   cbmc ... --conversion-check --property <id>... (the %float-to-int pass, when such properties exist)
 
-A proof also FAILS if CBMC reports a function without a body: calls to it would be unconstrained.
+A proof also FAILS if CBMC reports a function without a body: calls to it would be unconstrained. It also FAILS
+if, in the entry function, a call to a card function passes an argument whose type, before any cast, is not the
+parameter's: a `u32 value` passed for a u64 parameter is narrowed by its declaration, which scan cannot see.
 
 The card's Makefile is declarative (tools/scan.py enforces it):
   CARD := C-NN
@@ -50,6 +53,7 @@ TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
 sys.path.insert(0, TOOLS)
 import overlay as ov  # noqa: E402
+import cards as cardlib  # noqa: E402
 
 DEFAULT_TIMEOUT = 600          # seconds per CBMC run, per configuration (GOAL.md §0.9)
 MEM_LIMIT = 12 * 1024 ** 3     # address-space cap per tool process, so CBMC fails instead of swapping
@@ -196,15 +200,15 @@ def _limits():
         pass
 
 
-def run(cmd, log, timeout=None, cwd=None):
-    """Run cmd under nice -n 10 in its own process group, output to log file. Returns
-    (returncode or 'timeout', seconds)."""
+def run(cmd, log, timeout=None, cwd=None, stdout_path=None):
+    """Run cmd under nice -n 10 in its own process group, output to log file (standard output to stdout_path
+    instead, if given). Returns (returncode or 'timeout', seconds)."""
     t0 = time.time()
-    with open(log, 'w') as lf:
+    with open(log, 'w') as lf, open(stdout_path or os.devnull, 'w') as of:
         lf.write('$ ' + ' '.join(shlex.quote(c) for c in cmd) + '\n')
         lf.flush()
-        p = subprocess.Popen(['nice', '-n', '10'] + cmd, stdout=lf, stderr=subprocess.STDOUT,
-                             cwd=cwd, preexec_fn=_limits)
+        p = subprocess.Popen(['nice', '-n', '10'] + cmd, stdout=of if stdout_path else lf, stderr=subprocess.STDOUT
+                             if not stdout_path else lf, cwd=cwd, preexec_fn=_limits)
         try:
             rc = p.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
@@ -255,6 +259,116 @@ def parse_show_properties(text):
 
 # ---------------------------------------------------------------- build
 
+def goto_type(t):
+    """A goto type as a comparable string (structure and widths; the JSON carries no qualifiers or C names)."""
+    ns = t.get('namedSub') or {}
+    i = t.get('id')
+    if i in ('unsignedbv', 'signedbv', 'floatbv', 'fixedbv', 'c_bool', 'bv'):
+        return '%s[%s]' % (i, (ns.get('width') or {}).get('id'))
+    if i == 'pointer':
+        return goto_type(t['sub'][0]) + '*'
+    if i == 'array':
+        return goto_type(t['sub'][0]) + '[]'
+    if i in ('struct_tag', 'union_tag', 'c_enum_tag'):
+        return '%s %s' % (i, (ns.get('identifier') or {}).get('id'))
+    if i == 'code':
+        return 'code'
+    return i or '?'
+
+
+def _strip_casts(e):
+    while e.get('id') == 'typecast':
+        e = e['sub'][0]
+    return e
+
+
+def _etype(e):
+    return goto_type((e.get('namedSub') or {}).get('type') or {})
+
+
+def _name(e):
+    return ((e.get('namedSub') or {}).get('identifier') or {}).get('id', '?').split('::')[-1]
+
+
+def arg_type_problem(arg, ptype):
+    """None if a card-call argument has the parameter's type before any cast, else why not. The forms are scan's
+    (x, &x, p + k), as goto-cc writes them: a symbol; address_of a symbol, or of element 0 of an array (decay);
+    and p + k, where p must have the parameter's type and k be size_t, the unsigned type of p's pointer width."""
+    e = _strip_casts(arg)
+    i = e.get('id')
+    if i == 'symbol' or (i == 'address_of' and _strip_casts(e['sub'][0]).get('id') in ('symbol', 'index')):
+        if i == 'address_of' and e['sub'][0].get('id') == 'index':
+            ix = e['sub'][0]
+            if ix['sub'][0].get('id') != 'symbol' or ix['sub'][1].get('id') != 'constant':
+                return 'an element address that is not an array\'s start'
+            shown = _name(ix['sub'][0])
+        else:
+            shown = _name(e if i == 'symbol' else e['sub'][0])
+        if _etype(e) != ptype:
+            return '%s has type %s before any cast; the parameter has %s' % (shown, _etype(e), ptype)
+        return None
+    if i == '+' and len(e.get('sub', [])) == 2:
+        x, y = _strip_casts(e['sub'][0]), _strip_casts(e['sub'][1])
+        if x.get('id') != 'symbol' or y.get('id') != 'symbol':
+            return 'p + k with an operand that is not a variable'
+        if _etype(x) != ptype:
+            return '%s has type %s before any cast; the parameter has %s' % (_name(x), _etype(x), ptype)
+        width = ((((x.get('namedSub') or {}).get('type') or {}).get('namedSub') or {}).get('width') or {}).get('id')
+        size_t = 'unsignedbv[%s]' % width
+        if not width or _etype(y) != size_t:
+            return 'the offset %s has type %s; it must be size_t (%s)' % (_name(y), _etype(y), size_t)
+        return None
+    return 'an argument of the form %s, not x, &x or p + k' % i
+
+
+def card_call_type_problems(funcs_json, entry, funcs):
+    """From goto-instrument --show-goto-functions --json-ui on the linked program (before DFCC): for each call in
+    `entry` to one of `funcs` (sqlite3.c macros are already expanded to their calls), each argument whose type before
+    any cast is not the parameter's. size_t is the unsigned type of pointer width."""
+    data = json.loads(funcs_json, strict=False)
+    fns = next((x['functions'] for x in data if isinstance(x, dict) and 'functions' in x), None)
+    if fns is None:
+        return ['goto-instrument printed no functions']
+    body = next((f for f in fns if f.get('name') == entry), None)
+    if body is None:
+        return ['entry function %s is not in the goto program' % entry]
+    probs, calls = [], 0
+    for ins in body.get('instructions', []):
+        if ins.get('instructionId') != 'FUNCTION_CALL':
+            continue
+        sub = ins['code']['sub']
+        callee, args = sub[1], (sub[2].get('sub') or [])
+        line = (ins.get('sourceLocation') or {}).get('line', '?')
+        if callee.get('id') != 'symbol':
+            probs.append('line %s: a call through a function pointer in %s' % (line, entry))
+            continue
+        fn = _name(callee)
+        if fn not in funcs:
+            continue
+        calls += 1
+        params = [goto_type(q['namedSub']['type']) for q in
+                  ((callee['namedSub']['type'].get('namedSub') or {}).get('parameters') or {}).get('sub', [])]
+        if len(params) != len(args):
+            probs.append('line %s: %s takes %d arguments, called with %d' % (line, fn, len(params), len(args)))
+            continue
+        for k, (a, pt) in enumerate(zip(args, params)):
+            why = arg_type_problem(a, pt)
+            if why:
+                probs.append('line %s: argument %d of %s: %s (a narrower declared type narrows the input)' % (
+                    line, k + 1, fn, why))
+    return probs
+
+
+def card_functions(card_dir, proof):
+    """The card's functions (cards/C-NN.md), with the proof's ENFORCE and COVER functions."""
+    out = set(proof.enforced) | set(proof.cover)
+    try:
+        out |= set(cardlib.load(ROOT, os.path.basename(os.path.normpath(card_dir))).functions)
+    except Exception:   # no cards/ (a tool-test fixture): the Makefile's functions only
+        pass
+    return out
+
+
 def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
     """Build the instrumented goto program for one proof and config. Returns (path, error)."""
     os.makedirs(bdir, exist_ok=True)
@@ -275,6 +389,27 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
     steps = [(['goto-cc', '--function', proof.entry, obj, '-o', p0], 'link')]
     p1 = os.path.join(bdir, proof.name + '.1.goto')
     steps.append((['goto-instrument', '--drop-unused-functions', p0, p1], 'drop-unused'))
+    for cmd, tag in steps:
+        rc, _ = run(cmd, log + '.' + tag, timeout=900)
+        if rc != 0:
+            return None, '%s failed (%s); see %s' % (tag, rc, log + '.' + tag)
+    steps = []
+    # auditor 2026-11-09 evening: each card-call argument has its parameter's type before any cast
+    fj = os.path.join(bdir, proof.name + '.functions.json')
+    rc, _ = run(['goto-instrument', '--show-goto-functions', '--json-ui', p1], log + '.arg-types', timeout=900,
+                stdout_path=fj)
+    if rc != 0:
+        return None, 'goto-instrument --show-goto-functions failed (%s); see %s' % (rc, log + '.arg-types')
+    try:
+        probs = card_call_type_problems(open(fj, errors='replace').read(), proof.entry, card_functions(card_dir, proof))
+    except (ValueError, KeyError, IndexError, TypeError) as e:
+        probs = ['could not read the goto program\'s calls: %s: %s' % (type(e).__name__, e)]
+    finally:
+        os.remove(fj)
+    if probs:
+        with open(log + '.arg-types', 'a') as f:
+            f.write('\n'.join(probs) + '\n')
+        return None, 'card-call argument types: ' + '; '.join(probs)
     cur = p1
     if proof.uses_dfcc():
         p2 = os.path.join(bdir, proof.name + '.2.goto')
