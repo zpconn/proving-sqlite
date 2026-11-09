@@ -1,41 +1,34 @@
 # PROGRESS
 
-## Status (2026-11-08 17:30, setup session, after checkpoint 0)
+## Status (2026-11-09, setup session, checkpoint 1: waiting for Zach's review)
 
-**Done:** instructions installed, machine checked (evidence/bringup/machine.txt), GOAL.md §0 and §1; checkpoint 0's decisions A–E and the auditor's fixes C1–C10 (below; evidence/bringup/13-checkpoint0.md). **Next:** the auditor rechecks the fixes; then §2.
+**Done:** §0, §1 (bring-up, pilot: C-01 and C-02 merged), checkpoint 0 and all its follow-ups (evidence/bringup/13-checkpoint0.md), and GOAL.md §2. **Next:** Zach reviews checkpoint 1. Then proof.lock, HANDOFF.md, and the campaign session (§3). proof.lock is not written and §3 is not started.
 
-| § | Item | Result | Evidence |
-|---|---|---|---|
-| 1.1 | Pins | 3.53.4 pinned; SOURCE_ID and release-log SHA3 match; src zip manifest = check-in; CBMC 6.11.0 (SAT minisat2/cadical/glucose, SMT z3) | 01-pins.md, pin.txt |
-| 1.2 | Contracts on separate declarations | `f/c` enforces c on f, fails a false ensures, replaces calls; works for statics. **Choice: proofs/contracts/<fn>.h** | 02-contracts.md |
-| 1.3 | Loop contracts | while: applied, bad invariant and measure caught. do-while: only `do PROOF(...){`, not after the condition | 03-loops.md |
-| 1.4 | Checks | 11 options + float-to-int pass; all 13 toys fire; UB-CLASSES.md written | 04-checks.md, UB-CLASSES.md |
-| 1.5 | Configurations | lp64-le, ilp32-le, lp64-be: probe and preprocessing confirm width, byte order, SQLite branch | 05-configs.md, 05-probe.txt |
-| 1.6 | Builds | goto-cc whole overlay ≈5.7 s, 0.6 GB per config; one TU per harness | 06-builds.md |
-| 1.7 | Coverage | `cbmc --cover location`; flags the toy's unreachable line | 07-coverage.md |
-| 1.8.1 | Varint probe | 1M random + boundaries round-trip, 0 sanitizer reports; VarintLen 9 / 10 / 10 at 2^63−1 / 2^63 / 2^64−1: P2 stands | 08-probes.md |
-| 1.8.2 | Over-read probe | ASan heap-buffer-overflow READ at 38190 via 92137: A-001 premise holds | 08-probes.md |
-| 1.9 | Tools | check_overlay, scan, mutate, prove, lock, gate, make targets; 52/52 tests | 09-tools.md |
-| 1.10 | Agent CLIs | both: headless on subscription, running token counts, kill+resume, 15-min command, sandbox | 10-cli.md, tools/sessions.toml |
-| 1.11 | Coordinator | campaign.py; selftest 31/31 | 11-coordinator.md, 11-selftest.txt |
-| 1.12 | Pilot | C-01 merged (2 rounds), C-02 merged (1); kill+resume; planted bug caught; full gate PASS | 12-pilot.md |
+| §2 item | File | State |
+|---|---|---|
+| Properties P1–P3 | PROPERTIES.md | P3: departures D1–D3, including types 10/11 read 0 bytes (the table says "variable"); every change from GOAL.md listed |
+| 1. Appendix A confirmed | evidence/checkpoint1/01-scope.md, callgraph.txt | lines, loops and callees against the pin; adds memcpy and vdbeMemClearExternAndSetNull; card order |
+| 2. P3 reference | proofs/spec/record_format.h | 57 lines, each case citing its row; Codex review APPROVE (reviews/spec-r1.md); native test 2M checks, 0 mismatches (evidence/spec/) |
+| 3. Ledger drafts | LEDGER.md | A-001 slack (S fixed by C-15), A-002–A-004 boundary contracts (clauses checked in CBMC), A-005 nine-byte varint output |
+| 4. Mutants | proofs/MUTANTS | 62, at least 2 per function; none expected equivalent; 4 kills need a contract the card asks for |
+| 5. Cards | cards/C-01.md … C-20.md | Depends on and May change lines; every May change line names exact files |
+| 6. Trust and UB | TRUSTED.md, UB-CLASSES.md | UB-CLASSES adds 6.5p2 (unsequenced) and more 6.5p7 sites |
+| Caps | evidence/checkpoint1/02-caps.md | waiting cost makes no cap too tight; C-18 worth watching |
 
-Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 session-minutes; C-01 225 and C-02 450 properties per configuration, CBMC ≤ 1 s each; coverage 100%; mutants 16/16.
+Checks at checkpoint 1: tool tests 195/195, selftest 86/86, scan PASS, check_overlay PASS; full gate: `RESULT gate all PASS 6865s 0 failed`; mutants 22/62 killed, 0 equivalent, 40 pending (cards with no proofs yet). C-02's roundtrip already kills M-017 to M-022 (C-03, C-04, C-05) (evidence/checkpoint1/03-full-gate.log).
 
-**Checkpoint 0 decisions, done** (each with a tool test or selftest step; 13-checkpoint0.md has the detail):
-- A: corrections 1–8 applied to GOAL.md (§1.3–§1.5, §1.9, §2.4, §3.1, Appendix A), builder §2.6/§2.9, AGENTS.md §9, HOWTO.
-- B: lp64-be adds -funsigned-char; the probe checks char signedness; scan allows the flag.
-- C1–C10: scan (path enders, SETUP discipline, card-dir files, symlinks, preds.h growth, COVER), gate (includes check, preds.h users), coverage (Unreached lines), lock (missing after freeze), campaign.py (vendors fixed, command guards, reviewer sandbox, trailers on merges, mode/symlink refusal, results provenance).
-- D: Codex can block: two sessions.toml settings plus the builder's wait advice. 15-minute wait: 748,078 tokens before, 36,925 after.
-- E: auth-failure patterns pause the vendor, add a triage item, resume with `campaign.py resume-vendor`.
-- Tests: tool tests 95/95, selftest 49/49, full gate PASS (13-tool-tests.txt, 13-selftest.txt, 13-full-gate.log).
-- Auditor follow-ups 1–8 done (13-checkpoint0.md, one section each; every new test fails on the code before it): gate calls prove.py, never make on card Makefiles (1); harness discipline in scan rule 11 (2); strict Unreached lines entries checked against the run (3); shared headers #define only their guard (4); exact session commands and a sessions.toml hash per session (5); reviewer sandbox with its own CLAUDE_CONFIG_DIR, no /run/user, DBus, ~/.claude or other tools' logins, checked in a real session (6); worktree files read and written only as regular files (7); builder TMPDIR in the worktree, no /tmp (8). Zach chose to allow one snapshot form before the call, so C-02's merged harness passes as it is. Recheck items 1–3 done: card-function arguments only `x`, `&x`, `p + k` (p a pointer), every name a declared local, no static/extern locals, no macros in declarations; prove.py checks card-call argument types; plain {model}/{effort}; the FIFO check can't hang. Selftest 86/86, tool tests 192/192.
+**Decisions in this checkpoint for Zach** (made in tools or agents/ before the freeze; each can be undone):
+1. `mutate.py --all` reports a survivor whose card has no proofs yet as PENDING instead of failing, so the full gate passes during the campaign; at the end nothing is pending. GOAL.md §3.4 still says "every mutant … killed".
+2. Builders write boundary-callee headers word for word from LEDGER.md (builder §1); C-14 writes sqlite3DbMallocRaw.h, C-17 writes vdbeCompareMemString.h and sqlite3CorruptError.h.
+3. The file format document at the pin is evidence/spec/fileformat2.html, from sqlite-doc-3530400.zip, downloaded from sqlite.org (hashes in evidence/spec/README.md).
+4. May change lines list reports b1–b6 and repro files 1–3; a card retried past round 6 needs its line extended.
 
 **Open questions for Zach:**
 1. SQLite 3.54.1 is out; the pin stays 3.53.4 per §1.1.
-2. Codex builders had ChatGPT connectors (Gmail, Sites deploy, ~300 tools), web search and subagents available despite `--ignore-user-config`; the pilot never used them, and they are now disabled. Anything else to turn off?
-3. Claude's login now expires 2026-12-07 22:27 UTC. An expired login now pauses the vendor with a triage item instead of failing cards.
-4. A reviewer can still read the rest of / (other ~/.config dirs, /mnt/c) and reach host sockets such as the system DBus, with network on. Hide $HOME and /mnt wholesale, binding back what Claude needs? (13-checkpoint0.md, follow-up 6)
+2. Codex's ChatGPT connectors, web search and subagents are disabled for builders; anything else to turn off?
+3. Claude's login expires 2026-12-07 22:27 UTC; an expired login pauses the vendor with a triage item.
+4. A reviewer can still read the rest of / and reach host sockets with network on. Hide $HOME and /mnt wholesale? (13-checkpoint0.md, follow-up 6)
+5. A-001: sqlite3VdbeRecordUnpack's header index is bounded by szHdr and the field count, not by nKey, so the slack may grow with nField (C-15's card asks the builder to report it).
 
 ## What bring-up showed GOAL.md or the plan got wrong
 
@@ -47,13 +40,16 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 6. **RESULT last** (§1.9): `make -C` prints "Leaving directory" after it unless `GNUMAKEFLAGS=--no-print-directory` is set; campaign.py sets it for every session and gate.
 7. **Claude sessions** (§0.10, §1.10): they run in `--permission-mode auto` inside bubblewrap. This session's auto-mode classifier refused a test launch with bypassPermissions.
 8. **Mutants:** each line carries `card=` (the card whose proofs must kill it), so a P1 card's gate never depends on a P2/P3 card that merges later. The full gate still runs every mutant against every proof.
+9. **P3, types 10 and 11** (§2): GOAL.md takes k from the file format table for t ≤ 11, but the table gives "variable" for 10 and 11. The code reads 0 bytes; PROPERTIES.md states this as departure D2.
+10. **Appendix A's callees** (§2.1): the call graph adds memcpy (serialGet, serialGet7, sqlite3IsNaN) and vdbeMemClearExternAndSetNull (sqlite3VdbeMemSetNull's dynamic branch, excluded by its requires).
+11. **UB-CLASSES' 6.5p7 sites:** bring-up listed only serialGet; vdbeRecordDecodeInt (92569, 92579) and vdbeRecordCompareInt (92877, 92889) make the same accesses.
 
-## Notes for §2
+## Notes for §3
 
-- Ledger drafts so far: C-01's builder proposed one for sqlite3PutVarint's 9-byte output buffer (reports/C-01-b2.md), to be numbered in §2.3 with the three boundary contracts and A-001.
-- Every commit campaign.py makes now carries a Campaign: trailer, its merges of main into card branches and orch included (C8). The pilot's two merges of main (4a793a2, 3d01a2e) predate this and have none.
-- results.csv's lp64-be rows predate -funsigned-char; the next merge that reruns each card regenerates them. The full gate already passes with it.
+- Every commit campaign.py makes carries a Campaign: trailer, its merges of main into card branches and orch included (C8). The pilot's two merges of main (4a793a2, 3d01a2e) predate this and have none.
+- results.csv's lp64-be rows predate -funsigned-char; the next merge that reruns each card regenerates them.
 - Token counting: codex counts input (which already includes cache reads) + cache writes + output; claude counts input + cache reads + cache writes + output.
+- A-005 (C-01's nine-byte output) is numbered; LEDGER.md's entries are all drafts until the cards that use them settle.
 
 ## Log
 
@@ -79,3 +75,4 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 - 2026-11-09: entry-function declarations may name no macro from sqlite3.c, proof.h or an included header (SQLITE_PRIVATE is static, SQLITE_EXTERN extern); system headers' macros come from gcc -dM -E per configuration. Five tests that fail on 7b3a029, one typedef test that passes; tool tests 184/184, scan PASS.
 - 2026-11-09: prove.py fails a proof whose entry function passes a card function an argument with a type other than the parameter's (before any cast; k in p + k size_t), checked on the linked goto program. Four tests that fail on f49022f; tool tests 190/190. Full gate at fc90cc0: RESULT gate all PASS 921s 0 failed.
 - 2026-11-09 night: the argument-type check fails a proof whose entry makes no direct call to its ENFORCE function (or, without ENFORCE, to any card function). A COVER-only proof with no card call passed before; tool tests 192/192. Full gate not rerun.
+- 2026-11-09: Zach approved the checkpoint 0 fixes; GOAL.md §2 carried out. PROPERTIES.md; proofs/spec/record_format.h (Codex spec review J0011, 140,902 tokens: APPROVE); LEDGER.md drafts A-001 to A-005; proofs/MUTANTS to 62; cards C-03 to C-20; TRUSTED.md; UB-CLASSES.md for 6.5p2; Appendix A confirmed (evidence/checkpoint1/). mutate.py --all reports PENDING for cards without proofs. Waiting cost makes no cap too tight.

@@ -1,0 +1,184 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 0 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 0 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  lock: no proof.lock yet (it is written at the freeze, after checkpoint 1)
+  RESULT lock PASS 0 files (no proof.lock)
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py
+  scan: 2 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (22s)
+gate: cards to run: C-01, C-02
+==== includes C-01: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-01
+    includes C-01 lp64-le: 153 files, 0 not allowed
+    includes C-01 ilp32-le: 153 files, 0 not allowed
+    includes C-01 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-01 all PASS
+==== includes C-01 PASS (0s)
+==== prove C-01: /usr/bin/python3 /home/zpconn/code/proving-sqlite/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite/proofs/C-01 --config all --overlay /home/zpconn/code/proving-sqlite/overlay --build-dir /home/zpconn/code/proving-sqlite/proofs/C-01/build
+  RESULT prove C-01/put64 lp64-le PASS 25s 110 properties 0 failed
+  RESULT prove C-01/put lp64-le PASS 19s 115 properties 0 failed
+  RESULT prove C-01 lp64-le PASS 44s 225 properties 0 failed
+  RESULT prove C-01/put64 ilp32-le PASS 23s 110 properties 0 failed
+  RESULT prove C-01/put ilp32-le PASS 17s 115 properties 0 failed
+  RESULT prove C-01 ilp32-le PASS 40s 225 properties 0 failed
+  RESULT prove C-01/put64 lp64-be PASS 23s 110 properties 0 failed
+  RESULT prove C-01/put lp64-be PASS 21s 115 properties 0 failed
+  RESULT prove C-01 lp64-be PASS 44s 225 properties 0 failed
+  RESULT prove C-01 all PASS 128s 675 properties 0 failed
+==== prove C-01 PASS (127s)
+==== coverage C-01: /usr/bin/python3 /home/zpconn/code/proving-sqlite/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite/proofs/C-01 --config all --overlay /home/zpconn/code/proving-sqlite/overlay --build-dir /home/zpconn/code/proving-sqlite/proofs/C-01/build
+    coverage put64 lp64-le putVarint64: 18/18 lines; uncovered none
+    coverage put lp64-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage put64 ilp32-le putVarint64: 18/18 lines; uncovered none
+    coverage put ilp32-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage put64 lp64-be putVarint64: 18/18 lines; uncovered none
+    coverage put lp64-be sqlite3PutVarint: 9/9 lines; uncovered none
+  RESULT coverage C-01 all PASS 81/81 lines 0 uncovered 0 unexplained
+==== coverage C-01 PASS (97s)
+==== includes C-02: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-02
+    includes C-02 lp64-le: 151 files, 0 not allowed
+    includes C-02 ilp32-le: 151 files, 0 not allowed
+    includes C-02 lp64-be: 151 files, 0 not allowed
+  RESULT includes C-02 all PASS
+==== includes C-02 PASS (0s)
+==== prove C-02: /usr/bin/python3 /home/zpconn/code/proving-sqlite/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite/proofs/C-02 --config all --overlay /home/zpconn/code/proving-sqlite/overlay --build-dir /home/zpconn/code/proving-sqlite/proofs/C-02/build
+  RESULT prove C-02/roundtrip lp64-le PASS 10s 450 properties 0 failed
+  RESULT prove C-02 lp64-le PASS 10s 450 properties 0 failed
+  RESULT prove C-02/roundtrip ilp32-le PASS 10s 450 properties 0 failed
+  RESULT prove C-02 ilp32-le PASS 10s 450 properties 0 failed
+  RESULT prove C-02/roundtrip lp64-be PASS 10s 450 properties 0 failed
+  RESULT prove C-02 lp64-be PASS 10s 450 properties 0 failed
+  RESULT prove C-02 all PASS 30s 1350 properties 0 failed
+==== prove C-02 PASS (29s)
+==== coverage C-02: /usr/bin/python3 /home/zpconn/code/proving-sqlite/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite/proofs/C-02 --config all --overlay /home/zpconn/code/proving-sqlite/overlay --build-dir /home/zpconn/code/proving-sqlite/proofs/C-02/build
+    coverage roundtrip lp64-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip ilp32-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-be putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3VarintLen: 4/4 lines; uncovered none
+  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+==== coverage C-02 PASS (15s)
+==== mutants all: /usr/bin/python3 tools/mutate.py --all --json proofs/build/mutants-all.json
+  MUTANT M-001 putVarint64:37971 'p[8]'->'p[9]' KILLED by C-01/put64 lp64-le: 27 failed: [putVarint64.assigns.1] Check that p[(signed long int)9] is assignable; [putVarint64.pointer_dereference.5] dereference failure: pointer outside object bounds in p[(signed long int)9]; [putVarint64.pointer_dereference.6] dereference failure: invalid integer address in p[(signed long int)9]; [putVarint64.overflow.1] arithmetic overflow on signed - in i - 1; [putVarint64.assigns.2] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.13] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.14] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.15] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.16] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.17] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.18] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.19] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.20] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.21] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.22] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.23] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.24] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.7] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.8] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.9] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.10] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.11] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.12] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  MUTANT M-002 putVarint64:37973 'i--'->'i++' KILLED by C-01/put64 lp64-le: 25 failed: [putVarint64.overflow.1] arithmetic overflow on signed + in i + 1; [putVarint64.unwind.0] unwinding assertion loop 0; [putVarint64.assigns.2] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.13] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.14] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.15] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.16] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.17] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.18] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.19] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.20] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.21] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.22] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.23] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.24] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.7] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.8] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.9] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.10] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.11] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.12] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  MUTANT M-003 putVarint64:37982 'v >>= 7'->'v >>= 6' KILLED by C-01/put64 lp64-le: 28 failed: [putVarint64.overflow.4] arithmetic overflow on signed - in j - 1; [putVarint64.overflow.5] arithmetic overflow on signed + in i + 1; [putVarint64.unwind.2] unwinding assertion loop 2; [putVarint64.array_bounds.3] array 'buf' lower bound in buf[(signed long int)j]; [putVarint64.array_bounds.4] array 'buf' upper bound in buf[(signed long int)j]; [putVarint64.assigns.3] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.25] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.26] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.27] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.28] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.29] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.30] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.31] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.32] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.33] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.34] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.35] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.36] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.13] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.14] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.15] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.16] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  MUTANT M-004 putVarint64:37970 '<<32'->'<<33' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-005 putVarint64:37974 '0x7f'->'0x3f' KILLED by C-02/roundtrip lp64-le: 2 failed: [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-006 sqlite3PutVarint:37998 'p[1]'->'p[9]' KILLED by C-01/put lp64-le: 4 failed: [sqlite3PutVarint.assigns.3] Check that p[(signed long int)9] is assignable; [sqlite3PutVarint.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)9]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size
+  MUTANT M-007 sqlite3PutVarint:37993 'p[0]'->'p[9]' KILLED by C-01/put lp64-le: 4 failed: [sqlite3PutVarint.assigns.1] Check that p[(signed long int)9] is assignable; [sqlite3PutVarint.pointer_dereference.5] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.6] dereference failure: invalid integer address in p[(signed long int)9]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size
+  MUTANT M-008 sqlite3PutVarint:37992 '0x7f'->'0xff' KILLED by C-02/roundtrip lp64-le: 3 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case; [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-009 sqlite3PutVarint:37996 '0x3fff'->'0x7fff' KILLED by C-02/roundtrip lp64-le: 3 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case; [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-010 sqlite3GetVarint:38029 '<<7'->'<<8' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-011 sqlite3GetVarint:38150 '<<15'->'<<14' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-012 sqlite3GetVarint:38161 'p[-4]'->'p[-5]' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-013 sqlite3GetVarint32:38192 '<<7'->'<<6' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-014 sqlite3GetVarint32:38204 '0xffffffff'->'0xfffffffe' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-015 sqlite3VarintLen:38217 'i=1'->'i=0' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case
+  MUTANT M-016 sqlite3VarintLen:38217 '>>= 7'->'>>= 8' KILLED by C-02/roundtrip lp64-le: 1 failed: [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case
+  MUTANT M-017 sqlite3GetVarint:38161 'p[-4]'->'p[4]' KILLED by C-02/roundtrip lp64-le: 15 failed: [sqlite3GetVarint.pointer_arithmetic.83] pointer arithmetic: pointer outside object bounds in p + (signed long int)4; [sqlite3GetVarint.pointer_arithmetic.84] pointer arithmetic: invalid integer address in p + (signed long int)4; [sqlite3GetVarint.pointer_dereference.133] dereference failure: pointer NULL in p[(signed long int)4]; [sqlite3GetVarint.pointer_dereference.134] dereference failure: pointer invalid in p[(signed long int)4]; [sqlite3GetVarint.pointer_dereference.135] dereference failure: deallocated dynamic object in p[(signed long int)4]; [sqlite3GetVarint.pointer_dereference.136] dereference failure: dead object in p[(signed long int)4]; [sqlite3GetVarint.pointer_dereference.137] dereference failure: pointer outside object bounds in p[(signed long int)4]; [sqlite3GetVarint.pointer_dereference.138] dereference failure: invalid integer address in p[(signed long int)4]; [sqlite3GetVarint.pointer_dereference.139] dereference failure: pointer NULL in *v; [sqlite3GetVarint.pointer_dereference.140] dereference failure: pointer invalid in *v; [sqlite3GetVarint.pointer_dereference.141] dereference failure: deallocated dynamic object in *v; [sqlite3GetVarint.pointer_dereference.142] dereference failure: dead object in *v; [sqlite3GetVarint.pointer_dereference.143] dereference failure: pointer outside object bounds in *v; [sqlite3GetVarint.pointer_dereference.144] dereference failure: invalid integer address in *v; [harness_roundtrip.assertion.5] P2 GetVarint value
+  MUTANT M-018 sqlite3GetVarint:38145 '<<32'->'<<64' KILLED by C-02/roundtrip lp64-le: 3 failed: [sqlite3GetVarint.undefined-shift.1] shift distance too large in (u64)s << 64; [harness_roundtrip.assertion.5] P2 GetVarint value; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-019 sqlite3GetVarint32:38197 'p[2]'->'p[9]' KILLED by C-02/roundtrip lp64-le: 9 failed: [sqlite3GetVarint32.pointer_arithmetic.35] pointer arithmetic: pointer outside object bounds in p + (signed long int)9; [sqlite3GetVarint32.pointer_arithmetic.36] pointer arithmetic: invalid integer address in p + (signed long int)9; [sqlite3GetVarint32.pointer_dereference.43] dereference failure: pointer NULL in p[(signed long int)9]; [sqlite3GetVarint32.pointer_dereference.44] dereference failure: pointer invalid in p[(signed long int)9]; [sqlite3GetVarint32.pointer_dereference.45] dereference failure: deallocated dynamic object in p[(signed long int)9]; [sqlite3GetVarint32.pointer_dereference.46] dereference failure: dead object in p[(signed long int)9]; [sqlite3GetVarint32.pointer_dereference.47] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3GetVarint32.pointer_dereference.48] dereference failure: invalid integer address in p[(signed long int)9]; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-020 sqlite3GetVarint32:38192 '<<7'->'<<25' KILLED by C-02/roundtrip lp64-le: 2 failed: [sqlite3GetVarint32.overflow.1] arithmetic overflow on signed shl in ((signed int)p[(signed long int)0] & 0x7F) << 25; [harness_roundtrip.assertion.7] P2 getVarint32 value or saturation
+  MUTANT M-021 sqlite3VarintLen:38217 '>>= 7'->'>>= 0' KILLED by C-02/roundtrip lp64-le: 1 failed: [sqlite3VarintLen.unwind.0] unwinding assertion loop 0
+  MUTANT M-022 sqlite3VarintLen:38217 '!=0'->'!=1' KILLED by C-02/roundtrip lp64-le: 2 failed: [sqlite3VarintLen.unwind.0] unwinding assertion loop 0; [harness_roundtrip.assertion.3] P2 VarintLen including high-bit case
+  MUTANT M-023 sqlite3VdbeSerialTypeLen:91863 '>=128'->'>=129' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-06, the card that must kill it, has no proofs yet
+  MUTANT M-024 sqlite3VdbeSerialTypeLen:91864 '/2'->'/0' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-06, the card that must kill it, has no proofs yet
+  MUTANT M-025 sqlite3VdbeOneByteSerialTypeLen:91873 '[serial_type]'->'[128]' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-06, the card that must kill it, has no proofs yet
+  MUTANT M-026 sqlite3VdbeOneByteSerialTypeLen:91873 '[serial_type]'->'[255]' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-06, the card that must kill it, has no proofs yet
+  MUTANT M-027 serialGet:91951 'buf+4'->'buf+5' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-07, the card that must kill it, has no proofs yet
+  MUTANT M-028 serialGet:91952 '<<32'->'<<64' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-07, the card that must kill it, has no proofs yet
+  MUTANT M-029 serialGet7:91985 'buf+4'->'buf+5' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-07, the card that must kill it, has no proofs yet
+  MUTANT M-030 serialGet7:91986 '<<32'->'<<64' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-07, the card that must kill it, has no proofs yet
+  MUTANT M-031 sqlite3VdbeSerialGet:92083 'serial_type&1'->'serial_type&3' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-08, the card that must kill it, has no proofs yet
+  MUTANT M-032 sqlite3VdbeSerialGet:92055 '<<32'->'<<63' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-08, the card that must kill it, has no proofs yet
+  MUTANT M-033 sqlite3VdbeSerialGet:92071 'serial_type-8'->'serial_type-7' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-09, the card that must kill it, has no proofs yet
+  MUTANT M-034 sqlite3VdbeSerialGet:92082 '/2'->'/4' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-09, the card that must kill it, has no proofs yet
+  MUTANT M-035 sqlite3VdbeSerialGet:92005 'MEM_Null|MEM_Zero'->'MEM_Null' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-09, the card that must kill it, has no proofs yet
+  MUTANT M-036 serialGet:91977 'MEM_Null'->'MEM_Real' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-09, the card that must kill it, has no proofs yet
+  MUTANT M-037 serialGet:91953 'serial_type==6'->'serial_type==7' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-09, the card that must kill it, has no proofs yet
+  MUTANT M-038 vdbeRecordDecodeInt:92578 'aKey+4'->'aKey+5' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-10, the card that must kill it, has no proofs yet
+  MUTANT M-039 vdbeRecordDecodeInt:92573 '<<32'->'<<63' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-10, the card that must kill it, has no proofs yet
+  MUTANT M-040 sqlite3IsNaN:36449 '&x'->'&rc' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-11, the card that must kill it, has no proofs yet
+  MUTANT M-041 sqlite3IsNaN:36449 'sizeof(y)'->'9' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-11, the card that must kill it, has no proofs yet
+  MUTANT M-042 sqlite3IntFloatCompare:92433 '>='->'>' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-11, the card that must kill it, has no proofs yet
+  MUTANT M-043 sqlite3IntFloatCompare:92432 '-9223372036854775808.0'->'-9223372036854777856.0' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-11, the card that must kill it, has no proofs yet
+  MUTANT M-044 isAllZero:92371 'i<n'->'i<=n' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-12, the card that must kill it, has no proofs yet
+  MUTANT M-045 isAllZero:92371 'i=0'->'i=-1' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-12, the card that must kill it, has no proofs yet
+  MUTANT M-046 sqlite3VdbeMemSetNull:86611 'MEM_Null'->'MEM_Int' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-13, the card that must kill it, has no proofs yet
+  MUTANT M-047 sqlite3VdbeMemSetNull:86611 'MEM_Null'->'MEM_Str' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-13, the card that must kill it, has no proofs yet
+  MUTANT M-048 sqlite3VdbeAllocUnpackedRecord:92102 '+1)'->'+0)' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-14, the card that must kill it, has no proofs yet
+  MUTANT M-049 sqlite3VdbeAllocUnpackedRecord:92107 'nKeyField + 1'->'nKeyField + 2' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-14, the card that must kill it, has no proofs yet
+  MUTANT M-050 sqlite3VdbeRecordUnpack:92145 '>=p->nField'->'>p->nField' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-15, the card that must kill it, has no proofs yet
+  MUTANT M-051 sqlite3VdbeRecordUnpack:92153 'pMem-('->'pMem+(' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-15, the card that must kill it, has no proofs yet
+  MUTANT M-052 sqlite3VdbeFindCompare:93038 'aMem[0]'->'aMem[1]' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-16, the card that must kill it, has no proofs yet
+  MUTANT M-053 sqlite3VdbeFindCompare:93049 'aMem[0]'->'aMem[1]' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-16, the card that must kill it, has no proofs yet
+  MUTANT M-054 sqlite3VdbeRecordCompareWithSkip:92756 ' > '->' < ' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-17, the card that must kill it, has no proofs yet
+  MUTANT M-055 sqlite3VdbeRecordCompareWithSkip:92802 '=='->'>' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-17, the card that must kill it, has no proofs yet
+  MUTANT M-056 sqlite3VdbeRecordCompareWithSkip:92738 'MIN('->'MAX(' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-17, the card that must kill it, has no proofs yet
+  MUTANT M-057 sqlite3VdbeRecordCompare:92832 ', 0)'->', 1)' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-18, the card that must kill it, has no proofs yet
+  MUTANT M-058 sqlite3VdbeRecordCompare:92832 'pKey1,'->'pPKey2,' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-18, the card that must kill it, has no proofs yet
+  MUTANT M-059 vdbeRecordCompareString:92970 ' > '->' < ' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-19, the card that must kill it, has no proofs yet
+  MUTANT M-060 vdbeRecordCompareString:92974 'MIN('->'MAX(' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-19, the card that must kill it, has no proofs yet
+  MUTANT M-061 vdbeRecordCompareInt:92849 '0x3F'->'0x7F' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-20, the card that must kill it, has no proofs yet
+  MUTANT M-062 vdbeRecordCompareInt:92888 '<<32'->'<<64' PENDING every proof passed on lp64-le,ilp32-le,lp64-be; C-20, the card that must kill it, has no proofs yet
+  RESULT mutate all PASS 22/62 killed 0 equivalent 40 pending
+==== mutants all PASS (6570s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 0 spans
+  lock                     PASS    0s  RESULT lock PASS 0 files (no proof.lock)
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   23s  RESULT probe all PASS
+  includes C-01            PASS    0s  RESULT includes C-01 all PASS
+  prove C-01               PASS  127s  RESULT prove C-01 all PASS 128s 675 properties 0 failed
+  coverage C-01            PASS   97s  RESULT coverage C-01 all PASS 81/81 lines 0 uncovered 0 unexplained
+  includes C-02            PASS    0s  RESULT includes C-02 all PASS
+  prove C-02               PASS   30s  RESULT prove C-02 all PASS 30s 1350 properties 0 failed
+  coverage C-02            PASS   15s  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+  mutants all              PASS 6570s  RESULT mutate all PASS 22/62 killed 0 equivalent 40 pending
+RESULT gate all PASS 6865s 0 failed
