@@ -1,0 +1,2 @@
+2000000 checks, 0 mismatches (gcc -O1 -fsanitize=address,undefined, upstream/sqlite3.c, 2026-11-09)
+with row 5 size 6 -> 5 in a copy of the spec: 2000000 checks, 8659 mismatches

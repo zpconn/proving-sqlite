@@ -1077,10 +1077,11 @@ def prompt_resume(kind):
 def prompt_oneoff(role, n):
     if role == 'spec-review':
         return ('You are a reviewer session in the proving-sqlite project, on the vendor that did not write the file '
-                'you review. Read GOAL.md §2 (P3), AGENTS.md, and proofs/spec/record_format.h. Check ref_serial_get '
-                'against the serial type table in SQLite\'s file format document (sqlite.org/fileformat2.html, '
-                '"Record Format"; a copy may be under evidence/ or ref/), row by row, and check that each departure '
-                'GOAL.md P3 lists is written out and that nothing else departs from the table. It must be at most '
+                'you review. Read GOAL.md §2 (P3), PROPERTIES.md (P3, which states the departures), AGENTS.md, and '
+                'proofs/spec/record_format.h. Check ref_serial_get and ref_serial_bytes against the serial type table '
+                'in SQLite\'s file format document at the pin, section 2.1 "Record Format": evidence/spec/fileformat2.html '
+                '(evidence/spec/README.md gives its source and hashes), row by row, and check that each departure '
+                'PROPERTIES.md P3 lists is written out and that nothing else departs from the table. It must be at most '
                 '60 lines with each case citing its row. Do not modify any tracked file. Write your verdict to '
                 'reviews/spec-r%d.md: first line APPROVE or REJECT, then numbered issues with severity, evidence and '
                 'the fix.\n' % n)
