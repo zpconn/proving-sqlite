@@ -481,6 +481,22 @@ def main():
         t.expect('scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value + value) (only even values)',
                  rc != 0 and 'argument `value + value` of sqlite3PutVarint: in x + y, x must be a data pointer' in out
                  and 'RESULT scan FAIL' in res, out)
+        # auditor 2026-11-09: every name in a card-call argument is a local the entry function declares before or in SETUP
+        ENUM_H01 = h01.replace('#include <stdlib.h>\n', '#include <stdlib.h>\nenum { K = 100 };\n')
+        CALL01 = '  sqlite3PutVarint(output + offset, value);'
+        for kind, n, base in (('a sqlite3.c macro', 'SQLITE_ROW', h01), ('an enum constant', 'K', ENUM_H01),
+                              ('a sqlite3.c global', 'sqlite3PendingByte', h01)):
+            for pos, call in (('the id argument', '  sqlite3PutVarint(output + offset, %s);' % n),
+                              ('x in x + y', '  sqlite3PutVarint(%s + offset, value);' % n),
+                              ('y in x + y', '  sqlite3PutVarint(output + %s, value);' % n)):
+                t.write(real, 'proofs/C-01/harness.c', base.replace(CALL01, call))
+                rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
+                t.expect('scan rejects (card calls): C-01 with %s (%s) as %s' % (kind, n, pos),
+                         rc != 0 and '%s is not a local variable harness_sqlite3PutVarint declares' % n in out
+                         and 'RESULT scan FAIL' in res, out)
+        t.write(real, 'proofs/C-01/harness.c', ENUM_H01)
+        rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
+        t.expect('scan (card calls): C-01 with a file-scope enum it does not pass to the call passes', rc == 0, out)
         h02 = open(os.path.join(REPO, 'proofs/C-02/harness.c')).read()
         assert 'getVarint32(encoded, decoded32);' in h02
         t.write(real, 'proofs/C-01/harness.c', h01)

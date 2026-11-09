@@ -96,6 +96,16 @@ ok   scan rejects (snapshot): a snapshot loop counting with i++
 ok   scan (card calls): a copy of the repo passes
 ok   scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value | 1)
 ok   scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value + value) (only even values)
+ok   scan rejects (card calls): C-01 with a sqlite3.c macro (SQLITE_ROW) as the id argument
+ok   scan rejects (card calls): C-01 with a sqlite3.c macro (SQLITE_ROW) as x in x + y
+ok   scan rejects (card calls): C-01 with a sqlite3.c macro (SQLITE_ROW) as y in x + y
+ok   scan rejects (card calls): C-01 with an enum constant (K) as the id argument
+ok   scan rejects (card calls): C-01 with an enum constant (K) as x in x + y
+ok   scan rejects (card calls): C-01 with an enum constant (K) as y in x + y
+ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as the id argument
+ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as x in x + y
+ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as y in x + y
+ok   scan (card calls): C-01 with a file-scope enum it does not pass to the call passes
 ok   scan rejects (card calls): C-02 through sqlite3.c's getVarint32 macro with encoded + 1
 ok   scan (card calls): &id and id + id arguments passes
 ok   scan rejects (card calls): a constant offset in the call under proof
@@ -161,4 +171,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 163/163
+RESULT tool-tests PASS 173/173

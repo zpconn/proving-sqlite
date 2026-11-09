@@ -42,8 +42,8 @@ Rejects:
      statement from these rules), line splices, digraphs and trigraphs, loop and function contract clauses
      (PROOF included), __builtin_* outside HARNESS_BUILTINS, __attribute__ and asm. (Auditor recheck item 1:)
      every call in an entry function to a card function (or ENFORCEd one), or to a sqlite3.c function-like macro
-     that expands to one, takes only `id`, `&id` or `x + y` (x a data pointer the entry function declares before
-     or in SETUP, y another identifier) as each argument, so any narrowing of the inputs
+     that expands to one, takes only `id`, `&id` or `x + y` (x a data pointer, y another identifier) as each
+     argument, every name in it a local variable the entry function declares before or in SETUP, so any narrowing of the inputs
      sits in SETUP, where the reviewer checks it; such a name used other than as a call, or named outside an
      entry function (a helper or file scope), fails too;
  12. files in proofs/C-NN/ but harness.c, Makefile, NOTES.md and the ignored build/ directory; files in
@@ -439,6 +439,21 @@ def top_assignment(stmt):
     return None
 
 
+def declared_names(stmt):
+    """The names a declaration statement declares (`T a, *b, c[4]`, `T *p = malloc(n)`); [] for anything else (an
+    assignment, an assume, a call), so a name counts as a local only where the entry function declares it."""
+    names = []
+    for i, d in enumerate(top_level_args(stmt)):
+        head = re.sub(r'\[[^\]]*\]', ' ', d.split('=', 1)[0])
+        if re.search(r'[(){}.*]\s*$|[(){}.]|->', head):
+            return []
+        ids = re.findall(r'[A-Za-z_][A-Za-z0-9_]*', head)
+        if len(ids) < (2 if i == 0 else 1) or ids[-1] in C_KEYWORDS:
+            return []
+        names.append(ids[-1])
+    return names
+
+
 def unary_amp(t):
     """True if t takes an address: a '&' token not preceded by an operand."""
     toks = [x for x in TOKEN_RX.findall(t) if not x.isspace()]
@@ -580,8 +595,8 @@ def snapshot_problem(snap, decls, call_stmt, setup_text, counters):
 
 
 def check_entries(s, where, raw, code, proofs, card):
-    """Rule 11, for each proof's ENTRY function. Returns {entry: the data pointers it declares before SETUP or in
-    it}, for check_card_calls."""
+    """Rule 11, for each proof's ENTRY function. Returns {entry: (the data pointers, and all the local variables, it
+    declares before SETUP or in it)}, for check_card_calls."""
     defs = {name: (start, b, e) for name, start, b, e in top_level_functions(code)}
     setup_rx = re.compile(r'/\*\s*SETUP\s*\*/')
     end_rx = re.compile(r'/\*\s*END SETUP\s*\*/')
@@ -605,19 +620,21 @@ def check_entries(s, where, raw, code, proofs, card):
                 ent, len(setups), len(ends)))
             continue
         sa, sb = setups[0].start(), ends[0].end()
-        ptrs, arrays = set(), set()
+        ptrs, arrays, local = set(), set(), set()
         for off, st in split_statements(code[b + 1:sa], b + 1):
             if not is_declaration(st):
                 s.bad(where, 'line %d: before SETUP, entry function %s may only declare variables: %s' % (
                     code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1, ent, ' '.join(st.split())[:80]))
             ptrs |= pointer_names(st)
             arrays |= array_names(st)
+            local.update(declared_names(st))
         setup_stmts = split_statements(code[setups[0].end():ends[0].start()], setups[0].end())
         for off, st in setup_stmts:
             if is_declaration(st) or (top_assignment(st) and not re.search(r'[\[\]>.]|^\s*\*', top_assignment(st)[0])):
                 ptrs |= pointer_names(st)
                 arrays |= array_names(st)
-        entry_ptrs[ent] = frozenset(ptrs)
+            local.update(declared_names(st))
+        entry_ptrs[ent] = (frozenset(ptrs & local), frozenset(local))
         for off, st in setup_stmts:
             why = setup_statement_problem(st, frozenset(ptrs), frozenset(arrays))
             if why:
@@ -707,7 +724,9 @@ def check_card_calls(s, where, code, proofs, card, entry_ptrs=None):
     """Rule 11 (auditor recheck item 1): a card function, or a sqlite3.c macro that expands to one, is named only as
     a call in an entry function, and each argument of that call is `id`, `&id` or `x + y`, so any narrowing of
     the inputs sits in SETUP. In `x + y` (auditor, 2026-11-08 late), x is a data pointer the entry function declares
-    before SETUP or in it, and y another identifier: `value + value` would let the proof see only even values."""
+    before SETUP or in it, and y another identifier: `value + value` would let the proof see only even values. Every
+    name in an argument (auditor, 2026-11-09) is a local variable the entry function declares before SETUP or in
+    it: a sqlite3.c macro, an enum constant or a global (SQLITE_ROW, sqlite3PendingByte) would fix the input."""
     entry_ptrs = entry_ptrs or {}
     funcs = set(card.functions if card else []) | {f for p in proofs for f in p.enforced}
     if not funcs:
@@ -740,7 +759,13 @@ def check_card_calls(s, where, code, proofs, card, entry_ptrs=None):
                     line, ' '.join(arg.split())[:60], m.group(1)))
                 continue
             am = CARD_ARG_RX.fullmatch(arg.strip())
-            if am.group('x') and (am.group('x') not in entry_ptrs.get(ent, ()) or am.group('y') == am.group('x')):
+            ptrs, local = entry_ptrs.get(ent, ((), ()))
+            for n in re.findall(_ID, arg):
+                if n not in local:
+                    s.bad(where, 'line %d: argument `%s` of %s: %s is not a local variable %s declares before or in '
+                                 'SETUP (a macro, enum constant or global fixes the input)' % (
+                        line, ' '.join(arg.split())[:60], m.group(1), n, ent))
+            if am.group('x') and (am.group('x') not in ptrs or am.group('y') == am.group('x')):
                 s.bad(where, 'line %d: argument `%s` of %s: in x + y, x must be a data pointer %s declares before or '
                              'in SETUP, and y a different identifier (`v + v` or `n + p` narrows the inputs)' % (
                     line, ' '.join(arg.split())[:60], m.group(1), ent))

@@ -351,3 +351,23 @@ So `value + value`, `k + p`, `p + p`, and a pointer declared after the call unde
 - toy `toyGet(k + p)` with k a u64;
 - toy `toyGet(p + p)`;
 - toy `toyGet(q + k)` with q declared after the call under proof.
+
+### Recheck item 1, tightened again (auditor, REVIEW-LOG.md 2026-11-09): argument names are locals
+
+Three calls passed scan, each fixing the value or the offset to a constant:
+- `sqlite3PutVarint(output + offset, SQLITE_ROW)`;
+- `sqlite3PutVarint(output + SQLITE_ROW, value)`;
+- `sqlite3PutVarint(output + offset, sqlite3PendingByte)`.
+
+With SQLITE_ROW, C-01's proof still passed, and only coverage noticed. Now every name in a card-call argument must be a local variable the entry function declares before SETUP or in it: id, the id in &id, and both x and y in x + y.
+- **How locals are found.** scan.py's `declared_names` reads the declarators of a declaration statement: `T a, *b, c[4]`, and `T *p = malloc(n)` in SETUP. Assignments, assumes and calls declare nothing.
+- **The pointer rule.** The rule that x must be a data pointer now uses only pointers that are also declared locals.
+
+Today's harnesses comply. `tools/scan.py`: `RESULT scan PASS 0 problems`.
+
+**Tests** (tool tests 173/173). Nine `RESULT scan FAIL` cases, all on a copy of the repository with C-01's sqlite3PutVarint call changed. Each kind of name is tried as the id argument, as x and as y:
+- a sqlite3.c macro, `SQLITE_ROW`;
+- an enum constant, `K` from `enum { K = 100 };` at the harness's file scope (sqlite3.c defines no enums);
+- a sqlite3.c global, `sqlite3PendingByte`.
+
+All nine fail on c9dae3a's scan.py (164/173 there). The id and y cases printed `RESULT scan PASS`; the x cases failed only on the pointer rule, without naming the constant. A tenth test checks that C-01 with the file-scope enum, not passed to the call, still passes.
