@@ -105,6 +105,11 @@ ok   scan rejects (card calls): C-01 with an enum constant (K) as y in x + y
 ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as the id argument
 ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as x in x + y
 ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as y in x + y
+ok   scan rejects (entry storage class): C-01 with static u64 value; before SETUP
+ok   scan rejects (entry storage class): C-01 with static u64 value; in SETUP
+ok   scan rejects (entry storage class): C-01 with extern int sqlite3PendingByte; before SETUP, passed to the call
+ok   scan rejects (entry storage class): C-01 with extern int sqlite3PendingByte; in SETUP, passed to the call
+ok   scan rejects (entry storage class): C-01 with _Thread_local u64 value; before SETUP
 ok   scan (card calls): C-01 with a file-scope enum it does not pass to the call passes
 ok   scan rejects (card calls): C-02 through sqlite3.c's getVarint32 macro with encoded + 1
 ok   scan (card calls): &id and id + id arguments passes
@@ -171,4 +176,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 173/173
+RESULT tool-tests PASS 178/178

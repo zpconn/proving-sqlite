@@ -43,7 +43,8 @@ Rejects:
      (PROOF included), __builtin_* outside HARNESS_BUILTINS, __attribute__ and asm. (Auditor recheck item 1:)
      every call in an entry function to a card function (or ENFORCEd one), or to a sqlite3.c function-like macro
      that expands to one, takes only `id`, `&id` or `x + y` (x a data pointer, y another identifier) as each
-     argument, every name in it a local variable the entry function declares before or in SETUP, so any narrowing of the inputs
+     argument, every name in it a local variable the entry function declares before or in SETUP (and an entry
+     function declares nothing static, extern or thread-local), so any narrowing of the inputs
      sits in SETUP, where the reviewer checks it; such a name used other than as a call, or named outside an
      entry function (a helper or file scope), fails too;
  12. files in proofs/C-NN/ but harness.c, Makefile, NOTES.md and the ignored build/ directory; files in
@@ -439,10 +440,15 @@ def top_assignment(stmt):
     return None
 
 
+STORAGE_CLASS_RX = re.compile(r'\b(static|extern|_Thread_local|thread_local|__thread)\b')
+
+
 def declared_names(stmt):
     """The names a declaration statement declares (`T a, *b, c[4]`, `T *p = malloc(n)`); [] for anything else (an
     assignment, an assume, a call), so a name counts as a local only where the entry function declares it."""
     names = []
+    if STORAGE_CLASS_RX.search(stmt):
+        return []
     for i, d in enumerate(top_level_args(stmt)):
         head = re.sub(r'\[[^\]]*\]', ' ', d.split('=', 1)[0])
         if re.search(r'[(){}.*]\s*$|[(){}.]|->', head):
@@ -612,6 +618,12 @@ def check_entries(s, where, raw, code, proofs, card):
         body = code[b + 1:e]
         for m in re.finditer(r'\b(return|goto)\b', body):
             s.bad(where, 'line %d: %s in entry function %s (a path that skips the call under proof is an assume)' % (
+                code.count('\n', 0, b + 1 + m.start()) + 1, m.group(1), ent))
+        # auditor 2026-11-09: a static or thread-local local keeps its zero (or initializer) in a proof without
+        # contracts, and an extern names a global; neither is an input the proof leaves free
+        for m in STORAGE_CLASS_RX.finditer(blank_strings(body)):
+            s.bad(where, 'line %d: %s declaration in entry function %s (a static keeps its initial value and an extern '
+                         'is a global: declare inputs as plain locals)' % (
                 code.count('\n', 0, b + 1 + m.start()) + 1, m.group(1), ent))
         setups = [m for m in setup_rx.finditer(raw, b, e)]
         ends = [m for m in end_rx.finditer(raw, b, e)]

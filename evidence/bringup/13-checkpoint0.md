@@ -371,3 +371,20 @@ Today's harnesses comply. `tools/scan.py`: `RESULT scan PASS 0 problems`.
 - a sqlite3.c global, `sqlite3PendingByte`.
 
 All nine fail on c9dae3a's scan.py (164/173 there). The id and y cases printed `RESULT scan PASS`; the x cases failed only on the pointer rule, without naming the constant. A tenth test checks that C-01 with the file-scope enum, not passed to the call, still passes.
+
+### Recheck item 1, entry storage classes (auditor, REVIEW-LOG.md 2026-11-09 later)
+
+`static u64 value;` or `extern int sqlite3PendingByte;` in an entry function counted as a local, so it passed as a card-call argument. With contracts this is harmless, since DFCC leaves statics and globals unconstrained (the auditor checked). But a COVER-only proof keeps a static local at zero: a variant of C-01/put passed scan and prove with value always 0, and only coverage caught it (22/27).
+
+**The rule.** scan.py now rejects any `static`, `extern`, `_Thread_local`, `thread_local` or `__thread` in an entry function, before SETUP, in it or after it (`STORAGE_CLASS_RX`), as it already rejects such objects at file scope. `declared_names` also no longer counts such a declaration as declaring a local. Today's harnesses comply: `RESULT scan PASS 0 problems`.
+
+**Tests** (tool tests 178/178). Five `RESULT scan FAIL` cases on a copy of the repository, all in C-01's harness_putVarint64:
+- `static u64 value;` before SETUP;
+- `static u64 value;` in SETUP;
+- `extern int sqlite3PendingByte;` before SETUP, passed to the call;
+- `extern int sqlite3PendingByte;` in SETUP, passed to the call;
+- `_Thread_local u64 value;` before SETUP.
+
+All five printed `RESULT scan PASS` on 6422661's scan.py (173/178 there).
+
+**HOWTO.** proofs/HOWTO.md now notes that under DFCC every static and global starts unconstrained, which over-approximates SQLite's initialized globals, while proofs without contracts keep their initializers. Builder rule 7 and GOAL.md §3.4 list the rule.

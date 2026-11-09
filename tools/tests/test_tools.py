@@ -494,6 +494,21 @@ def main():
                 t.expect('scan rejects (card calls): C-01 with %s (%s) as %s' % (kind, n, pos),
                          rc != 0 and '%s is not a local variable harness_sqlite3PutVarint declares' % n in out
                          and 'RESULT scan FAIL' in res, out)
+        # auditor 2026-11-09 later: no static, extern or thread-local declarations in an entry function
+        DECL_V, SETUP_M, PUT64 = '  u64 value;\n', '  /* SETUP */\n', 'putVarint64(output + offset, value);'
+        EXT = '  extern int sqlite3PendingByte;\n'
+        for name, text, needle in (
+                ('static u64 value; before SETUP', h01.replace(DECL_V, '  static u64 value;\n', 1), 'static declaration in entry function harness_putVarint64'),
+                ('static u64 value; in SETUP', h01.replace(DECL_V, '', 1).replace(SETUP_M, SETUP_M + '  static u64 value;\n', 1), 'static declaration in entry function harness_putVarint64'),
+                ('extern int sqlite3PendingByte; before SETUP, passed to the call', h01.replace(DECL_V, DECL_V + EXT, 1).replace(
+                    PUT64, 'putVarint64(output + offset, sqlite3PendingByte);'), 'extern declaration in entry function harness_putVarint64'),
+                ('extern int sqlite3PendingByte; in SETUP, passed to the call', h01.replace(SETUP_M, SETUP_M + EXT, 1).replace(
+                    PUT64, 'putVarint64(output + offset, sqlite3PendingByte);'), 'extern declaration in entry function harness_putVarint64'),
+                ('_Thread_local u64 value; before SETUP', h01.replace(DECL_V, '  _Thread_local u64 value;\n', 1), '_Thread_local declaration in entry function')):
+            t.write(real, 'proofs/C-01/harness.c', text)
+            rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
+            t.expect('scan rejects (entry storage class): C-01 with %s' % name,
+                     rc != 0 and needle in out and 'RESULT scan FAIL' in res, out)
         t.write(real, 'proofs/C-01/harness.c', ENUM_H01)
         rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
         t.expect('scan (card calls): C-01 with a file-scope enum it does not pass to the call passes', rc == 0, out)
