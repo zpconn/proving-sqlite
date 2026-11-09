@@ -1,4 +1,4 @@
-selftest fixture: /var/tmp/campaign-selftest-0h2893i6
+selftest fixture: /var/tmp/campaign-selftest-_4y_ss_8
 ok   sessions.toml's codex and claude commands, start and resume, pass the session guards
 ok   session guard refuses codex without the workspace-write sandbox
 ok   session guard refuses codex with approvals on
@@ -28,6 +28,13 @@ ok   a re-review is refused when its reviewer would share the vendor that built 
 ok   sessions.toml is refused: a codex command without --disable apps (a change the flag guard does not catch)
 ok   sessions.toml is refused: a codex command with an extra -c setting
 ok   sessions.toml is refused: a claude command whose --effort is a literal, not {effort}
+ok   a sessions.toml builder model of '--dangerously-bypass-approvals-and-sandbox' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml reviewer model of '-o' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml builder effort of 'high" -c sandbox_mode="danger-full-access' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml reviewer effort of 'high\n' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml builder model of 'a b' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml reviewer model of '' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml builder effort of 5 is refused by role_config, start_session (before filling, nothing spawned) and the start check
 ok   sessions.toml's own codex command starts; its session-start entry records sessions.toml's sha256
 ok   a codex session gets TMPDIR in its worktree (tmp/, created), not /tmp
 ok   a claude session gets its own CLAUDE_CONFIG_DIR under state/claude-config/, mode 700, seeded with the login and only the account keys of ~/.claude.json
@@ -37,6 +44,7 @@ ok   campaign.py writes nothing when .campaign/usage is a hard link to a file ou
 ok   campaign.py writes nothing when .campaign is a symlink to a directory outside, and stops the session for triage
 ok   a report that is a FIFO or a symlink, or a review under a symlinked reviews/, is refused, not read
 ok   start: primary checkout moves to orch, main gets its own checkout
+ok   a phase whose cards are all still waiting with no session run yet is not settled (the wait would end before the daemon's first pass)
 ok   phase A settles (every card merged, in triage, or waiting)
 ok   C-01 approved and merged
 ok   C-02 a rejection whose second round answers the review
@@ -77,4 +85,4 @@ ok   kill -9 of daemon and merge job mid-merge: the merge is redone once, never 
 ok   kill -9 of the daemon mid-merge: the surviving merge job's result is taken once (C-24)
 ok   finish: primary checkout back on main with orch merged, main's checkout removed
 ok   no session saw the API-key or CLAUDE_CODE_ variables planted in campaign.py's environment (55 sessions)
-RESULT selftest PASS 78/78
+RESULT selftest PASS 86/86

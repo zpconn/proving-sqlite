@@ -278,3 +278,62 @@ Option two: scan allows one snapshot form between END SETUP and the call under p
   - a loop counting with `i++`.
 
 `tools/scan.py` on the repository: `RESULT scan PASS 0 problems`. Full gate rerun at bc6cb37 (13-full-gate.log): `RESULT gate all PASS 1008s 0 failed`. In it, scan passed; C-01 proved 675 properties, 0 failed, with coverage 81/81; C-02 proved 1350, 0 failed, with coverage 399/399; and the mutants passed. Builder rule 7, proofs/HOWTO.md, GOAL.md §3.4 and the scan.py docstring give the form.
+
+## Auditor's recheck (REVIEW-LOG.md, 2026-11-08 night): three small items
+
+### 1. A card function's arguments are only `x`, `&x` or `x + y` (scan.py rule 11, `check_card_calls`)
+
+**The rule.** Every use of a card function's name (or of an ENFORCEd one) in a harness must:
+- be a call in an entry function, anywhere in it: after the call under proof and inside asserts too;
+- have each argument be an identifier, `&identifier` or `identifier + identifier`.
+
+So any narrowing of the inputs sits in SETUP, where the reviewer checks it. Two closures go with it, since each would otherwise get around the rule:
+- **Macros.** sqlite3.c function-like macros that expand to a card function count as card functions, transitively (`function_like_macros`, `card_call_names`). For C-02 these are getVarint32, getVarint32NR and putVarint32.
+- **Other uses.** Naming a card function other than as a call (a function pointer), or outside an entry function (in a helper or at file scope), fails.
+
+**Today's harnesses already comply.** C-01 calls `putVarint64(output + offset, value)` and `sqlite3PutVarint(output + offset, value)`. C-02 calls `sqlite3PutVarint(buffer, value)`, `sqlite3VarintLen(value)`, `sqlite3GetVarint(encoded, &decoded64)` and `getVarint32(encoded, decoded32)`. `tools/scan.py`: `RESULT scan PASS 0 problems`.
+
+**Tests** (tools/tests/test_tools.py; tool tests 159/159). The ten negative tests all fail on 20ce5b0's scan.py (it printed `RESULT scan PASS`, or for the function pointer only an unrelated problem).
+- Pass:
+  - a copy of the repository;
+  - a toy with `toyGet(p + k)` and `toyGet(&b)` after the call.
+- `RESULT scan FAIL`:
+  - the auditor's case, C-01 with `sqlite3PutVarint(output + offset, value | 1)`;
+  - C-02 with `getVarint32(encoded + 1, decoded32)`, through sqlite3.c's macro;
+  - in the toy:
+    - `toyGet(p + 1)` as the call under proof;
+    - a cast argument;
+    - a `?:` argument;
+    - a second call `toyGet(q - 1)` after the call under proof;
+    - `toyGet(p + 1)` inside an assert;
+    - a call through a function pointer;
+    - a helper that calls toyGet;
+    - a toy sqlite3.c macro `TOYGET(p + 1)`.
+
+### 2. `{model}` and `{effort}` are plain names (campaign.py `role_value_problems`)
+
+A role's model and effort must match `^[A-Za-z0-9._-]+$` and not start with `-`, and must be strings. Three places check it:
+- `role_config` raises SessionRefused, which sends the card to triage;
+- `start_session` refuses before seeding a config directory or filling the command line;
+- `sessions_problems`, so `campaign.py start` refuses the whole sessions.toml.
+
+**Selftest.** Seven new steps cover `--dangerously-bypass-approvals-and-sandbox`, `-o`, `high" -c sandbox_mode="danger-full-access`, `high\n`, `a b`, the empty string and the integer 5, on builder and reviewer. Each checks that all three places refuse and that nothing was spawned or seeded. All seven fail with the check stubbed out to today's behaviour (no check), and pass now.
+
+### 3. The follow-up 7 FIFO check fails instead of hanging (campaign.py `bounded_worktree_read`)
+
+The selftest's in-process reads now run in a thread with a 10 s timeout. A read that has not returned is reported as `hung`; the check then opens the FIFO for writing, which unblocks the read. The check requires every read to be refused by WorktreeFileError: a missing helper, or any other exception, also fails.
+
+**Shown on both versions**, with read_worktree_file replaced by a plain `open()` and run under `timeout 45`:
+- 20ce5b0's selftest stopped after the usage checks and was killed (exit 124).
+- The new one printed `FAIL a report that is a FIFO or a symlink, …` with `('hung', 'reading reports/C-01-b1.md did not return within 10 s')`, then went on.
+
+### Also: a race in the selftest's phase wait
+
+While testing these, one selftest run gave `RESULT selftest FAIL 60/85` with every phase A card still `waiting` and no session started. The cause:
+- `settled()` counts `waiting` as settled, since C-13 waits for good;
+- every card also starts in `waiting`;
+- so a poll that landed before the daemon's first pass ended phase A at once.
+
+Five later runs passed. A phase now counts as settled only once some session has started for one of its cards. A new selftest step checks that a phase that hasn't started is not settled; it fails with the old `settled()`.
+
+Selftest 86/86 (13-selftest.txt). Builder rule 7, proofs/HOWTO.md, GOAL.md §3.1 and §3.4, and the comment in sessions.toml describe the new rules. GOAL.md §3.1 also said a reviewer could write ~/.claude and ~/.claude.json, which follow-up 6 had stopped; it now says what is writable: the worktree and the reviewer's own config directory.

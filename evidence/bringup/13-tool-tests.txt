@@ -81,6 +81,30 @@ ok   scan rejects (follow-up 2): __attribute__((constructor))
 ok   scan rejects (follow-up 2): a digraph subscript in a SETUP assume
 ok   scan rejects (follow-up 2): a trigraph subscript in a SETUP assume
 ok   scan rejects (follow-up 2): a line splice that hides an assume
+ok   scan (snapshot): C-02's merged harness passes
+ok   scan (snapshot): a snapshot loop into a local array passes
+ok   scan (snapshot): a constant-index snapshot passes
+ok   scan rejects (snapshot): in[0] &= 0x7f; before the call
+ok   scan rejects (snapshot): a snapshot whose S is a pointer
+ok   scan rejects (snapshot): a snapshot into an array then passed to the call
+ok   scan rejects (snapshot): a snapshot loop body with a second statement (braces)
+ok   scan rejects (snapshot): a snapshot loop body with a second statement (comma)
+ok   scan rejects (snapshot): a snapshot into a static array
+ok   scan rejects (snapshot): a snapshot whose array SETUP names
+ok   scan rejects (snapshot): a loop counter two snapshot loops assign
+ok   scan rejects (snapshot): a snapshot loop counting with i++
+ok   scan (card calls): a copy of the repo passes
+ok   scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value | 1)
+ok   scan rejects (card calls): C-02 through sqlite3.c's getVarint32 macro with encoded + 1
+ok   scan (card calls): &id and id + id arguments passes
+ok   scan rejects (card calls): a constant offset in the call under proof
+ok   scan rejects (card calls): a cast argument
+ok   scan rejects (card calls): a conditional argument
+ok   scan rejects (card calls): a narrowed second call after the call under proof
+ok   scan rejects (card calls): a card call inside an assert
+ok   scan rejects (card calls): a call through a function pointer
+ok   scan rejects (card calls): a helper that calls the card function
+ok   scan rejects (card calls): a sqlite3.c macro that expands to the card function, with p + 1
 ok   scan (follow-up 2): a SETUP with field stores, a cast malloc, pointer arithmetic and sizeof(T *) passes
 ok   scan rejects (C2): a shadow header in proofs/C-90/contracts/
 ok   scan rejects (C2): a symlinked harness.c
@@ -133,4 +157,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 135/135
+RESULT tool-tests PASS 159/159
