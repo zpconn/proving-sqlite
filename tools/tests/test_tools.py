@@ -475,6 +475,12 @@ def main():
         rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
         t.expect('scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value | 1)',
                  rc != 0 and 'argument `value | 1` of sqlite3PutVarint' in out and 'RESULT scan FAIL' in res, out)
+        t.write(real, 'proofs/C-01/harness.c', h01.replace('  sqlite3PutVarint(output + offset, value);',
+                                                          '  sqlite3PutVarint(output + offset, value + value);'))
+        rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
+        t.expect('scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value + value) (only even values)',
+                 rc != 0 and 'argument `value + value` of sqlite3PutVarint: in x + y, x must be a data pointer' in out
+                 and 'RESULT scan FAIL' in res, out)
         h02 = open(os.path.join(REPO, 'proofs/C-02/harness.c')).read()
         assert 'getVarint32(encoded, decoded32);' in h02
         t.write(real, 'proofs/C-01/harness.c', h01)
@@ -496,6 +502,11 @@ def main():
         cc_bad = [
             ('a constant offset in the call under proof', G.replace('  toyGet(p);', '  toyGet(p + 1);'), 'argument `p + 1` of toyGet'),
             ('a cast argument', G.replace('  toyGet(p);', '  toyGet((const u8 *)p);'), 'argument `(const u8 *)p` of toyGet'),
+            ('x + y with x an integer', G.replace('void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  u64 k;').replace(
+                '  toyGet(p);', '  toyGet(k + p);'), 'argument `k + p` of toyGet: in x + y, x must be a data pointer'),
+            ('x + y with y the same pointer', G.replace('  toyGet(p);', '  toyGet(p + p);'), 'argument `p + p` of toyGet: in x + y'),
+            ('x + y with x a pointer declared after the call', G.replace('void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  u64 k;').replace(
+                '  toyGet(p);', '  toyGet(p);\n  u8 *q;\n  toyGet(q + k);'), 'argument `q + k` of toyGet: in x + y'),
             ('a conditional argument', G.replace('  toyGet(p);', '  toyGet(p ? p : p);'), 'argument `p ? p : p` of toyGet'),
             ('a narrowed second call after the call under proof', G.replace('void harness_toyGet(void) {', DECL_R2).replace(
                 '  toyGet(p);', '  toyGet(p);\n  q = p;\n  r = toyGet(q - 1);'), 'argument `q - 1` of toyGet'),

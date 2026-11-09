@@ -337,3 +337,17 @@ While testing these, one selftest run gave `RESULT selftest FAIL 60/85` with eve
 Five later runs passed. A phase now counts as settled only once some session has started for one of its cards. A new selftest step checks that a phase that hasn't started is not settled; it fails with the old `settled()`.
 
 Selftest 86/86 (13-selftest.txt). Builder rule 7, proofs/HOWTO.md, GOAL.md §3.1 and §3.4, and the comment in sessions.toml describe the new rules. GOAL.md §3.1 also said a reviewer could write ~/.claude and ~/.claude.json, which follow-up 6 had stopped; it now says what is writable: the worktree and the reviewer's own config directory.
+
+### Recheck item 1, tightened (auditor, REVIEW-LOG.md 2026-11-08 late): in `x + y`, x is a pointer
+
+`sqlite3PutVarint(output + offset, value + value)` passed scan, so the proof saw only even values. Now, in a card-call argument `x + y`:
+- x must be a data pointer the entry function declares before SETUP or in it (check_entries returns those names to check_card_calls);
+- y must be a different identifier.
+
+So `value + value`, `k + p`, `p + p`, and a pointer declared after the call under proof all fail. Today's harnesses comply: C-01's `output + offset` is the only `x + y` argument, and output is declared `unsigned char *` before SETUP. `tools/scan.py`: `RESULT scan PASS 0 problems`.
+
+**Tests** (tool tests 163/163). These four fail on 85bfa82's scan.py (159/163 there):
+- C-01 with `value + value`, on a copy of the repository;
+- toy `toyGet(k + p)` with k a u64;
+- toy `toyGet(p + p)`;
+- toy `toyGet(q + k)` with q declared after the call under proof.

@@ -42,7 +42,8 @@ Rejects:
      statement from these rules), line splices, digraphs and trigraphs, loop and function contract clauses
      (PROOF included), __builtin_* outside HARNESS_BUILTINS, __attribute__ and asm. (Auditor recheck item 1:)
      every call in an entry function to a card function (or ENFORCEd one), or to a sqlite3.c function-like macro
-     that expands to one, takes only `id`, `&id` or `id + id` as each argument, so any narrowing of the inputs
+     that expands to one, takes only `id`, `&id` or `x + y` (x a data pointer the entry function declares before
+     or in SETUP, y another identifier) as each argument, so any narrowing of the inputs
      sits in SETUP, where the reviewer checks it; such a name used other than as a call, or named outside an
      entry function (a helper or file scope), fails too;
  12. files in proofs/C-NN/ but harness.c, Makefile, NOTES.md and the ignored build/ directory; files in
@@ -579,11 +580,13 @@ def snapshot_problem(snap, decls, call_stmt, setup_text, counters):
 
 
 def check_entries(s, where, raw, code, proofs, card):
-    """Rule 11, for each proof's ENTRY function."""
+    """Rule 11, for each proof's ENTRY function. Returns {entry: the data pointers it declares before SETUP or in
+    it}, for check_card_calls."""
     defs = {name: (start, b, e) for name, start, b, e in top_level_functions(code)}
     setup_rx = re.compile(r'/\*\s*SETUP\s*\*/')
     end_rx = re.compile(r'/\*\s*END SETUP\s*\*/')
     entry_ranges = []
+    entry_ptrs = {}
     for proof in proofs:
         ent = proof.entry
         if ent not in defs:
@@ -614,6 +617,7 @@ def check_entries(s, where, raw, code, proofs, card):
             if is_declaration(st) or (top_assignment(st) and not re.search(r'[\[\]>.]|^\s*\*', top_assignment(st)[0])):
                 ptrs |= pointer_names(st)
                 arrays |= array_names(st)
+        entry_ptrs[ent] = frozenset(ptrs)
         for off, st in setup_stmts:
             why = setup_statement_problem(st, frozenset(ptrs), frozenset(arrays))
             if why:
@@ -659,9 +663,10 @@ def check_entries(s, where, raw, code, proofs, card):
     for m in setup_rx.finditer(raw):
         if not any(b <= m.start() < e for b, e in entry_ranges):
             s.bad(where, 'line %d: SETUP block outside an entry function' % (raw.count('\n', 0, m.start()) + 1))
+    return entry_ptrs
 
 
-CARD_ARG_RX = re.compile(r'&\s*{0}|{0}\s*\+\s*{0}|{0}'.format(_ID))
+CARD_ARG_RX = re.compile(r'&\s*{0}|(?P<x>{0})\s*\+\s*(?P<y>{0})|{0}'.format(_ID))
 
 
 def card_call_names(funcs, macros):
@@ -698,21 +703,24 @@ def top_level_args(text):
     return out if text.strip() else []
 
 
-def check_card_calls(s, where, code, proofs, card):
+def check_card_calls(s, where, code, proofs, card, entry_ptrs=None):
     """Rule 11 (auditor recheck item 1): a card function, or a sqlite3.c macro that expands to one, is named only as
-    a call in an entry function, and each argument of that call is `id`, `&id` or `id + id`, so any narrowing of
-    the inputs sits in SETUP."""
+    a call in an entry function, and each argument of that call is `id`, `&id` or `x + y`, so any narrowing of
+    the inputs sits in SETUP. In `x + y` (auditor, 2026-11-08 late), x is a data pointer the entry function declares
+    before SETUP or in it, and y another identifier: `value + value` would let the proof see only even values."""
+    entry_ptrs = entry_ptrs or {}
     funcs = set(card.functions if card else []) | {f for p in proofs for f in p.enforced}
     if not funcs:
         return
     names = card_call_names(funcs, s.overlay_macros)
     entries = {p.entry for p in proofs}
-    ranges = [(b, e) for name, _, b, e in top_level_functions(code) if name in entries]
+    ranges = [(name, b, e) for name, _, b, e in top_level_functions(code) if name in entries]
     blank = blank_strings(code)
     rx = re.compile(r'\b(%s)\b' % '|'.join(re.escape(n) for n in sorted(names, key=len, reverse=True)))
     for m in rx.finditer(blank):
         line = code.count('\n', 0, m.start()) + 1
-        if not any(b < m.start() < e for b, e in ranges):
+        ent = next((name for name, b, e in ranges if b < m.start() < e), None)
+        if ent is None:
             s.bad(where, 'line %d: %s, a card function or a macro that calls one, is named outside an entry function '
                          '(a helper or file-scope use would let its inputs be narrowed outside SETUP)' % (
                 line, m.group(1)))
@@ -730,6 +738,12 @@ def check_card_calls(s, where, code, proofs, card):
                 s.bad(where, 'line %d: argument `%s` of %s: a card function\'s arguments may be only id, &id or '
                              'id + id; narrow its inputs in SETUP, where the reviewer checks them' % (
                     line, ' '.join(arg.split())[:60], m.group(1)))
+                continue
+            am = CARD_ARG_RX.fullmatch(arg.strip())
+            if am.group('x') and (am.group('x') not in entry_ptrs.get(ent, ()) or am.group('y') == am.group('x')):
+                s.bad(where, 'line %d: argument `%s` of %s: in x + y, x must be a data pointer %s declares before or '
+                             'in SETUP, and y a different identifier (`v + v` or `n + p` narrows the inputs)' % (
+                    line, ' '.join(arg.split())[:60], m.group(1), ent))
 
 
 def check_card_dir_files(s, card_dir):
@@ -847,8 +861,8 @@ def check_harness(s, card_dir, sqlite_ids, proofs=(), card=None):
     check_function_defs(s, where, code, sqlite_ids)
     check_path_enders(s, where, code)
     check_harness_text(s, where, code)
-    check_entries(s, where, raw, code, proofs, card)
-    check_card_calls(s, where, code, proofs, card)
+    entry_ptrs = check_entries(s, where, raw, code, proofs, card)
+    check_card_calls(s, where, code, proofs, card, entry_ptrs)
 
 
 def check_harness_text(s, where, code):

@@ -95,10 +95,14 @@ ok   scan rejects (snapshot): a loop counter two snapshot loops assign
 ok   scan rejects (snapshot): a snapshot loop counting with i++
 ok   scan (card calls): a copy of the repo passes
 ok   scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value | 1)
+ok   scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value + value) (only even values)
 ok   scan rejects (card calls): C-02 through sqlite3.c's getVarint32 macro with encoded + 1
 ok   scan (card calls): &id and id + id arguments passes
 ok   scan rejects (card calls): a constant offset in the call under proof
 ok   scan rejects (card calls): a cast argument
+ok   scan rejects (card calls): x + y with x an integer
+ok   scan rejects (card calls): x + y with y the same pointer
+ok   scan rejects (card calls): x + y with x a pointer declared after the call
 ok   scan rejects (card calls): a conditional argument
 ok   scan rejects (card calls): a narrowed second call after the call under proof
 ok   scan rejects (card calls): a card call inside an assert
@@ -157,4 +161,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 159/159
+RESULT tool-tests PASS 163/163
