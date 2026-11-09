@@ -459,6 +459,66 @@ def main():
             t.write(r, 'proofs/C-90/harness.c', text)
             rc, out, res = t.run(r, [py, 'tools/scan.py'])
             t.expect('scan rejects (snapshot): %s' % name, rc != 0 and needle in out and 'RESULT scan FAIL' in res, out)
+        # auditor recheck item 1: a card function's arguments are only id, &id or id + id
+        real = os.path.join(t.base, 'real%d' % t.total)
+        for d in ('tools', 'proofs', 'cards', 'overlay', 'upstream'):
+            shutil.copytree(os.path.join(REPO, d), os.path.join(real, d),
+                            ignore=shutil.ignore_patterns('__pycache__', 'tests', 'fakecli', 'build'))
+        shutil.copy(os.path.join(REPO, 'pin.txt'), os.path.join(real, 'pin.txt'))
+        subprocess.run(['git', 'init', '-q', '-b', 'main', real], check=True)
+        rc, out, res = t.run(real, [py, 'tools/scan.py'])
+        t.expect('scan (card calls): a copy of the repo passes', rc == 0 and 'RESULT scan PASS' in res, out)
+        h01 = open(os.path.join(REPO, 'proofs/C-01/harness.c')).read()
+        assert '  sqlite3PutVarint(output + offset, value);' in h01
+        t.write(real, 'proofs/C-01/harness.c', h01.replace('  sqlite3PutVarint(output + offset, value);',
+                                                          '  sqlite3PutVarint(output + offset, value | 1);'))
+        rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
+        t.expect('scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value | 1)',
+                 rc != 0 and 'argument `value | 1` of sqlite3PutVarint' in out and 'RESULT scan FAIL' in res, out)
+        h02 = open(os.path.join(REPO, 'proofs/C-02/harness.c')).read()
+        assert 'getVarint32(encoded, decoded32);' in h02
+        t.write(real, 'proofs/C-01/harness.c', h01)
+        t.write(real, 'proofs/C-02/harness.c', h02.replace('getVarint32(encoded, decoded32);',
+                                                          'getVarint32(encoded + 1, decoded32);'))
+        rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-02'])
+        t.expect('scan rejects (card calls): C-02 through sqlite3.c\'s getVarint32 macro with encoded + 1',
+                 rc != 0 and 'argument `encoded + 1` of getVarint32' in out and 'RESULT scan FAIL' in res, out)
+        DECL_R2 = 'void harness_toyGet(void) {\n  int r;\n  u8 *q;'
+        cc_ok = [
+            ('&id and id + id arguments', G.replace('void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  u64 k;\n  u8 b;').replace(
+                '  toyGet(p);', '  toyGet(p);\n  toyGet(p + k);\n  toyGet(&b);')),
+        ]
+        for name, text in cc_ok:
+            r = setup_get(t)
+            t.write(r, 'proofs/C-90/harness.c', text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py'])
+            t.expect('scan (card calls): %s passes' % name, rc == 0, out)
+        cc_bad = [
+            ('a constant offset in the call under proof', G.replace('  toyGet(p);', '  toyGet(p + 1);'), 'argument `p + 1` of toyGet'),
+            ('a cast argument', G.replace('  toyGet(p);', '  toyGet((const u8 *)p);'), 'argument `(const u8 *)p` of toyGet'),
+            ('a conditional argument', G.replace('  toyGet(p);', '  toyGet(p ? p : p);'), 'argument `p ? p : p` of toyGet'),
+            ('a narrowed second call after the call under proof', G.replace('void harness_toyGet(void) {', DECL_R2).replace(
+                '  toyGet(p);', '  toyGet(p);\n  q = p;\n  r = toyGet(q - 1);'), 'argument `q - 1` of toyGet'),
+            ('a card call inside an assert', G.replace('  toyGet(p);', '  toyGet(p);\n  __CPROVER_assert(toyGet(p + 1) >= 0, "x");'), 'argument `p + 1` of toyGet'),
+            ('a call through a function pointer', G.replace('void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  int (*f)(const u8 *);').replace(
+                '  toyGet(p);', '  toyGet(p);\n  f = toyGet;\n  f(p + 1);'), 'toyGet is used other than as a call'),
+            ('a helper that calls the card function', G.replace('void harness', 'static int via(const u8 *q) { return toyGet(q); }\nvoid harness').replace(
+                '  toyGet(p);', '  toyGet(p);\n  via(p + 1);'), 'is named outside an entry function'),
+        ]
+        for name, text, needle in cc_bad:
+            r = setup_get(t)
+            t.write(r, 'proofs/C-90/harness.c', text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py'])
+            t.expect('scan rejects (card calls): %s' % name, rc != 0 and needle in out and 'RESULT scan FAIL' in res, out)
+        r = setup_get(t)
+        TOYM = TOY + '#define TOYGET(A) toyGet(A)\n'
+        t.write(r, 'upstream/sqlite3.c', TOYM)
+        t.write(r, 'overlay/sqlite3.c', TOYM)
+        t.write(r, 'pin.txt', 'upstream/sqlite3.c: %s\n' % hashlib.sha256(TOYM.encode()).hexdigest())
+        t.write(r, 'proofs/C-90/harness.c', G.replace('  toyGet(p);', '  toyGet(p);\n  TOYGET(p + 1);'))
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan rejects (card calls): a sqlite3.c macro that expands to the card function, with p + 1',
+                 rc != 0 and 'argument `p + 1` of TOYGET' in out and 'RESULT scan FAIL' in res, out)
         r = setup_get(t)
         t.write(r, 'proofs/C-90/harness.c', G.replace('void harness', BOX).replace(
             'void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  struct box *b;\n  int n;').replace(

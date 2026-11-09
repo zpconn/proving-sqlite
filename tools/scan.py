@@ -40,7 +40,11 @@ Rejects:
      naming a local array outside sizeof, and a data pointer assigned anything but a malloc result, pointer
      arithmetic on one, or 0; anywhere in a harness, any preprocessor directive but #include (so no macro hides a
      statement from these rules), line splices, digraphs and trigraphs, loop and function contract clauses
-     (PROOF included), __builtin_* outside HARNESS_BUILTINS, __attribute__ and asm;
+     (PROOF included), __builtin_* outside HARNESS_BUILTINS, __attribute__ and asm. (Auditor recheck item 1:)
+     every call in an entry function to a card function (or ENFORCEd one), or to a sqlite3.c function-like macro
+     that expands to one, takes only `id`, `&id` or `id + id` as each argument, so any narrowing of the inputs
+     sits in SETUP, where the reviewer checks it; such a name used other than as a call, or named outside an
+     entry function (a helper or file scope), fails too;
  12. files in proofs/C-NN/ but harness.c, Makefile, NOTES.md and the ignored build/ directory; files in
      overlay/ but sqlite3.c; files in proofs/include/ but proof.h and preds.h; symlinks anywhere under
      proofs/, overlay/ or tests/repro/; preprocessor directives a harness or header has no use for
@@ -109,6 +113,7 @@ class Scan:
     def __init__(self, root):
         self.root = root
         self.problems = []
+        self.overlay_macros = {}  # sqlite3.c function-like macro name -> identifiers in its replacement text
 
     def bad(self, where, msg):
         self.problems.append('%s: %s' % (where, msg))
@@ -233,6 +238,16 @@ def sqlite_identifiers(overlay_text):
     """Identifiers in sqlite3.c's code (comments removed by a fast regex; good enough for names)."""
     code = re.sub(r'/\*.*?\*/|//[^\n]*', ' ', overlay_text, flags=re.S)
     return set(re.findall(r'\b[A-Za-z_][A-Za-z0-9_]*\b', code))
+
+
+def function_like_macros(overlay_text):
+    """{name: identifiers in its replacement text} for each function-like #define in sqlite3.c."""
+    text = re.sub(r'\\\r?\n', ' ', overlay_text)
+    out = {}
+    for m in re.finditer(r'^[ \t]*#[ \t]*define[ \t]+([A-Za-z_][A-Za-z0-9_]*)\(([^)\n]*)\)(.*)$', text, re.M):
+        body = re.sub(r'/\*.*?\*/|//.*', ' ', m.group(3))
+        out.setdefault(m.group(1), set()).update(re.findall(r'\b[A-Za-z_][A-Za-z0-9_]*\b', body))
+    return out
 
 
 # ------------------------------------------------------------------- rules
@@ -646,6 +661,77 @@ def check_entries(s, where, raw, code, proofs, card):
             s.bad(where, 'line %d: SETUP block outside an entry function' % (raw.count('\n', 0, m.start()) + 1))
 
 
+CARD_ARG_RX = re.compile(r'&\s*{0}|{0}\s*\+\s*{0}|{0}'.format(_ID))
+
+
+def card_call_names(funcs, macros):
+    """funcs, plus every sqlite3.c function-like macro whose expansion reaches one of them."""
+    names = set(funcs)
+    grew = True
+    while grew:
+        grew = False
+        for n, ids in macros.items():
+            if n not in names and ids & names:
+                names.add(n)
+                grew = True
+    return names
+
+
+def blank_strings(code):
+    """String and character literals' contents replaced by spaces, offsets kept."""
+    return re.sub(r'"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])*\'',
+                  lambda m: m.group(0)[0] + ' ' * (len(m.group(0)) - 2) + m.group(0)[-1], code)
+
+
+def top_level_args(text):
+    """text split at commas outside parentheses and brackets."""
+    out, depth, start = [], 0, 0
+    for i, ch in enumerate(text):
+        if ch in '([{':
+            depth += 1
+        elif ch in ')]}':
+            depth -= 1
+        elif ch == ',' and depth == 0:
+            out.append(text[start:i])
+            start = i + 1
+    out.append(text[start:])
+    return out if text.strip() else []
+
+
+def check_card_calls(s, where, code, proofs, card):
+    """Rule 11 (auditor recheck item 1): a card function, or a sqlite3.c macro that expands to one, is named only as
+    a call in an entry function, and each argument of that call is `id`, `&id` or `id + id`, so any narrowing of
+    the inputs sits in SETUP."""
+    funcs = set(card.functions if card else []) | {f for p in proofs for f in p.enforced}
+    if not funcs:
+        return
+    names = card_call_names(funcs, s.overlay_macros)
+    entries = {p.entry for p in proofs}
+    ranges = [(b, e) for name, _, b, e in top_level_functions(code) if name in entries]
+    blank = blank_strings(code)
+    rx = re.compile(r'\b(%s)\b' % '|'.join(re.escape(n) for n in sorted(names, key=len, reverse=True)))
+    for m in rx.finditer(blank):
+        line = code.count('\n', 0, m.start()) + 1
+        if not any(b < m.start() < e for b, e in ranges):
+            s.bad(where, 'line %d: %s, a card function or a macro that calls one, is named outside an entry function '
+                         '(a helper or file-scope use would let its inputs be narrowed outside SETUP)' % (
+                line, m.group(1)))
+            continue
+        j = m.end()
+        while j < len(blank) and blank[j].isspace():
+            j += 1
+        k = balanced(blank, j) if blank[j:j + 1] == '(' else -1
+        if k < 0:
+            s.bad(where, 'line %d: %s is used other than as a call (a call through a pointer escapes the argument '
+                         'rule)' % (line, m.group(1)))
+            continue
+        for arg in top_level_args(blank[j + 1:k - 1]):
+            if not CARD_ARG_RX.fullmatch(arg.strip()):
+                s.bad(where, 'line %d: argument `%s` of %s: a card function\'s arguments may be only id, &id or '
+                             'id + id; narrow its inputs in SETUP, where the reviewer checks them' % (
+                    line, ' '.join(arg.split())[:60], m.group(1)))
+
+
 def check_card_dir_files(s, card_dir):
     """Rule 12: proofs/C-NN/ holds harness.c, Makefile, NOTES.md and the ignored build/ directory only."""
     for n in sorted(os.listdir(card_dir)):
@@ -762,6 +848,7 @@ def check_harness(s, card_dir, sqlite_ids, proofs=(), card=None):
     check_path_enders(s, where, code)
     check_harness_text(s, where, code)
     check_entries(s, where, raw, code, proofs, card)
+    check_card_calls(s, where, code, proofs, card)
 
 
 def check_harness_text(s, where, code):
@@ -1050,6 +1137,7 @@ def main():
     overlay_path = a.overlay or os.path.join(s.root, 'overlay', 'sqlite3.c')
     otext = open(overlay_path, 'rb').read().decode('latin-1')
     sqlite_ids = sqlite_identifiers(otext)
+    s.overlay_macros = function_like_macros(otext)
     try:
         all_cards = cardlib.load_all(s.root)
     except cardlib.CardFormatError as e:

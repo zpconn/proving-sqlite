@@ -37,6 +37,7 @@ import signal
 import stat
 import subprocess
 import sys
+import threading
 import time
 
 try:
@@ -281,14 +282,61 @@ def template_problems(vendor, key, argv):
             'only placeholders may vary, and campaign.py fills them' % (vendor, key, i, got_s, want_s)]
 
 
+# auditor recheck item 2: the values campaign.py puts in for {model} and {effort}. One argv word of letters, digits,
+# '.', '_' and '-', not starting with '-' (so never an option), and nothing a shell or a codex -c value would read.
+PLACEHOLDER_VALUE_RX = re.compile(r'[A-Za-z0-9._][A-Za-z0-9._-]*')
+
+
+def role_value_problems(where, model, effort):
+    """[] if model and effort may fill {model} and {effort}, else why not."""
+    return ['%s %s %r is not a plain name (^[A-Za-z0-9._-]+$, no leading dash)' % (where, k, v)
+            for k, v in (('model', model), ('effort', effort))
+            if not (isinstance(v, str) and PLACEHOLDER_VALUE_RX.fullmatch(v))]
+
+
 def sessions_problems(sess):
-    """Every command template in sessions.toml that is not SESSION_COMMANDS' (cmd_start refuses to start)."""
+    """Every command template in sessions.toml that is not SESSION_COMMANDS', and every role's model or effort
+    that is not a plain name (cmd_start refuses to start)."""
     probs = []
     for vendor, cmds in SESSION_COMMANDS.items():
         vc = (sess.get('vendors') or {}).get(vendor) or {}
         for key in cmds:
             probs += template_problems(vendor, key, vc.get(key))
+    for role, tiers in sorted((sess.get('roles') or {}).items()):
+        for tier, rc in sorted((tiers or {}).items()):
+            rc = rc if isinstance(rc, dict) else {}
+            probs += role_value_problems('sessions.toml roles.%s.%s' % (role, tier), rc.get('model'), rc.get('effort'))
     return probs
+
+
+def bounded_worktree_read(w, rel, timeout=10):
+    """Selftest (auditor recheck item 3): read_worktree_file(w, rel) in a thread, as (kind, detail), kind 'refused'
+    (WorktreeFileError), 'read', 'error', 'missing' (no such helper) or 'hung'. A read that blocks (a plain open() of
+    a FIFO waits for a writer) is reported as 'hung' after `timeout` seconds, and unblocked by opening the FIFO for
+    writing, so the check fails instead of hanging the selftest."""
+    g = globals()
+    helper, err = g.get('read_worktree_file'), g.get('WorktreeFileError')
+    if helper is None:
+        return ('missing', 'campaign.py has no read_worktree_file')
+    box = []
+
+    def go():
+        try:
+            helper(w, rel)
+            box.append(('read', rel))
+        except Exception as ex:
+            box.append(('refused' if err and isinstance(ex, err) else 'error', '%s: %s' % (type(ex).__name__, ex)))
+    th = threading.Thread(target=go, daemon=True)
+    th.start()
+    th.join(timeout)
+    if th.is_alive():
+        try:
+            os.close(os.open(os.path.join(w, rel), os.O_WRONLY | os.O_NONBLOCK))
+        except OSError:
+            pass
+        th.join(2)
+        return ('hung', 'reading %s did not return within %d s' % (rel, timeout))
+    return box[0]
 
 
 class SessionRefused(CampaignError):
@@ -308,6 +356,9 @@ def role_config(sess, role, tier):
     if rc.get('vendor', vendor) != vendor:
         raise SessionRefused('sessions.toml puts roles.%s.%s on %s, but campaign.py runs %s sessions on %s only '
                              '(GOAL.md §0.10)' % (role, tier, rc.get('vendor'), role, vendor))
+    probs = role_value_problems('sessions.toml roles.%s.%s' % (role, tier), rc.get('model'), rc.get('effort'))
+    if probs:
+        raise SessionRefused('; '.join(probs))
     vcfg = dict(sess['vendors'][vendor])
     vcfg['_sessions_sha256'] = sess.get('_sha256')
     return vendor, rc['model'], rc['effort'], vcfg
@@ -1148,7 +1199,7 @@ class Campaign:
         (template_problems) or the filled command line fails command_problems."""
         job.update(vendor=vendor, model=model, effort=effort, wt=wt)
         key = 'resume' if resume_of and resume_of.get('cli_session') else 'start'
-        probs = template_problems(vendor, key, vcfg.get(key))
+        probs = template_problems(vendor, key, vcfg.get(key)) + role_value_problems('the session\'s', model, effort)
         cfg = ''
         if vendor == 'claude' and not probs:
             cfg = (resume_of or {}).get('config') or os.path.join(self.p.state, 'claude-config', job['id'])
@@ -2591,6 +2642,10 @@ class SelfTest:
                 return False
             if any(j['state'] in ('running', 'limit') for j in st.get('jobs', {}).values()):
                 return False
+            # every card starts in waiting: until the daemon has started a session for one of them, a phase whose
+            # cards are all waiting has not begun (a poll before its first pass counted it as settled)
+            if not any(j.get('card') in cards for j in st.get('jobs', {}).values()):
+                return False
             for cid in cards:
                 c = st['cards'].get(cid)
                 if not c or c['state'] not in ('merged', 'triage', 'parked', 'waiting'):
@@ -2732,6 +2787,35 @@ class SelfTest:
                 refused, job, st = start(vendor, 'start', edit, 10 + n)
                 self.ok('sessions.toml is refused: %s' % name, refused and needle in refused
                         and not any(s[0] == job['id'] for s in spawned), refused)
+            # auditor recheck item 2: {model} and {effort} values are plain names, never an option or a quote
+            for n, (field, value) in enumerate([('model', '--dangerously-bypass-approvals-and-sandbox'),
+                                                ('model', '-o'), ('effort', 'high" -c sandbox_mode="danger-full-access'),
+                                                ('effort', 'high\n'), ('model', 'a b'), ('model', ''), ('effort', 5)]):
+                role, vendor = ('builder', 'codex') if n % 2 == 0 else ('reviewer', 'claude')
+                bad = json.loads(json.dumps(sess))
+                bad['roles'][role]['standard'][field] = value
+                try:
+                    role_config(bad, role, 'standard')
+                    rc_refused = None
+                except SessionRefused as ex:
+                    rc_refused = str(ex)
+                v, m, e, cfg = role_config(sess, role, 'standard')
+                m, e = (value, e) if field == 'model' else (m, value)
+                job = {'id': 'J%04d-unit' % (30 + n), 'kind': 'session', 'role': role, 'card': 'C-01', 'round': 1}
+                st = FakeSt()
+                st.entries = []
+                try:
+                    Campaign(p).start_session(st, job, v, m, e, cfg, uwt, 'prompt')
+                    ss_refused = None
+                except SessionRefused as ex:
+                    ss_refused = str(ex)
+                release_claude_config(job)
+                sp_ = sessions_problems(bad)
+                self.ok('a sessions.toml %s %s of %r is refused by role_config, start_session (before filling, nothing '
+                        'spawned) and the start check' % (role, field, value),
+                        rc_refused and 'not a plain name' in rc_refused and ss_refused and 'not a plain name' in ss_refused
+                        and not any(s[0] == job['id'] for s in spawned) and not job.get('config')
+                        and any('not a plain name' in x for x in sp_), (rc_refused, ss_refused, sp_))
             refused, job, st = start('codex', 'start', same, 20)
             sp = [s for s in spawned if s[0] == job['id']]
             ss = [x for x in st.entries if x['kind'] == 'session-start']
@@ -2784,15 +2868,10 @@ class SelfTest:
             os.mkfifo(os.path.join(w, 'reports', 'C-01-b1.md'))
             os.symlink(target, os.path.join(w, 'reports', 'C-01-b2.md'))
             os.symlink(self.base, os.path.join(w, 'reviews'))
-            got = []
-            for rel in ('reports/C-01-b1.md', 'reports/C-01-b2.md', 'reviews/fakecli.sock'):
-                try:
-                    read_worktree_file(w, rel)
-                    got.append('read')
-                except WorktreeFileError as ex:
-                    got.append(str(ex))
+            got = [bounded_worktree_read(w, rel) for rel in ('reports/C-01-b1.md', 'reports/C-01-b2.md',
+                                                              'reviews/fakecli.sock')]
             self.ok('a report that is a FIFO or a symlink, or a review under a symlinked reviews/, is refused, not read',
-                    all(x != 'read' for x in got), got)
+                    all(kind == 'refused' for kind, _ in got), got)
         except Exception as ex:
             self.ok('follow-up 7 checks ran', False, '%s: %s' % (type(ex).__name__, ex))
 
@@ -2840,6 +2919,9 @@ class SelfTest:
                 r = self.camp('resume-vendor', 'codex')
                 meddled['auth']['resumed'] = r.returncode
                 meddled['auth']['out'] = r.stdout[-400:]
+        fresh = {'cards': {c: {'state': 'waiting'} for c in a_cards}, 'jobs': {}, 'merge_queue': []}
+        self.ok('a phase whose cards are all still waiting with no session run yet is not settled (the wait would '
+                'end before the daemon\'s first pass)', not self.settled(a_cards)(fresh))
         done = self.wait_for(self.settled(a_cards), 420, during=intervene)
         st = self.state()
         self.ok('phase A settles (every card merged, in triage, or waiting)', done,

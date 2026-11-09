@@ -86,7 +86,8 @@ auth_failure_patterns = ["Please run /login", "(?i)login expired", "(?i)not logg
 
 # Roles and tiers (GOAL.md §0.10). The vendor lines must match campaign.py's ROLE_VENDOR (builder and spec-review on
 # codex, reviewer and ledger on claude), which it uses whatever this file says, refusing a mismatch; and it refuses a
-# reviewer on the vendor that built the round it judges, re-reviews included.
+# reviewer on the vendor that built the round it judges, re-reviews included. Each model and effort must be a plain
+# name, ^[A-Za-z0-9._-]+$ not starting with '-' (auditor recheck item 2): campaign.py refuses anything else.
 [roles.builder.high]
 vendor = "codex"
 model = "gpt-6-astra"
