@@ -102,3 +102,19 @@ The auditor showed that one entry, `- sqlite3.c:37900-38099: values the harness 
   - prose under the heading.
 
 All six rejections pass with the fix and FAIL against the tools at 8822461; the accepted case passes on both. Tool tests 104/104. C-01 and C-02 coverage still pass, 81/81 and 399/399: their NOTES.md have no gaps to list. Builder §3.4, proofs/HOWTO.md and GOAL.md §3.4 state the format.
+
+## Follow-up 4: shared headers define no macros but their include guard
+
+preds.h may only gain predicates (rule 13), but the check compared file-scope items, so an appended `#define toyPos(x) 1` kept every item preds.h held and passed `scan --base` while changing what toyPos means at every use. Contracts and specs had the same opening: `#define toyLen(n) 1` in a contract rewrote a SQLite call in every harness that includes it.
+
+**Rule 15** (scan.py `check_guard_only`, run on preds.h, every proofs/contracts/*.h and every proofs/spec/*.h):
+- the only #define allowed is an include guard: `#ifndef G` as the file's first code, `#define G` with no value on the next line;
+- G must be all caps, end in `_H` and not be a name sqlite3.c uses (an empty `#define toyLen` guard would erase a function name at every call);
+- no #undef at all; `#pragma once` stays allowed.
+
+**Tests.**
+- Accepted: preds.h with only its guard, and the guarded preds.h gaining a predicate, both under `scan --base`.
+- Rejected under `scan --base`: a macro redefining an existing predicate; an #undef and redefinition of one; an object-like macro naming a SQLite function.
+- Rejected under `scan`: a macro in a contract; a #define in proofs/spec/; an include guard named after a SQLite function.
+
+All six rejections pass with the fix and FAIL against the tools at ae6421e; the accepted cases pass on both. Tool tests 112/112. The repository's scan passes (preds.h has guard PREDS_H; the two contracts have no directives). Builder §1, proofs/HOWTO.md and GOAL.md §3.4 state the rule.

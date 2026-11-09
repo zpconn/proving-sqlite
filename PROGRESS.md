@@ -29,6 +29,7 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 - D: Codex can block: two sessions.toml settings plus the builder's wait advice. 15-minute wait: 748,078 tokens before, 36,925 after.
 - E: auth-failure patterns pause the vendor, add a triage item, resume with `campaign.py resume-vendor`.
 - Tests: tool tests 95/95, selftest 49/49, full gate PASS (13-tool-tests.txt, 13-selftest.txt, 13-full-gate.log).
+- Auditor follow-up 4 done: preds.h, contracts/ and spec/ may #define only their include guard (scan rule 15); tool tests 112/112.
 - Auditor follow-up 3 done: "## Unreached lines" entries are one line or a range within one uncovered stretch, with a reason, and fail if the run covers them; tool tests 104/104.
 - Auditor follow-up 1 done: the gate calls tools/prove.py instead of make on card Makefiles and skips one load_card rejects; tool tests 97/97, `make gate CARD=C-02` PASS (13-checkpoint0.md).
 
@@ -68,3 +69,4 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 - 16:00–17:30 B, C1–C10, E implemented with tests; GOAL.md, agents/, AGENTS.md, HOWTO, 10-cli.md updated; real reviewer sandbox probed; full gate on the changed tree.
 - Evening: auditor's re-audit. Follow-up item 1 (gate never evaluates card Makefiles) done with two tests that fail on 1c27db4.
 - Follow-up item 3 (coverage explanations) done with six tests that fail on 8822461.
+- Follow-up item 4 (no macros in shared headers but the include guard) done with six tests that fail on ae6421e.

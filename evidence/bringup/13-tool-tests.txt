@@ -66,6 +66,14 @@ ok   scan rejects (C2): a symlink under tests/repro/
 ok   scan rejects (C10): a card function no proof's COVER names
 ok   scan (C4): preds.h gaining a predicate passes
 ok   scan rejects (C4): a predicate in preds.h changed
+ok   scan (follow-up 4): preds.h with only its include guard passes
+ok   scan (follow-up 4): guarded preds.h gaining a predicate passes
+ok   scan --base rejects (follow-up 4): a macro redefining an existing predicate in preds.h
+ok   scan --base rejects (follow-up 4): an #undef and redefinition of an existing predicate in preds.h
+ok   scan --base rejects (follow-up 4): an object-like macro naming a SQLite function in preds.h
+ok   scan rejects (follow-up 4): a macro in a contract
+ok   scan rejects (follow-up 4): a #define in proofs/spec/
+ok   scan rejects (follow-up 4): an include guard named after a SQLite function
 ok   scan rejects: span with an assignment
 ok   scan rejects: span with clauses out of order
 ok   scan rejects: span with an assume
@@ -102,4 +110,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 104/104
+RESULT tool-tests PASS 112/112

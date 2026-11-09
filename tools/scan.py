@@ -37,7 +37,11 @@ Rejects:
      (#import, #embed, #line, any #pragma but once);
  13. with --base: a change to proofs/include/preds.h that removes or alters anything it held (it may only
      gain predicates);
- 14. a card whose functions are not all in some proof's COVER (coverage would not look at them).
+ 14. a card whose functions are not all in some proof's COVER (coverage would not look at them);
+ 15. (checkpoint 0 follow-up 4) in proofs/include/preds.h, proofs/contracts/ and proofs/spec/, any #define but
+     the include guard (`#ifndef G` first, then `#define G`, G all-caps ending in _H and unused by sqlite3.c)
+     and any #undef: a macro could change an existing predicate's or SQLite name's meaning while rule 13 still
+     sees every item preds.h held.
 
 Usage: tools/scan.py [--root DIR] [--card C-NN [--base REF]] [--overlay FILE]
   --card limits the harness rules to one card and, with --base, requires every PROOF span that
@@ -257,6 +261,28 @@ def check_defines(s, where, code):
             s.bad(where, 'macro may not mention __CPROVER, assume, PROOF, # or ##: %s' % m.group(0).strip()[:80])
     if '##' in code:
         s.bad(where, 'token pasting (##) not allowed')
+
+
+def check_guard_only(s, where, code, sqlite_ids):
+    """Rule 15: a shared header (preds.h, proofs/contracts/, proofs/spec/) #defines nothing but its include guard
+    and #undefs nothing. A macro would let a header keep every item preds.h held, so the append-only rule passes,
+    while changing what an existing predicate or a SQLite name means where it is used. The guard is `#ifndef G`
+    as the file's first code, `#define G` (no value) as its next line, and G an all-caps name ending in _H that
+    sqlite3.c does not use."""
+    guard = None
+    m = re.match(r'\s*#[ \t]*ifndef[ \t]+([A-Za-z_]\w*)[ \t]*\n[ \t]*#[ \t]*define[ \t]+(\1)[ \t]*(?:\n|$)', code)
+    if m:
+        g = m.group(1)
+        if re.fullmatch(r'[A-Z][A-Z0-9_]*_H', g) and g not in sqlite_ids:
+            guard = m.start(2)
+        else:
+            s.bad(where, 'include guard %s must be an all-caps name ending in _H that sqlite3.c does not use' % g)
+    for d in re.finditer(r'^[ \t]*#[ \t]*(define|undef)\b[ \t]*(\S*)', code, re.M):
+        if guard is not None and d.group(1) == 'define' and d.start(2) == guard:
+            continue
+        line = code.count('\n', 0, d.start()) + 1
+        s.bad(where, 'line %d: #%s %s: a shared header may #define only its include guard, and #undef nothing'
+              % (line, d.group(1), d.group(2)[:40]))
 
 
 def check_assumes(s, where, raw, code, allow_setup):
@@ -610,6 +636,7 @@ def check_contract_files(s, sqlite_ids, all_cards, enforced):
             s.bad(where, 'must declare contract_%s' % fn)
         check_pragmas(s, where, code)
         check_defines(s, where, code)
+        check_guard_only(s, where, code, sqlite_ids)
         check_directives(s, where, code)
         check_path_enders(s, where, code)
         check_assumes(s, where, raw, code, allow_setup=False)
@@ -638,6 +665,7 @@ def check_preds(s, sqlite_ids):
             code = strip_comments(raw)
             check_pragmas(s, where, code)
             check_defines(s, where, code)
+            check_guard_only(s, where, code, sqlite_ids)
             check_directives(s, where, code)
             check_path_enders(s, where, code)
             check_assumes(s, where, raw, code, allow_setup=False)

@@ -143,6 +143,7 @@ The campaign session starts here. Read HANDOFF.md and run the checks it lists; i
      - return or goto in a harness entry function, and anything but exactly one SETUP block per entry function, before the call under proof;
      - any file in proofs/C-NN/ but harness.c, Makefile and NOTES.md, and any symlink under proofs/, overlay/ or tests/repro/;
      - a change to preds.h other than new predicates;
+     - any #define in preds.h, proofs/contracts/ or proofs/spec/ but the include guard, and any #undef there;
    - the P2 and P3 harnesses.
 5. **Ledger and findings.** Builders draft entries. Once a reviewer has checked a draft, you number it and land it in LEDGER.md or FINDINGS.md, copying a finding's repro to `tests/repro/F-NNN.c`. A finding is a counterexample that reproduces: `tests/repro/F-NNN.c` builds natively against unmodified upstream/sqlite3.c and fails under ASan or UBSan. A reviewer reproduces each one before it goes in.
 6. **Results.** RESULTS.md and results.csv give, for each function, property and configuration: CBMC time, properties checked, coverage, mutants killed, the review verdict and the ledger entries used. campaign.py generates them from evidence at each merge; never edit them by hand.

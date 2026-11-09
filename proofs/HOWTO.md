@@ -31,6 +31,8 @@ Bring-up (GOAL.md §1) settled these. The evidence for each is under `evidence/b
 
 Contracts are clauses on a separate declaration, `contract_<fn>`, with the function's own signature. `--enforce-contract fn/contract_fn` checks `fn` against it, and `--replace-call-with-contract fn/contract_fn` uses it at call sites; both work on static functions. SQLite's text gets only loop annotations. A boundary contract (one for a function no card proves) names its ledger entry in a comment: `Ledger: A-NNN`.
 
+Shared headers (contracts, `proofs/include/preds.h`, `proofs/spec/`) #define nothing but an include guard and #undef nothing: `#ifndef G` as the first code and `#define G` on the next line, G an all-caps name ending in `_H` that sqlite3.c doesn't use, or `#pragma once` instead. Write a predicate as a static function, never a macro: scan.py rejects any other macro, because one could change an existing predicate's meaning while every line preds.h held stays in place.
+
 ## Loop contracts: PROOF spans in `overlay/sqlite3.c`
 
 `PROOF(__CPROVER_assigns(...) __CPROVER_loop_invariant(...) __CPROVER_decreases(...))`, in that order. Put every character of the span, whitespace included, inside the parentheses: `tools/check_overlay.py` deletes exactly `PROOF(` to its matching `)` and requires upstream to remain.

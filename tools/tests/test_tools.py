@@ -433,6 +433,35 @@ def main():
         t.write(r, 'proofs/include/preds.h', '#pragma once\nstatic int toyPos(int x) { return x >= 0; }\n')
         rc, out, res = t.run(r, [py, 'tools/scan.py', '--card', 'C-90', '--base', 'HEAD'])
         t.expect('scan rejects (C4): a predicate in preds.h changed', rc != 0 and 'may only gain predicates' in out, out)
+        # checkpoint 0 follow-up 4: shared headers #define only their include guard
+        r = setup_get(t)
+        PG = '#ifndef PREDS_H\n#define PREDS_H\nstatic int toyPos(int x) { return x > 0; }\n#endif\n'
+        t.write(r, 'proofs/include/preds.h', PG)
+        subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', r, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'base'], check=True)
+        rc, out, res = t.run(r, [py, 'tools/scan.py', '--card', 'C-90', '--base', 'HEAD'])
+        t.expect('scan (follow-up 4): preds.h with only its include guard passes', rc == 0, out)
+        t.write(r, 'proofs/include/preds.h', PG.replace('#endif', 'static int toyNeg(int x) { return x < 0; }\n#endif'))
+        rc, out, res = t.run(r, [py, 'tools/scan.py', '--card', 'C-90', '--base', 'HEAD'])
+        t.expect('scan (follow-up 4): guarded preds.h gaining a predicate passes', rc == 0, out)
+        for name, text in [
+                ('a macro redefining an existing predicate', PG.replace('#endif', '#define toyPos(x) 1\n#endif')),
+                ('an #undef and redefinition of an existing predicate', PG.replace('#endif', '#undef toyPos\n#define toyPos(x) ((x) >= 0)\n#endif')),
+                ('an object-like macro naming a SQLite function', PG.replace('#endif', '#define toyGet toyLen\n#endif'))]:
+            t.write(r, 'proofs/include/preds.h', text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py', '--card', 'C-90', '--base', 'HEAD'])
+            t.expect('scan --base rejects (follow-up 4): %s in preds.h' % name,
+                     rc != 0 and 'may #define only its include guard' in out and 'RESULT scan FAIL' in res, out)
+        for name, rel, text, needle in [
+                ('a macro in a contract', 'proofs/contracts/toyGet.h',
+                 CONTRACT_GET.replace('FOOT', '2') + '#define toyLen(n) 1\n', 'may #define only its include guard'),
+                ('a #define in proofs/spec/', 'proofs/spec/toy.h', '#define TOY_MAX 9\n', 'may #define only its include guard'),
+                ('an include guard named after a SQLite function', 'proofs/include/preds.h',
+                 '#ifndef toyLen\n#define toyLen\n#endif\n', 'include guard toyLen')]:
+            r = setup_get(t)
+            t.write(r, rel, text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py'])
+            t.expect('scan rejects (follow-up 4): %s' % name, rc != 0 and needle in out, out)
         # spans
         span_cases = [
             ('span with an assignment', SUM_SPAN_GOOD.replace('s <= 255 * i', 's = 0'), 'assignment'),
