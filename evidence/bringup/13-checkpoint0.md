@@ -388,3 +388,30 @@ All nine fail on c9dae3a's scan.py (164/173 there). The id and y cases printed `
 All five printed `RESULT scan PASS` on 6422661's scan.py (173/178 there).
 
 **HOWTO.** proofs/HOWTO.md now notes that under DFCC every static and global starts unconstrained, which over-approximates SQLite's initialized globals, while proofs without contracts keep their initializers. Builder rule 7 and GOAL.md §3.4 list the rule.
+
+### Recheck item 1, macros in declarations (auditor, REVIEW-LOG.md 2026-11-09 afternoon)
+
+sqlite3.c defines `SQLITE_PRIVATE` as `static` (line 29) and `SQLITE_EXTERN` as `extern` (line 393). So `SQLITE_PRIVATE u64 value;` and `SQLITE_EXTERN int sqlite3PendingByte;` passed the storage-class rule, and the second was accepted as a card-call argument. On a no-contract variant of C-01/put, the first gave value 0 throughout, and only coverage caught it.
+
+**The fix closes the class, not the two names.** No identifier that the translation unit may #define can appear in an entry function's declarations. The check covers each declarator's type and name, not its initializer, and applies to:
+- every statement before SETUP;
+- every statement after that which declares something, or carries a storage class.
+
+**Where the macro names come from** (`harness_macros`):
+- **sqlite3.c:** every #define, in any branch (`defined_names`; 3,711 names).
+- **proof.h,** which prove.py force-includes.
+- **Project headers the harness includes,** found on prove.py's `-I overlay -I proofs/include -I proofs` path, followed through their own includes.
+- **System headers:** for the system headers included, `gcc -dM -E` with each proofs/CONFIGS configuration's gcc flags (`-m64`, `-m32`, `-DSQLITE_BYTEORDER=4321 -funsigned-char`), predefined macros included. If gcc cannot list them, scan reports a problem.
+
+So declarations use only C keywords and typedef names. Today's harnesses comply: they use u8, u32, u64, size_t, unsigned char/int and int. `RESULT scan PASS 0 problems`.
+
+**Tests** (tool tests 184/184), on a copy of the repository in C-01's harness_putVarint64:
+- `RESULT scan FAIL`:
+  - `SQLITE_PRIVATE u64 value;` before SETUP;
+  - the same in SETUP;
+  - `SQLITE_EXTERN int sqlite3PendingByte;` before SETUP, passed to the call;
+  - the same in SETUP;
+  - `bool flag;` with `<stdbool.h>`, for the system-header path.
+- Pass: i64 and size_t declared before SETUP and u32 in SETUP, alongside the existing u64.
+
+The five negative tests printed `RESULT scan PASS` on 7b3a029's scan.py (179/184 there).

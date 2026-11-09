@@ -44,7 +44,8 @@ Rejects:
      every call in an entry function to a card function (or ENFORCEd one), or to a sqlite3.c function-like macro
      that expands to one, takes only `id`, `&id` or `x + y` (x a data pointer, y another identifier) as each
      argument, every name in it a local variable the entry function declares before or in SETUP (and an entry
-     function declares nothing static, extern or thread-local), so any narrowing of the inputs
+     function declares nothing static, extern or thread-local, and its declarations name no macro that sqlite3.c,
+     proof.h or an included header #defines: only C keywords and typedef names), so any narrowing of the inputs
      sits in SETUP, where the reviewer checks it; such a name used other than as a call, or named outside an
      entry function (a helper or file scope), fails too;
  12. files in proofs/C-NN/ but harness.c, Makefile, NOTES.md and the ignored build/ directory; files in
@@ -116,6 +117,8 @@ class Scan:
         self.root = root
         self.problems = []
         self.overlay_macros = {}  # sqlite3.c function-like macro name -> identifiers in its replacement text
+        self.overlay_defines = set()  # every name sqlite3.c #defines, in any branch
+        self._system_macros = {}  # (system includes) -> the names gcc defines with them, over every configuration
 
     def bad(self, where, msg):
         self.problems.append('%s: %s' % (where, msg))
@@ -250,6 +253,70 @@ def function_like_macros(overlay_text):
         body = re.sub(r'/\*.*?\*/|//.*', ' ', m.group(3))
         out.setdefault(m.group(1), set()).update(re.findall(r'\b[A-Za-z_][A-Za-z0-9_]*\b', body))
     return out
+
+
+DEFINE_RX = re.compile(r'^[ \t]*#[ \t]*define[ \t]+([A-Za-z_][A-Za-z0-9_]*)', re.M)
+
+
+def defined_names(text):
+    """Every name a C file #defines, in any #if branch (an over-approximation is what rule 11 wants)."""
+    return set(DEFINE_RX.findall(re.sub(r'\\\r?\n', ' ', text)))
+
+
+def project_header(root, inc):
+    """The file a quoted include names, searched as prove.py's goto-cc line does (-I overlay -I proofs/include
+    -I proofs), or None."""
+    for d in ('overlay', os.path.join('proofs', 'include'), 'proofs'):
+        f = os.path.join(root, d, inc)
+        if os.path.isfile(f):
+            return f
+    return None
+
+
+def harness_macros(s, where, code):
+    """Rule 11 (auditor 2026-11-09 afternoon): every name a harness's translation unit may have #defined: sqlite3.c's,
+    proof.h's (prove.py includes it first) and those of each header the harness includes, project headers followed
+    through their own includes, and system headers as gcc preprocesses them for every configuration in
+    proofs/CONFIGS (its predefined macros included)."""
+    names = set(s.overlay_defines)
+    seen, todo, system = set(), ['proof.h'], set()
+    todo += [m.group(1) for m in re.finditer(r'^[ \t]*#[ \t]*include[ \t]*"([^"]+)"', code, re.M)]
+    system |= set(re.findall(r'^[ \t]*#[ \t]*include[ \t]*(<[^>\n]+>)', code, re.M))
+    while todo:
+        inc = todo.pop()
+        if inc in seen or inc == 'sqlite3.c':
+            continue
+        seen.add(inc)
+        f = project_header(s.root, inc)
+        if not f:
+            continue
+        text = strip_comments(open(f, errors='replace').read())
+        names |= defined_names(text)
+        todo += re.findall(r'^[ \t]*#[ \t]*include[ \t]*"([^"]+)"', text, re.M)
+        system |= set(re.findall(r'^[ \t]*#[ \t]*include[ \t]*(<[^>\n]+>)', text, re.M))
+    key = tuple(sorted(system))
+    if key not in s._system_macros:
+        got = set()
+        try:
+            configs = prove.read_configs(s.root)
+        except Exception:
+            configs = [('default', [])]
+        for name, flags in configs or [('default', [])]:
+            gflags = [f for f in flags if not f.startswith('--')]  # goto-cc's own (--big-endian) are not gcc's
+            src = ''.join('#include %s\n' % i for i in key)
+            try:
+                p = subprocess.run(['gcc', '-dM', '-E', '-x', 'c'] + gflags + ['-'], input=src, capture_output=True,
+                                   text=True, timeout=120)
+            except (OSError, subprocess.TimeoutExpired) as e:
+                p = None
+                err = str(e)
+            if p is None or p.returncode != 0:
+                s.bad(where, 'cannot list the macros of %s for configuration %s (gcc -dM -E: %s)' % (
+                    ', '.join(key) or 'no system headers', name, (p.stderr.strip()[:200] if p else err)))
+                continue
+            got |= defined_names(p.stdout)
+        s._system_macros[key] = got
+    return names | s._system_macros[key]
 
 
 # ------------------------------------------------------------------- rules
@@ -600,7 +667,7 @@ def snapshot_problem(snap, decls, call_stmt, setup_text, counters):
     return None
 
 
-def check_entries(s, where, raw, code, proofs, card):
+def check_entries(s, where, raw, code, proofs, card, macros=frozenset()):
     """Rule 11, for each proof's ENTRY function. Returns {entry: (the data pointers, and all the local variables, it
     declares before SETUP or in it)}, for check_card_calls."""
     defs = {name: (start, b, e) for name, start, b, e in top_level_functions(code)}
@@ -621,6 +688,27 @@ def check_entries(s, where, raw, code, proofs, card):
                 code.count('\n', 0, b + 1 + m.start()) + 1, m.group(1), ent))
         # auditor 2026-11-09: a static or thread-local local keeps its zero (or initializer) in a proof without
         # contracts, and an extern names a global; neither is an input the proof leaves free
+        # auditor 2026-11-09 afternoon: declarations use only C keywords and typedef names, never a name some header
+        # #defines (SQLITE_PRIVATE is static, SQLITE_EXTERN extern), so what scan reads is what the compiler sees
+        sa0 = next((m.start() for m in setup_rx.finditer(raw, b, e)), e)
+        frags, start, depth = [], b + 1, 0
+        for i in range(b + 1, e):
+            ch = code[i]
+            if ch == '(':
+                depth += 1
+            elif ch == ')':
+                depth -= 1
+            elif depth == 0 and ch in ';{}':
+                frags.append((start, code[start:i]))
+                start = i + 1
+        for off, fr in frags:
+            if not fr.strip() or not (declared_names(fr) or off < sa0 or STORAGE_CLASS_RX.search(fr)):
+                continue
+            for part in top_level_args(fr):
+                for n in sorted(set(re.findall(_ID, part.split('=', 1)[0])) & set(macros)):
+                    s.bad(where, 'line %d: %s in a declaration in entry function %s is a macro (sqlite3.c or an included '
+                                 'header #defines it): declarations use only C keywords and typedef names' % (
+                        code.count('\n', 0, off + len(fr) - len(fr.lstrip())) + 1, n, ent))
         for m in STORAGE_CLASS_RX.finditer(blank_strings(body)):
             s.bad(where, 'line %d: %s declaration in entry function %s (a static keeps its initial value and an extern '
                          'is a global: declare inputs as plain locals)' % (
@@ -898,7 +986,7 @@ def check_harness(s, card_dir, sqlite_ids, proofs=(), card=None):
     check_function_defs(s, where, code, sqlite_ids)
     check_path_enders(s, where, code)
     check_harness_text(s, where, code)
-    entry_ptrs = check_entries(s, where, raw, code, proofs, card)
+    entry_ptrs = check_entries(s, where, raw, code, proofs, card, harness_macros(s, where, code))
     check_card_calls(s, where, code, proofs, card, entry_ptrs)
 
 
@@ -1189,6 +1277,7 @@ def main():
     otext = open(overlay_path, 'rb').read().decode('latin-1')
     sqlite_ids = sqlite_identifiers(otext)
     s.overlay_macros = function_like_macros(otext)
+    s.overlay_defines = defined_names(otext)
     try:
         all_cards = cardlib.load_all(s.root)
     except cardlib.CardFormatError as e:

@@ -110,6 +110,12 @@ ok   scan rejects (entry storage class): C-01 with static u64 value; in SETUP
 ok   scan rejects (entry storage class): C-01 with extern int sqlite3PendingByte; before SETUP, passed to the call
 ok   scan rejects (entry storage class): C-01 with extern int sqlite3PendingByte; in SETUP, passed to the call
 ok   scan rejects (entry storage class): C-01 with _Thread_local u64 value; before SETUP
+ok   scan rejects (declaration macros): C-01 with SQLITE_PRIVATE u64 value; before SETUP
+ok   scan rejects (declaration macros): C-01 with SQLITE_PRIVATE u64 value; in SETUP
+ok   scan rejects (declaration macros): C-01 with SQLITE_EXTERN int sqlite3PendingByte; before SETUP, passed to the call
+ok   scan rejects (declaration macros): C-01 with SQLITE_EXTERN int sqlite3PendingByte; in SETUP, passed to the call
+ok   scan rejects (declaration macros): C-01 with a system header's macro type (bool from <stdbool.h>) before SETUP
+ok   scan (declaration macros): C-01 with typedef names (u64, i64, u32, size_t) declared before and in SETUP passes
 ok   scan (card calls): C-01 with a file-scope enum it does not pass to the call passes
 ok   scan rejects (card calls): C-02 through sqlite3.c's getVarint32 macro with encoded + 1
 ok   scan (card calls): &id and id + id arguments passes
@@ -176,4 +182,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 178/178
+RESULT tool-tests PASS 184/184

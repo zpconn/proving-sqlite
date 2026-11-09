@@ -509,6 +509,25 @@ def main():
             rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
             t.expect('scan rejects (entry storage class): C-01 with %s' % name,
                      rc != 0 and needle in out and 'RESULT scan FAIL' in res, out)
+        # auditor 2026-11-09 afternoon: no macro in an entry function's declarations (SQLITE_PRIVATE is static,
+        # SQLITE_EXTERN extern); typedef names still pass
+        EXT2 = '  SQLITE_EXTERN int sqlite3PendingByte;\n'
+        PB = 'putVarint64(output + offset, sqlite3PendingByte);'
+        for name, text, needle in (
+                ('SQLITE_PRIVATE u64 value; before SETUP', h01.replace(DECL_V, '  SQLITE_PRIVATE u64 value;\n', 1), 'SQLITE_PRIVATE in a declaration in entry function harness_putVarint64 is a macro'),
+                ('SQLITE_PRIVATE u64 value; in SETUP', h01.replace(DECL_V, '', 1).replace(SETUP_M, SETUP_M + '  SQLITE_PRIVATE u64 value;\n', 1), 'SQLITE_PRIVATE in a declaration in entry function harness_putVarint64 is a macro'),
+                ('SQLITE_EXTERN int sqlite3PendingByte; before SETUP, passed to the call', h01.replace(DECL_V, DECL_V + EXT2, 1).replace(PUT64, PB), 'SQLITE_EXTERN in a declaration in entry function harness_putVarint64 is a macro'),
+                ('SQLITE_EXTERN int sqlite3PendingByte; in SETUP, passed to the call', h01.replace(SETUP_M, SETUP_M + EXT2, 1).replace(PUT64, PB), 'SQLITE_EXTERN in a declaration in entry function harness_putVarint64 is a macro'),
+                ('a system header\'s macro type (bool from <stdbool.h>) before SETUP', h01.replace('#include <stdlib.h>\n', '#include <stdlib.h>\n#include <stdbool.h>\n').replace(DECL_V, DECL_V + '  bool flag;\n', 1), 'bool in a declaration in entry function harness_putVarint64 is a macro')):
+            t.write(real, 'proofs/C-01/harness.c', text)
+            rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
+            t.expect('scan rejects (declaration macros): C-01 with %s' % name,
+                     rc != 0 and needle in out and 'RESULT scan FAIL' in res, out)
+        t.write(real, 'proofs/C-01/harness.c', h01.replace(DECL_V, DECL_V + '  i64 spare;\n  size_t more;\n', 1).replace(
+            SETUP_M, SETUP_M + '  u32 extra;\n', 1))
+        rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
+        t.expect('scan (declaration macros): C-01 with typedef names (u64, i64, u32, size_t) declared before and in SETUP passes',
+                 rc == 0 and 'RESULT scan PASS' in res, out)
         t.write(real, 'proofs/C-01/harness.c', ENUM_H01)
         rc, out, res = t.run(real, [py, 'tools/scan.py', '--card', 'C-01'])
         t.expect('scan (card calls): C-01 with a file-scope enum it does not pass to the call passes', rc == 0, out)
