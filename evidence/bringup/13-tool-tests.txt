@@ -13,6 +13,8 @@ ok   prove: a call to a function without a body fails
 ok   prove: a Makefile variable outside the schema fails
 ok   prove: a check-disabling option in SOLVER fails
 ok   prove: ENFORCE pairing f with another function's contract fails
+ok   prove rejects (argument types): a harness whose entry never calls its ENFORCE function
+ok   prove rejects (argument types): a COVER-only proof whose entry calls no card function
 ok   prove (argument types): C-01 as merged passes
 ok   prove (argument types): C-02 as merged passes
 ok   prove rejects (argument types): C-01 with u32 value in harness_sqlite3PutVarint
@@ -188,4 +190,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 190/190
+RESULT tool-tests PASS 192/192

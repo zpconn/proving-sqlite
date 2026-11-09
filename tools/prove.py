@@ -321,10 +321,12 @@ def arg_type_problem(arg, ptype):
     return 'an argument of the form %s, not x, &x or p + k' % i
 
 
-def card_call_type_problems(funcs_json, entry, funcs):
+def card_call_type_problems(funcs_json, entry, funcs, required=()):
     """From goto-instrument --show-goto-functions --json-ui on the linked program (before DFCC): for each call in
     `entry` to one of `funcs` (sqlite3.c macros are already expanded to their calls), each argument whose type before
-    any cast is not the parameter's. size_t is the unsigned type of pointer width."""
+    any cast is not the parameter's. size_t is the unsigned type of pointer width. Also a problem (auditor
+    2026-11-09 night): an entry with no checked call to each of `required` (the proof's ENFORCE function), or, for a
+    proof without one, no checked card call at all, so the check cannot pass by finding nothing."""
     data = json.loads(funcs_json, strict=False)
     fns = next((x['functions'] for x in data if isinstance(x, dict) and 'functions' in x), None)
     if fns is None:
@@ -332,7 +334,7 @@ def card_call_type_problems(funcs_json, entry, funcs):
     body = next((f for f in fns if f.get('name') == entry), None)
     if body is None:
         return ['entry function %s is not in the goto program' % entry]
-    probs, calls = [], 0
+    probs, calls, checked = [], 0, set()
     for ins in body.get('instructions', []):
         if ins.get('instructionId') != 'FUNCTION_CALL':
             continue
@@ -346,6 +348,7 @@ def card_call_type_problems(funcs_json, entry, funcs):
         if fn not in funcs:
             continue
         calls += 1
+        checked.add(fn)
         params = [goto_type(q['namedSub']['type']) for q in
                   ((callee['namedSub']['type'].get('namedSub') or {}).get('parameters') or {}).get('sub', [])]
         if len(params) != len(args):
@@ -356,6 +359,12 @@ def card_call_type_problems(funcs_json, entry, funcs):
             if why:
                 probs.append('line %s: argument %d of %s: %s (a narrower declared type narrows the input)' % (
                     line, k + 1, fn, why))
+    for fn in sorted(set(required) - checked):
+        probs.append('%s makes no direct call to %s, the function under proof, so no argument of it was checked' % (
+            entry, fn))
+    if not required and not calls:
+        probs.append('%s makes no direct call to a card function (%s), so no argument was checked' % (
+            entry, ', '.join(sorted(funcs))))
     return probs
 
 
@@ -401,7 +410,8 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
     if rc != 0:
         return None, 'goto-instrument --show-goto-functions failed (%s); see %s' % (rc, log + '.arg-types')
     try:
-        probs = card_call_type_problems(open(fj, errors='replace').read(), proof.entry, card_functions(card_dir, proof))
+        probs = card_call_type_problems(open(fj, errors='replace').read(), proof.entry, card_functions(card_dir, proof),
+                                        proof.enforced)
     except (ValueError, KeyError, IndexError, TypeError) as e:
         probs = ['could not read the goto program\'s calls: %s: %s' % (type(e).__name__, e)]
     finally:

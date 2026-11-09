@@ -451,3 +451,17 @@ proofs/HOWTO.md, builder rule 7 and GOAL.md §3.4's gate list describe the check
 - C-01: 675 properties, 0 failed; coverage 81/81;
 - C-02: 1350 properties, 0 failed; coverage 399/399;
 - mutants 16/16 killed.
+
+### The type check must find a call (auditor, REVIEW-LOG.md 2026-11-09 night)
+
+`card_call_type_problems` counted calls but never checked the count, so an entry function with no card call passed the check by finding nothing. Now the check fails the proof in two cases:
+- the entry function has no checked call to the proof's ENFORCE function;
+- for a proof without ENFORCE, the entry function has no checked card call at all.
+
+**Tests** (tool tests 192/192), on the toy card C-90, lp64-le:
+- **ENFORCE proof whose entry never calls toyGet:** fails with `harness_toyGet makes no direct call to toyGet, the function under proof`. On fc90cc0's prove.py it already failed, but only because DFCC aborted (`dfcc failed (-6)`). The test fails there on the missing message, not on the verdict.
+- **COVER-only proof whose entry calls no card function:** fails with `makes no direct call to a card function`. This is the real gap: fc90cc0's prove.py gave `RESULT prove C-90 lp64-le PASS 0s 3 properties 0 failed`.
+
+**A call through a function pointer is no such case.** `int (*f)(const u8 *) = toyGet; f(p);` passes. `--drop-unused-functions` has already turned `f(p)` into a guarded direct call `toyGet(p)`, so the call is found and its argument is checked. scan rejects function pointers to card functions anyway.
+
+C-01 and C-02 as merged still pass on lp64-le, in the tool tests. The full gate was not rerun.

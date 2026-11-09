@@ -283,6 +283,22 @@ def main():
         rc, out, res = t.run(r, ['make', '-C', 'proofs/C-90', 'prove', cfg])
         t.expect('prove: ENFORCE pairing f with another function\'s contract fails', rc != 0 and 'contract_<fn>' in out, out)
 
+        # auditor 2026-11-09 night: the type check must find the call under proof, not pass by finding nothing.
+        # (A call through a function pointer is no such case: --drop-unused-functions has already turned `f(p)` into
+        # a guarded direct call `toyGet(p)`, whose arguments are checked.)
+        for name, mk, text, needle in (
+                ('a harness whose entry never calls its ENFORCE function', MK_GET,
+                 HARNESS_GET.replace('FOOT', '2').replace('  toyGet(p);', '  toyLen(1);'),
+                 'harness_toyGet makes no direct call to toyGet, the function under proof'),
+                ('a COVER-only proof whose entry calls no card function',
+                 MK_GET.replace('get_ENFORCE := toyGet/contract_toyGet', 'get_COVER := toyGet'),
+                 HARNESS_GET.replace('FOOT', '2').replace('  toyGet(p);', '  toyLen(1);'),
+                 'harness_toyGet makes no direct call to a card function')):
+            r = setup_get(t)
+            t.write(r, 'proofs/C-90/Makefile', mk)
+            t.write(r, 'proofs/C-90/harness.c', text)
+            rc, out, res = t.run(r, ['make', '-C', 'proofs/C-90', 'prove', cfg])
+            t.expect('prove rejects (argument types): %s' % name, rc != 0 and needle in out and 'FAIL' in res, out)
         # auditor 2026-11-09 evening: a card-call argument narrowed by its declared type (u32 value for a u64
         # parameter) fails the proof; checked on the linked goto program, so on the real C-01 and C-02 (lp64-le)
         real = os.path.join(t.base, 'real-prove')
