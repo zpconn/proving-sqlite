@@ -415,3 +415,39 @@ So declarations use only C keywords and typedef names. Today's harnesses comply:
 - Pass: i64 and size_t declared before SETUP and u32 in SETUP, alongside the existing u64.
 
 The five negative tests printed `RESULT scan PASS` on 7b3a029's scan.py (179/184 there).
+
+### Argument types, checked by prove.py (auditor, REVIEW-LOG.md 2026-11-09 evening)
+
+A card-call argument can be narrowed by its declared type. In harness_sqlite3PutVarint, `u32 value;` (or `int value;`) gave scan PASS, prove PASS on all three configurations (675 properties, 0 failed) and coverage PASS 81/81, while the proof saw only part of the u64 range. scan cannot see types, so prove.py now checks them on the linked goto program, before DFCC (`build_proof` → `card_call_type_problems`).
+
+**How.** After `--drop-unused-functions`, `goto-instrument --show-goto-functions --json-ui` dumps the program, about 29 MB for C-01. In the entry function, for every FUNCTION_CALL whose callee is a card function, each argument is reduced to its operand before any typecast, and that operand's type must equal the parameter's.
+- **Which functions count:** the card's Functions line, plus the proof's ENFORCE and COVER functions.
+- **Macros:** a sqlite3.c macro such as getVarint32 is already expanded to its call by then.
+- **The argument forms scan allows:**
+  - a variable;
+  - `&x`, which is `address_of(symbol)`;
+  - an array argument, which is `address_of(index(array, 0))`;
+  - `p + k`, where p must have the parameter's type and k must be size_t: the unsigned type of p's pointer width, so unsignedbv[64] on the LP64 configurations and unsignedbv[32] on ilp32-le.
+- **Fails closed:** any other form, or a call through a function pointer in an entry function, fails the proof.
+- **Casts:** a cast to the type the operand already has is fine. C-02's `getVarint32(encoded, decoded32)` becomes `sqlite3GetVarint32(encoded, cast(address_of(decoded32), unsignedbv[32]*))` and passes.
+- **Types are compared structurally** (kind, width, pointer and array structure): the JSON carries no C type names or const qualifiers, so `const u8 *` parameters match `u8 *` arguments.
+
+A mismatch fails the proof with, for example, `card-call argument types: line 31: argument 2 of sqlite3PutVarint: value has type unsignedbv[32] before any cast; the parameter has unsignedbv[64] (a narrower declared type narrows the input)`. Coverage builds go through the same check.
+
+**Tests** (tool tests 190/190; on a copy of the repository, lp64-le):
+- Pass: C-01 as merged; C-02 as merged.
+- `RESULT prove C-01 lp64-le FAIL`:
+  - `u32 value;` in harness_sqlite3PutVarint;
+  - `int value;`;
+  - `u8 value;`;
+  - `u32 offset;` in `output + offset`, since k must be size_t.
+
+With f49022f's prove.py, all four negatives gave `RESULT prove C-01 lp64-le PASS … 225 properties 0 failed` (12/16 in the prove group). Run by hand on all three configurations, C-01 as merged gives `RESULT prove C-01 all PASS 675 properties 0 failed`, and C-02 gives `1350 properties 0 failed`.
+
+proofs/HOWTO.md, builder rule 7 and GOAL.md §3.4's gate list describe the check.
+
+**Full gate at fc90cc0** (13-full-gate.log): `RESULT gate all PASS 921s 0 failed`.
+- scan PASS;
+- C-01: 675 properties, 0 failed; coverage 81/81;
+- C-02: 1350 properties, 0 failed; coverage 399/399;
+- mutants 16/16 killed.

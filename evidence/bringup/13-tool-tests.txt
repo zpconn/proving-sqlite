@@ -13,6 +13,12 @@ ok   prove: a call to a function without a body fails
 ok   prove: a Makefile variable outside the schema fails
 ok   prove: a check-disabling option in SOLVER fails
 ok   prove: ENFORCE pairing f with another function's contract fails
+ok   prove (argument types): C-01 as merged passes
+ok   prove (argument types): C-02 as merged passes
+ok   prove rejects (argument types): C-01 with u32 value in harness_sqlite3PutVarint
+ok   prove rejects (argument types): C-01 with int value in harness_sqlite3PutVarint
+ok   prove rejects (argument types): C-01 with u8 value in harness_sqlite3PutVarint
+ok   prove rejects (argument types): C-01 with a u32 offset in output + offset (k must be size_t)
 ok   coverage: unreachable line 33 is flagged and unexplained fails
 ok   coverage: the gap cited in NOTES.md outside "Unreached lines" (a requires table) is not an explanation
 ok   coverage: the same gap listed under "## Unreached lines" in NOTES.md passes
@@ -182,4 +188,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 184/184
+RESULT tool-tests PASS 190/190
