@@ -74,3 +74,31 @@ Tests (tools/tests/test_tools.py, gate section): a card Makefile with a `prove:`
 - `gate: make prove skips the rejected card Makefile too (no marker)`
 
 Against the tools at 1c27db4 both FAIL, with the marker written (make ran the rule). With the fix both pass. Tool tests 97/97 (13-tool-tests.txt). `make gate CARD=C-02 BASE=HEAD` on the real repo passes with the same numbers as before (14-gate-C-02.log): C-02 1350 properties, C-01 675, coverage 399/399 and 81/81, mutants 11/11; the log has no `make -C`.
+
+## Follow-up 3: coverage explanations must match what the run left uncovered
+
+The auditor showed that one entry, `- sqlite3.c:37900-38099: values the harness bounds`, explained five hidden gaps in a C-01 variant. Ranges of up to 200 lines were accepted, in any number, and nothing checked that a listed line was really unreached.
+
+**Format.** prove.py `unreached_entries` reads the `## Unreached lines` section strictly:
+- every non-blank line there is one entry, `- sqlite3.c:<line>: <reason>` or `- sqlite3.c:<a>-<b>: <reason>`, or `- none`;
+- a line that is anything else (prose, an entry with no reason, an entry naming two lines or ranges) fails coverage.
+
+**Check against the run.** `check_unreached` compares each entry with the run:
+- a single line must be uncovered in some proof and configuration of the run;
+- a range must lie within one uncovered block, both ends in it;
+- an entry naming a line the run covers, or a line that is no coverage goal, fails coverage;
+- only accepted entries explain gaps.
+
+**What a block is.** `cbmc --cover location` reports one goal per instruction, with overlapping line sets: a dead `q = 2; q = q + 1; q = q * 3;` gives goals [44,45], [45,46] and [46]. So a block (`uncovered_regions`, recorded per function as `uncovered_blocks` in coverage-summary.json) is the source-level stretch: a maximal run of uncovered goal lines with no covered goal line between them.
+
+**Tests.** They use a new toy function, toyDead2, with a three-line dead branch.
+- Accepted: a range within the dead stretch, with a reason.
+- Rejected:
+  - a blanket range (the auditor's case);
+  - a range one line past the stretch;
+  - an entry naming a covered line;
+  - an entry with no reason;
+  - an entry naming two lines;
+  - prose under the heading.
+
+All six rejections pass with the fix and FAIL against the tools at 8822461; the accepted case passes on both. Tool tests 104/104. C-01 and C-02 coverage still pass, 81/81 and 399/399: their NOTES.md have no gaps to list. Builder §3.4, proofs/HOWTO.md and GOAL.md §3.4 state the format.

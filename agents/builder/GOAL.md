@@ -44,7 +44,7 @@ Only these, which your card's May change line spells out:
    - the contract in plain English;
    - the §2.3 table of requires;
    - footprint minimality;
-   - under the heading `## Unreached lines`, each uncovered line as `- sqlite3.c:<line>: why it can't be reached` (the coverage check counts a gap as explained only there);
+   - under the heading `## Unreached lines`, one entry per line: `- sqlite3.c:<line>: why it can't be reached`, or `- sqlite3.c:<a>-<b>: why` for a range inside one uncovered stretch (no covered line in it). The coverage check counts a gap as explained only there, and fails an entry without a reason, or one naming a line the run covers;
    - each loop invariant in one line;
    - open questions.
 

@@ -57,6 +57,15 @@ int toyLog(int);
 static int toyCallsLog(int x){
   return toyLog(x);
 }
+static int toyDead2(int x){
+  int q = 0;
+  if( x>20 && x<15 ){
+    q = 2;
+    q = q + 1;
+    q = q * 3;
+  }
+  return q;
+}
 '''
 
 
@@ -295,6 +304,35 @@ def main():
         r = setup_get(t)
         rc, out, res = t.run(r, ['make', '-C', 'proofs/C-90', 'coverage', cfg])
         t.expect('coverage: an enforced function is measured on its wrapped body (no false gaps)', rc == 0 and '0 uncovered' in res, out)
+        # follow-up 3: each entry is one line or a range within one uncovered block, with a reason, and must be
+        # uncovered in this run
+        r = t.fresh()
+        t.write(r, 'cards/C-95.md', card_md('C-95', ['toyDead2']))
+        t.write(r, 'proofs/C-95/harness.c', HARNESS_DEAD.replace('toyDead', 'toyDead2'))
+        t.write(r, 'proofs/C-95/Makefile', MK_DEAD.replace('C-92', 'C-95').replace('toyDead', 'toyDead2'))
+        qa, qc, qcov = line_of(TOY, '    q = 2;'), line_of(TOY, '    q = q * 3;'), line_of(TOY, '  int q = 0;')
+        head = '## Requires\nnone\n\n## Unreached lines\n'
+
+        def cov(entries):
+            t.write(r, 'proofs/C-95/NOTES.md', head + entries + '\n## Loops\n- none\n')
+            return t.run(r, ['make', '-C', 'proofs/C-95', 'coverage', cfg])
+        rc, out, res = cov('- sqlite3.c:%d-%d: x>20 && x<15 is unsatisfiable\n' % (qa, qc))
+        t.expect('coverage: a range within one uncovered block, with a reason, explains the gap',
+                 rc == 0 and '3 uncovered 0 unexplained' in res, out)
+        rc, out, res = cov('- sqlite3.c:1-%d: lines the harness bounds\n' % (qc + 3))
+        t.expect('coverage rejects: a blanket range wider than the uncovered block (the auditor\'s 37900-38099)',
+                 rc != 0 and 'not within one uncovered block' in out, out)
+        rc, out, res = cov('- sqlite3.c:%d-%d: x>20 && x<15 is unsatisfiable\n' % (qa, qc + 1))
+        t.expect('coverage rejects: a range that runs one line past the uncovered block', rc != 0 and 'not within one uncovered block' in out, out)
+        rc, out, res = cov('- sqlite3.c:%d-%d: x>20 && x<15 is unsatisfiable\n- sqlite3.c:%d: also unreached\n' % (qa, qc, qcov))
+        t.expect('coverage rejects: an entry naming a line this run covers',
+                 rc != 0 and ('sqlite3.c:%d is listed as unreached, but no proof' % qcov) in out, out)
+        rc, out, res = cov('- sqlite3.c:%d-%d:\n' % (qa, qc))
+        t.expect('coverage rejects: an entry with no reason', rc != 0 and 'not an entry' in out, out)
+        rc, out, res = cov('- sqlite3.c:%d: and sqlite3.c:%d-%d: unreachable\n' % (qa, qa + 1, qc))
+        t.expect('coverage rejects: an entry naming more than one line or range', rc != 0 and 'one line or range per entry' in out, out)
+        rc, out, res = cov('Lines %d to %d are unreachable because x>20 && x<15 is unsatisfiable.\n' % (qa, qc))
+        t.expect('coverage rejects: prose under "## Unreached lines" instead of entries', rc != 0 and 'not an entry' in out, out)
 
     # ---- scan
     if want('scan'):

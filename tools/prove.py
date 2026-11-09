@@ -510,6 +510,8 @@ def cover_one(card, card_dir, proof, cfg_name, cfg_flags, overlay_dir, build_roo
         res['functions'][fn] = {
             'goal_lines': sorted(lm.upstream_line(x) for x in all_lines),
             'uncovered': sorted(set(lm.upstream_line(x) for x in unc)),
+            'uncovered_blocks': uncovered_regions(sorted(set(lm.upstream_line(x) for x in all_lines)),
+                                                  set(lm.upstream_line(x) for x in unc)),
             'blocks': len(mine), 'blocks_failed': sum(1 for _, s in mine if not s)}
         if not mine:
             res['error'] = 'no coverage goals found for %s (is it reached? is the name right?)' % fn
@@ -519,24 +521,82 @@ def cover_one(card, card_dir, proof, cfg_name, cfg_flags, overlay_dir, build_roo
     return res
 
 
-def explained_lines(card_dir):
-    """Upstream lines NOTES.md explains: each `sqlite3.c:<line>` (or a range `sqlite3.c:<a>-<b>`) listed under the
-    heading "Unreached lines", up to the next heading. A line cited anywhere else in NOTES.md, such as a requires
-    table's caller line, explains nothing (checkpoint 0, decision C3)."""
+def uncovered_regions(goal_lines, uncovered):
+    """The function's uncovered blocks at source level. `cbmc --cover location` reports one goal per instruction,
+    with overlapping line sets, so a straight-line stretch of dead code is several goals. A block here is a maximal
+    run of uncovered goal lines with no covered goal line between them."""
+    out, cur = [], []
+    for x in goal_lines:
+        if x in uncovered:
+            cur.append(x)
+        elif cur:
+            out.append(cur)
+            cur = []
+    if cur:
+        out.append(cur)
+    return out
+
+
+RE_UNREACHED = re.compile(r'^\s*[-*]\s+sqlite3\.c:(\d+)(?:-(\d+))?(?::|\s+[\u2014\u2013-])\s*(\S.*)$')
+
+
+def unreached_entries(card_dir):
+    """The entries under the heading "## Unreached lines" in NOTES.md, up to the next heading (checkpoint 0, decision
+    C3 and follow-up 3). Each non-blank line there is one entry, `- sqlite3.c:<line>: <reason>` or
+    `- sqlite3.c:<a>-<b>: <reason>`, or the single line `- none`. Returns (entries, problems), each entry
+    (notes line number, lo, hi, text). A line cited anywhere else in NOTES.md explains nothing."""
     p = os.path.join(card_dir, 'NOTES.md')
     if not os.path.exists(p):
-        return set()
-    out, inside = set(), False
-    for line in open(p, errors='replace'):
+        return [], []
+    entries, probs, inside = [], [], False
+    for n, line in enumerate(open(p, errors='replace'), 1):
         h = re.match(r'^\s*#+\s*(.*?)\s*#*\s*$', line)
         if h:
             inside = re.match(r'(?i)^unreached lines\b', h.group(1)) is not None
             continue
-        if inside:
-            for m in re.finditer(r'sqlite3\.c:(\d+)(?:\s*[-\u2013]\s*(\d+))?', line):
-                lo, hi = int(m.group(1)), int(m.group(2) or m.group(1))
-                out.update(range(lo, min(hi, lo + 200) + 1))
-    return out
+        t = line.strip()
+        if not inside or not t or re.fullmatch(r'(?i)[-*]?\s*none\.?', t):
+            continue
+        m = RE_UNREACHED.match(line)
+        if not m:
+            probs.append('NOTES.md:%d: not an entry; write one line or range per entry, then its reason: '
+                         '"- sqlite3.c:<line>: <reason>": %s' % (n, t[:80]))
+            continue
+        lo, hi, why = int(m.group(1)), int(m.group(2) or m.group(1)), m.group(3).strip()
+        if hi < lo:
+            probs.append('NOTES.md:%d: range %d-%d runs backwards' % (n, lo, hi))
+        elif 'sqlite3.c:' in why:
+            probs.append('NOTES.md:%d: one line or range per entry (this one names more): %s' % (n, t[:80]))
+        elif not re.search(r'[A-Za-z]{3}', why):
+            probs.append('NOTES.md:%d: the entry for sqlite3.c:%s gives no reason' % (n, m.group(0).split('sqlite3.c:')[1].split(':')[0]))
+        else:
+            entries.append((n, lo, hi, t))
+    return entries, probs
+
+
+def check_unreached(entries, blocks):
+    """Which entries the run supports. blocks: the uncovered blocks (uncovered_regions) of every proof,
+    configuration and function in this run, each a list of upstream lines. A single line must be in an uncovered block; a range must lie within
+    one uncovered block, both ends in it. An entry naming a line this run covers, or no coverage goal at all,
+    fails. Returns (explained lines, problems)."""
+    unc = set(x for b in blocks for x in b)
+    explained, probs = set(), []
+    for n, lo, hi, t in entries:
+        if lo == hi:
+            if lo in unc:
+                explained.add(lo)
+            else:
+                probs.append('NOTES.md:%d: sqlite3.c:%d is listed as unreached, but no proof or configuration in this '
+                             'run leaves it uncovered' % (n, lo))
+            continue
+        if any(lo in b and hi in b and min(b) <= lo and hi <= max(b) for b in blocks):
+            explained.update(x for x in range(lo, hi + 1) if x in unc)
+        else:
+            covered = sorted(x for x in range(lo, hi + 1) if x not in unc)
+            probs.append('NOTES.md:%d: sqlite3.c:%d-%d is not within one uncovered block of this run%s' % (
+                n, lo, hi, (' (it includes lines the run covers or that are no coverage goal, e.g. %s)' %
+                            ', '.join(map(str, covered[:5]))) if covered else ''))
+    return explained, probs
 
 
 def cmd_coverage(a):
@@ -550,7 +610,7 @@ def cmd_coverage(a):
         return 1
     build_root = a.build_dir or os.path.join(card_dir, 'build')
     overlay_dir = os.path.abspath(a.overlay or os.path.join(ROOT, 'overlay'))
-    explained = explained_lines(card_dir)
+    entries, entry_probs = unreached_entries(card_dir)
     ok = True
     tot_goal, tot_unc, tot_unexpl = 0, 0, 0
     allres = []
@@ -561,17 +621,23 @@ def cmd_coverage(a):
             if r['error']:
                 print('  ERROR %s %s: %s' % (proof.name, cname, r['error']))
                 ok = False
-            for fn, d in r['functions'].items():
-                unexpl = [x for x in d['uncovered'] if x not in explained]
-                tot_goal += len(set(d['goal_lines']))
-                tot_unc += len(d['uncovered'])
-                tot_unexpl += len(unexpl)
-                print('  coverage %s %s %s: %d/%d lines; uncovered %s%s' % (
-                    proof.name, cname, fn, len(set(d['goal_lines'])) - len(d['uncovered']), len(set(d['goal_lines'])),
-                    ', '.join('sqlite3.c:%d' % x for x in d['uncovered']) or 'none',
-                    ('; NOT EXPLAINED under "## Unreached lines" in NOTES.md: ' + ', '.join('sqlite3.c:%d' % x for x in unexpl)) if unexpl else ''))
-                if unexpl:
-                    ok = False
+    blocks = [b for r in allres for d in r['functions'].values() for b in d.get('uncovered_blocks', [])]
+    explained, check_probs = check_unreached(entries, blocks)
+    for pr in entry_probs + check_probs:
+        print('  coverage: %s' % pr)
+        ok = False
+    for r in allres:
+        for fn, d in r['functions'].items():
+            unexpl = [x for x in d['uncovered'] if x not in explained]
+            tot_goal += len(set(d['goal_lines']))
+            tot_unc += len(d['uncovered'])
+            tot_unexpl += len(unexpl)
+            print('  coverage %s %s %s: %d/%d lines; uncovered %s%s' % (
+                r['proof'], r['config'], fn, len(set(d['goal_lines'])) - len(d['uncovered']), len(set(d['goal_lines'])),
+                ', '.join('sqlite3.c:%d' % x for x in d['uncovered']) or 'none',
+                ('; NOT EXPLAINED under "## Unreached lines" in NOTES.md: ' + ', '.join('sqlite3.c:%d' % x for x in unexpl)) if unexpl else ''))
+            if unexpl:
+                ok = False
     os.makedirs(build_root, exist_ok=True)
     with open(os.path.join(build_root, 'coverage-summary.json'), 'w') as f:
         json.dump(allres, f, indent=1)

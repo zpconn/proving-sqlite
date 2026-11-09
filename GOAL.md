@@ -130,7 +130,7 @@ The campaign session starts here. Read HANDOFF.md and run the checks it lists; i
    - proof.lock's hashes; after the freeze, a missing proof.lock fails;
    - each harness, preprocessed on every configuration, includes only overlay/sqlite3.c, proofs/include/*.h, proofs/contracts/*.h, proofs/spec/*.h and system headers;
    - every merged proof, on every configuration, with proofs/CHECKS;
-   - coverage of every proof, with each unreached line of the function under proof listed under "Unreached lines" in its NOTES.md, and every function of each card in some proof's COVER;
+   - coverage of every proof, with each unreached line of the function under proof listed under "Unreached lines" in its NOTES.md (one line, or a range within one uncovered block, with a reason; an entry naming a line the run covers fails), and every function of each card in some proof's COVER;
    - every mutant in proofs/MUTANTS killed, or shown equivalent by a reviewed argument;
    - `tools/scan.py`, which rejects:
      - any `__CPROVER_assume` outside a harness's setup block;

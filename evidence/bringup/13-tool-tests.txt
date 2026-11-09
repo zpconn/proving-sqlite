@@ -17,6 +17,13 @@ ok   coverage: unreachable line 33 is flagged and unexplained fails
 ok   coverage: the gap cited in NOTES.md outside "Unreached lines" (a requires table) is not an explanation
 ok   coverage: the same gap listed under "## Unreached lines" in NOTES.md passes
 ok   coverage: an enforced function is measured on its wrapped body (no false gaps)
+ok   coverage: a range within one uncovered block, with a reason, explains the gap
+ok   coverage rejects: a blanket range wider than the uncovered block (the auditor's 37900-38099)
+ok   coverage rejects: a range that runs one line past the uncovered block
+ok   coverage rejects: an entry naming a line this run covers
+ok   coverage rejects: an entry with no reason
+ok   coverage rejects: an entry naming more than one line or range
+ok   coverage rejects: prose under "## Unreached lines" instead of entries
 ok   scan: clean card passes
 ok   scan rejects: assume outside SETUP
 ok   scan rejects: assume on data bytes in SETUP
@@ -95,4 +102,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 97/97
+RESULT tool-tests PASS 104/104
