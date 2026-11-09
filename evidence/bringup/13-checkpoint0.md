@@ -247,3 +247,34 @@ The auditor's option taken for macros: harnesses may use no preprocessor directi
 - **Two ways forward:**
   - reopen C-02 for a builder round under the new rule;
   - let scan allow one snapshot form: `S[i] = X[i]`, alone or in a counted for loop, where S is a local array that the call statement doesn't name and SETUP never names.
+
+### Decision: one snapshot form (Zach, 2026-11-08)
+
+Option two: scan allows one snapshot form between END SETUP and the call under proof, and C-02 stays as merged.
+
+**The form** (scan.py `SNAPSHOT_ALONE_RX`, `SNAPSHOT_LOOP_RX`, `snapshot_problem`):
+- exactly `S[k] = X[k];` with a constant k;
+- or `S[i] = X[i]` as the whole body of `for(i = <const>; i < <const>; ++i)`, with no braces.
+
+**Conditions:**
+- S is declared once in the entry function as an array of constant size: not a pointer, not static or extern, no initializer.
+- For the loop form, i is a plain local declared once in the entry function, and no other snapshot loop uses it. Nothing else in the region can assign it, since only declarations may stand there.
+- Neither S nor i appears in the call under proof's statement or in SETUP. SETUP already may not name a local array or take an address, so S cannot be reached from the call's inputs.
+- Anything else in the region except a declaration fails, as before.
+
+**Tests** (tools/tests/test_tools.py; tool tests 147/147):
+- Pass:
+  - C-02's merged harness (`scan.py --card C-02` on the repository);
+  - a toy snapshot loop;
+  - a toy constant-index snapshot.
+- `RESULT scan FAIL`:
+  - `in[0] &= 0x7f;` before the call;
+  - S a pointer;
+  - S then passed to the call;
+  - a loop body with a second statement, in braces or after a comma;
+  - S static;
+  - S named in SETUP;
+  - one counter used by two snapshot loops;
+  - a loop counting with `i++`.
+
+`tools/scan.py` on the repository: `RESULT scan PASS 0 problems`. Full gate rerun at bc6cb37 (13-full-gate.log): `RESULT gate all PASS 1008s 0 failed`. In it, scan passed; C-01 proved 675 properties, 0 failed, with coverage 81/81; C-02 proved 1350, 0 failed, with coverage 399/399; and the mutants passed. Builder rule 7, proofs/HOWTO.md, GOAL.md §3.4 and the scan.py docstring give the form.
