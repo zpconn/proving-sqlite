@@ -13,12 +13,13 @@ Before writing anything, read:
 
 ## 1. What you may change
 
-Only these, which your card's May change line spells out:
+Only these, which your card's May change line spells out file by file:
 - `proofs/C-NN/`: harness.c, Makefile, NOTES.md.
 - `proofs/contracts/<function>.h` for your card's functions, or, if checkpoint 0 chose the fallback, PROOF spans on their definitions in `overlay/sqlite3.c`.
+- `proofs/contracts/<callee>.h` for a boundary callee whose header your card's May change line names: exactly the clause its LEDGER.md entry gives, with the line `Ledger: A-NNN` (scan.py requires it). If that clause doesn't work, say why in your report; LEDGER.md is not yours to change.
 - PROOF spans between the header and body of loops in your card's functions, in `overlay/sqlite3.c`.
 - New predicates in `proofs/include/preds.h`, when no existing one says what you need.
-- `tests/repro/F-draft-C-NN-<k>.c`, for a suspected finding.
+- `tests/repro/F-draft-C-NN-<k>.c`, for a suspected finding (k = 1, 2 or 3).
 - `reports/C-NN-b<round>.md`.
 
 `proofs/C-NN/` holds only those three files (and the ignored build/), and nothing you write may be a symlink or executable; scan.py and campaign.py refuse either. preds.h may only gain predicates: scan.py rejects changing or removing one, and the gate reruns every card that includes it after any change. Write a predicate as a static function: preds.h, contracts and specs may #define only their include guard, and #undef nothing. Everything else is read-only, including upstream/, tools/, the gate, CHECKS, CONFIGS, MUTANTS, proofs/spec/, other cards' contracts, LEDGER.md and FINDINGS.md. If you need one of them changed, ask in your report. campaign.py commits only the paths on your May change line. If you change any other tracked file, or leave a new file elsewhere that git doesn't ignore, it commits nothing and sends the card to the orchestrator. Keep scratch files in `$TMPDIR`, which is tmp/ in your worktree and ignored by git; /tmp is not writable in your session. Leave `.campaign/` alone: campaign.py writes your usage there, and a session that replaces it with a symlink or anything else is stopped and sent to triage.

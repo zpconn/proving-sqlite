@@ -1,0 +1,41 @@
+# TRUSTED
+
+What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). If one of these is wrong, a proof here can pass while the property fails. Each is used as listed, at the versions in pin.txt and evidence/bringup/01-pins.md.
+
+## CBMC 6.11.0 (cbmc-6.11.0)
+
+- **Its C semantics.** goto-cc's front end, run as `goto-cc <CONFIGS flags> -include proof.h -I overlay -I proofs/include -I proofs` (tools/prove.py), and CBMC's model of C11 on each configuration. That model covers integer widths, two's complement, IEEE 754 doubles, byte order and pointer size. It also covers the meaning of every check in proofs/CHECKS. The configurations were probed (evidence/bringup/05-configs.md, `make probe`), and each check was shown to fire on a toy (evidence/bringup/toys/04-checks/). Those probes are tested evidence, not proofs of the front end.
+- **Its transformations:**
+  - `--drop-unused-functions` and its function-pointer removal;
+  - `--dfcc` with `--enforce-contract`, `--replace-call-with-contract` and `--apply-loop-contracts`: replacing a callee by its contract is sound only if DFCC checks the contract's requires at each call and assumes no more than its ensures;
+  - `--slice-global-inits`;
+  - unwinding with `--unwinding-assertions`.
+  - Under DFCC, statics and globals start unconstrained (proofs/HOWTO.md), which over-approximates SQLite's initialized globals.
+- **Its back ends:** the default SAT solver, MiniSat 2, unless a card's Makefile names another (`<name>_SOLVER`: CaDiCaL, Glucose, or Z3 4.8.12 through `--smt2`/`--z3`). No merged proof names one.
+- **Coverage:** `cbmc --cover location`, which the gate uses to require that proofs reach every line of the functions under proof (tools/prove.py coverage).
+- **Its library models,** used in place of the C library:
+  - `memcpy`: serialGet (91976), serialGet7 (91989), sqlite3IsNaN (36449);
+  - `memcmp`: sqlite3VdbeRecordCompareWithSkip (92739, 92767), vdbeRecordCompareString (92975);
+  - `malloc` and `free`, under `--malloc-may-fail --malloc-fail-null`: harnesses only.
+
+  Under `--pointer-check`, each model checks that its arguments are accessible for the length it is given. It also checks that memcpy's source and destination don't overlap (UB-CLASSES.md).
+
+## The preprocessor and headers
+
+- **GCC 13.3.0's preprocessor**, which goto-cc runs (`gcc (goto-cc 6.11.0 (cbmc-6.11.0)) 13.3.0`), with the system headers of Ubuntu 24.04 and gcc-multilib for ilp32-le. The include check (`prove.py includes`, in the gate) shows each harness pulls in nothing but overlay/sqlite3.c, proofs/{include,contracts,spec}/*.h and system headers. Which code survives `#if` is the preprocessor's decision under the default compile options (UB-CLASSES.md, Out of scope).
+- **The configuration flags** in proofs/CONFIGS (`-m64`, `-m32`, `--big-endian -DSQLITE_BYTEORDER=4321 -funsigned-char`): that they make goto-cc and CBMC model the platform each name says, which `make probe` checks for word size, byte order, char signedness and SQLite's branch choice.
+
+## Reviewed, not proved
+
+These are not trusted the way CBMC is. They are checked by review, and what they say is a premise of a proved claim:
+- **proofs/spec/record_format.h,** the P3 reference: written from SQLite's file format document (evidence/spec/fileformat2.html, hashed in evidence/spec/README.md) and checked against it row by row by a Codex session (reviews/spec-r1.md, APPROVE). A native comparison with sqlite3VdbeSerialGet is tested evidence (evidence/spec/README.md).
+- **UB-CLASSES.md's argued rows:** the kinds of UB CHECKS does not catch, argued by inspection and re-checked by each card's reviewer.
+- **The project's tools,** frozen with tools/ at checkpoint 1:
+  - check_overlay.py (the overlay is upstream plus PROOF spans);
+  - scan.py (harness discipline);
+  - prove.py (the pipeline above, and the card-call argument types);
+  - mutate.py, gate.py and lock.py.
+
+  A wrong tool could pass a vacuous proof. Each tool rule has a tool test that fails without it (tools/tests/test_tools.py; evidence/bringup/13-tool-tests.txt).
+
+What is *assumed* rather than trusted is in LEDGER.md: the boundary contracts and the callers' obligations.

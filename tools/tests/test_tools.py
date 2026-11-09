@@ -762,6 +762,21 @@ def main():
         t.expect('mutate: ambiguous mutant (token occurs several times) is an error', rc != 0 and 'occurs' in out, out)
         rc, out, res = t.run(r, [py, 'tools/mutate.py', '--card', 'C-90', '--config', 'lp64-le', '--adhoc', "toyGet %d '<<7' '<<70'" % gl])
         t.expect('mutate --adhoc: planted shift bug is killed', rc == 0 and 'KILLED' in out and 'shift' in out, out)
+        # checkpoint 1: a survivor whose card has no proofs yet is PENDING in --all, not a failure; one whose card has
+        # proofs still fails, and a pending card's mutant that some proof kills counts as killed
+        t.write(r, 'cards/C-95.md', card_md('C-95', ['toyGet']))
+        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d '0x7f' '0x3f' card=C-95\nM-002 toyGet %d 'p[1]' 'p[2]' card=C-95\n" % (gl, gl))
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--config', 'lp64-le'])
+        t.expect('mutate --all: a survivor whose card has no proofs is PENDING and passes; a killed one counts as killed',
+                 rc == 0 and re.search(r'M-001 .* PENDING .*C-95, the card that must kill it, has no proofs yet', out)
+                 and re.search(r'M-002 .* KILLED', out) and 'PASS 1/2 killed 0 equivalent 1 pending' in res, out)
+        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d '0x7f' '0x3f' card=C-90\n" % gl)
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--config', 'lp64-le'])
+        t.expect('mutate --all: a survivor whose card has proofs still fails', rc != 0 and re.search(r'M-001 .* SURVIVED', out)
+                 and 'FAIL 0/1 killed' in res and 'pending' not in res, out)
+        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d '0x7f' '0x3f'\n" % gl)
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--config', 'lp64-le'])
+        t.expect('mutate --all: a survivor with no card= still fails', rc != 0 and 'FAIL 0/1 killed' in res, out)
 
     # ---- lock
     if want('lock'):

@@ -2,7 +2,16 @@
 # A mutant is killed when some proof fails. card= names the card whose proofs must kill it: UB-relevant mutants
 # belong to the P1 card of their function, functional ones (no UB, wrong value) to the P2/P3 card.
 # Format: M-NNN <function> <upstream line> '<from>' '<to>' card=C-NN [equivalent='<argument>' review=<file>]
-# Pilot set (bring-up); §2.4 completes the list for every function.
+# M-001 to M-016 are the pilot set (bring-up); M-017 to M-062 complete it at checkpoint 1 (GOAL.md §2.4): at least two
+# per Appendix A function. While a card has no proofs, its surviving mutants are PENDING in the full gate (tools/mutate.py).
+# Expected equivalent: none. Every mutant below is either UB the frozen checks catch on any proof of the function
+# (out-of-footprint reads and writes, undefined shifts, signed overflow, division by zero, a float-to-int conversion
+# out of range, a loop that never ends), or a wrong value that P2 or P3 compares. Four kills also need what a
+# card's notes say its contract must state, because a caller relies on it:
+#   M-046, M-047 (C-13): sqlite3VdbeMemSetNull ensures pMem->flags == MEM_Null; RecordUnpack calls it for that (92150).
+#   M-048, M-049 (C-14): AllocUnpackedRecord ensures p->aMem holds p->nField writable Mems; RecordUnpack needs that.
+#   M-057, M-058 (C-18): sqlite3VdbeRecordCompare's call meets WithSkip's requires for bSkip == 0 and for pKey1 only.
+#   M-061 (C-20): A-001's slack is the smallest that works, so a header offset up to 0x7F plus 8 bytes exceeds it.
 #
 # putVarint64 (37967): writes past the 9-byte footprint, or a loop that never ends.
 M-001 putVarint64 37971 'p[8]' 'p[9]' card=C-01
@@ -27,3 +36,70 @@ M-014 sqlite3GetVarint32 38204 '0xffffffff' '0xfffffffe' card=C-02
 # sqlite3VarintLen (38215): wrong length (P2's VarintLen clause).
 M-015 sqlite3VarintLen 38217 'i=1' 'i=0' card=C-02
 M-016 sqlite3VarintLen 38217 '>>= 7' '>>= 8' card=C-02
+# sqlite3GetVarint (38021), P1: a read past the 9-byte footprint, an undefined shift.
+M-017 sqlite3GetVarint 38161 'p[-4]' 'p[4]' card=C-03
+M-018 sqlite3GetVarint 38145 '<<32' '<<64' card=C-03
+# sqlite3GetVarint32 (38182), P1: a read past the footprint, a signed shift that overflows int.
+M-019 sqlite3GetVarint32 38197 'p[2]' 'p[9]' card=C-04
+M-020 sqlite3GetVarint32 38192 '<<7' '<<25' card=C-04
+# sqlite3VarintLen (38215), P1: loops that never end (unwinding assertion or decreases clause).
+M-021 sqlite3VarintLen 38217 '>>= 7' '>>= 0' card=C-05
+M-022 sqlite3VarintLen 38217 '!=0' '!=1' card=C-05
+# sqlite3VdbeSerialTypeLen (91862) and sqlite3VdbeOneByteSerialTypeLen (91871), P1: sqlite3SmallTypeSizes[128]
+# read at index 128 or more, a division by zero.
+M-023 sqlite3VdbeSerialTypeLen 91863 '>=128' '>=129' card=C-06
+M-024 sqlite3VdbeSerialTypeLen 91864 '/2' '/0' card=C-06
+M-025 sqlite3VdbeOneByteSerialTypeLen 91873 '[serial_type]' '[128]' card=C-06
+M-026 sqlite3VdbeOneByteSerialTypeLen 91873 '[serial_type]' '[255]' card=C-06
+# serialGet (91945) and serialGet7 (91980), P1: a read of a 9th byte, an undefined shift.
+M-027 serialGet 91951 'buf+4' 'buf+5' card=C-07
+M-028 serialGet 91952 '<<32' '<<64' card=C-07
+M-029 serialGet7 91985 'buf+4' 'buf+5' card=C-07
+M-030 serialGet7 91986 '<<32' '<<64' card=C-07
+# sqlite3VdbeSerialGet (91997), P1: aFlag[2] read at index 2 or 3, a signed multiplication that overflows.
+M-031 sqlite3VdbeSerialGet 92083 'serial_type&1' 'serial_type&3' card=C-08
+M-032 sqlite3VdbeSerialGet 92055 '<<32' '<<63' card=C-08
+# sqlite3VdbeSerialGet and serialGet, P3: a wrong value, no UB (killed by C-09's comparison with ref_serial_get).
+M-033 sqlite3VdbeSerialGet 92071 'serial_type-8' 'serial_type-7' card=C-09
+M-034 sqlite3VdbeSerialGet 92082 '/2' '/4' card=C-09
+M-035 sqlite3VdbeSerialGet 92005 'MEM_Null|MEM_Zero' 'MEM_Null' card=C-09
+M-036 serialGet 91977 'MEM_Null' 'MEM_Real' card=C-09
+M-037 serialGet 91953 'serial_type==6' 'serial_type==7' card=C-09
+# vdbeRecordDecodeInt (92552), P1: a read of a 9th byte, a signed shift that overflows i64.
+M-038 vdbeRecordDecodeInt 92578 'aKey+4' 'aKey+5' card=C-10
+M-039 vdbeRecordDecodeInt 92573 '<<32' '<<63' card=C-10
+# sqlite3IsNaN (36445), P1: memcpy past an 8-byte object.
+M-040 sqlite3IsNaN 36449 '&x' '&rc' card=C-11
+M-041 sqlite3IsNaN 36449 'sizeof(y)' '9' card=C-11
+# sqlite3IntFloatCompare (92425), P1: the (i64)r conversion reached with r = 2^63 or a double just below -2^63
+# (the %float-to-int pass).
+M-042 sqlite3IntFloatCompare 92433 '>=' '>' card=C-11
+M-043 sqlite3IntFloatCompare 92432 '-9223372036854775808.0' '-9223372036854777856.0' card=C-11
+# isAllZero (92369), P1: z[n] and z[-1] read.
+M-044 isAllZero 92371 'i<n' 'i<=n' card=C-12
+M-045 isAllZero 92371 'i=0' 'i=-1' card=C-12
+# sqlite3VdbeMemSetNull (86607), P1: leaves a non-NULL Mem, against an ensures that it is NULL (C-13's notes).
+M-046 sqlite3VdbeMemSetNull 86611 'MEM_Null' 'MEM_Int' card=C-13
+M-047 sqlite3VdbeMemSetNull 86611 'MEM_Null' 'MEM_Str' card=C-13
+# sqlite3VdbeAllocUnpackedRecord (92096), P1: one Mem fewer allocated than nField says (against its ensures).
+M-048 sqlite3VdbeAllocUnpackedRecord 92102 '+1)' '+0)' card=C-14
+M-049 sqlite3VdbeAllocUnpackedRecord 92107 'nKeyField + 1' 'nKeyField + 2' card=C-14
+# sqlite3VdbeRecordUnpack (92116), P1: a Mem written past nField, the NULL overwrite past it.
+M-050 sqlite3VdbeRecordUnpack 92145 '>=p->nField' '>p->nField' card=C-15
+M-051 sqlite3VdbeRecordUnpack 92153 'pMem-(' 'pMem+(' card=C-15
+# sqlite3VdbeFindCompare (93010), P1: aMem[1] read when nField is 1.
+M-052 sqlite3VdbeFindCompare 93038 'aMem[0]' 'aMem[1]' card=C-16
+M-053 sqlite3VdbeFindCompare 93049 'aMem[0]' 'aMem[1]' card=C-16
+# sqlite3VdbeRecordCompareWithSkip (92607), P1: a blob past nKey1, the loop past nField, memcmp past pRhs->z.
+M-054 sqlite3VdbeRecordCompareWithSkip 92756 ' > ' ' < ' card=C-17
+M-055 sqlite3VdbeRecordCompareWithSkip 92802 '==' '>' card=C-17
+M-056 sqlite3VdbeRecordCompareWithSkip 92738 'MIN(' 'MAX(' card=C-17
+# sqlite3VdbeRecordCompare (92828), P1: a call that breaks WithSkip's requires (bSkip set; the wrong buffer).
+M-057 sqlite3VdbeRecordCompare 92832 ', 0)' ', 1)' card=C-18
+M-058 sqlite3VdbeRecordCompare 92832 'pKey1,' 'pPKey2,' card=C-18
+# vdbeRecordCompareString (92940), P1: the corruption check reversed, memcmp past the shorter string.
+M-059 vdbeRecordCompareString 92970 ' > ' ' < ' card=C-19
+M-060 vdbeRecordCompareString 92974 'MIN(' 'MAX(' card=C-19
+# vdbeRecordCompareInt (92845), P1: a header offset past the slack, an undefined shift.
+M-061 vdbeRecordCompareInt 92849 '0x3F' '0x7F' card=C-20
+M-062 vdbeRecordCompareInt 92888 '<<32' '<<64' card=C-20

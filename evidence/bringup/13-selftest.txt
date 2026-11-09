@@ -1,4 +1,4 @@
-selftest fixture: /var/tmp/campaign-selftest-_4y_ss_8
+selftest fixture: /var/tmp/campaign-selftest-0ni6hhyo
 ok   sessions.toml's codex and claude commands, start and resume, pass the session guards
 ok   session guard refuses codex without the workspace-write sandbox
 ok   session guard refuses codex with approvals on

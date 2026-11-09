@@ -8,6 +8,8 @@ proofs/MUTANTS, one mutant per line ('#' comments):
   M-NNN <function> <upstream line> '<from>' '<to>' card=C-NN [equivalent='<argument>' review=<reviews/file>]
 card= names the card whose proofs must kill it (a P1 card for UB-relevant mutants, the P2/P3 card for functional
 ones), so a card's gate never depends on a card that merges later. The full gate runs every mutant against every proof.
+A mutant that survives every proof while its card= has no proofs yet (no proofs/<card>/Makefile) is PENDING: it does
+not fail the run, and the RESULT line counts it. Once every card has proofs, nothing is pending (checkpoint 1).
 `from` must occur exactly once on that line (outside PROOF spans); it is replaced by `to`.
 
 Usage:
@@ -15,7 +17,7 @@ Usage:
   tools/mutate.py --card C-NN --with C-AA,C-BB    ... against those cards' proofs too
   tools/mutate.py --card C-NN --adhoc "<function> <line> '<from>' '<to>'"   one planted bug
   tools/mutate.py --all [--with ...]              every mutant, against every card that has proofs
-Ends with: RESULT mutate <card|all> PASS|FAIL <k>/<n> killed <e> equivalent
+Ends with: RESULT mutate <card|all> PASS|FAIL <k>/<n> killed <e> equivalent [<p> pending]
 """
 import argparse
 import hashlib
@@ -191,7 +193,7 @@ def main():
         return 1
     scratch = a.scratch or os.path.join(proof_cards[0][1], 'build', 'mutants')
     os.makedirs(scratch, exist_ok=True)
-    killed = equiv = 0
+    killed = equiv = pending = 0
     ok = True
     results = []
     for m in muts:
@@ -209,6 +211,10 @@ def main():
             if not m['review']:
                 ok = False
                 detail += ' -- NO REVIEW NAMED'
+        elif v == 'SURVIVED' and m['card'] and not os.path.exists(os.path.join(ROOT, 'proofs', m['card'], 'Makefile')):
+            v = 'PENDING'
+            pending += 1
+            detail += '; %s, the card that must kill it, has no proofs yet' % m['card']
         else:
             ok = False
         results.append({'mutant': m, 'verdict': v, 'detail': detail})
@@ -218,7 +224,8 @@ def main():
         os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
         with open(a.json, 'w') as f:
             json.dump(results, f, indent=1)
-    print('RESULT mutate %s %s %d/%d killed %d equivalent' % (label, 'PASS' if ok else 'FAIL', killed, len(muts), equiv))
+    print('RESULT mutate %s %s %d/%d killed %d equivalent%s' % (label, 'PASS' if ok else 'FAIL', killed, len(muts), equiv,
+                                                               ' %d pending' % pending if pending else ''))
     return 0 if ok else 1
 
 

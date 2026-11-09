@@ -170,6 +170,9 @@ ok   mutate: out-of-bounds mutant killed, functional mutant survives -> FAIL, ov
 ok   mutate: survivor with a reviewed equivalence argument passes
 ok   mutate: ambiguous mutant (token occurs several times) is an error
 ok   mutate --adhoc: planted shift bug is killed
+ok   mutate --all: a survivor whose card has no proofs is PENDING and passes; a killed one counts as killed
+ok   mutate --all: a survivor whose card has proofs still fails
+ok   mutate --all: a survivor with no card= still fails
 ok   lock: freshly written lock checks
 ok   lock: sessions.toml is exempt
 ok   lock: a changed tool fails
@@ -190,4 +193,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 192/192
+RESULT tool-tests PASS 195/195
