@@ -428,6 +428,37 @@ def main():
             t.write(r, 'proofs/C-90/harness.c', text)
             rc, out, res = t.run(r, [py, 'tools/scan.py'])
             t.expect('scan rejects (follow-up 2): %s' % name, rc != 0 and needle in out and 'RESULT scan FAIL' in res, out)
+        # the one snapshot form allowed between END SETUP and the call (Zach's decision on follow-up 2)
+        rc, out, res = t.run(REPO, [py, 'tools/scan.py', '--card', 'C-02'])
+        t.expect('scan (snapshot): C-02\'s merged harness passes', rc == 0 and 'RESULT scan PASS' in res, out)
+        GI = G.replace(' *p = ', ' *in = ').replace('assume(p != 0)', 'assume(in != 0)').replace('toyGet(p)', 'toyGet(in)')
+        DECL_S = 'void harness_toyGet(void) {\n  u8 snap[2];\n  int i;'
+        SNAP_LOOP = '  for(i = 0; i < 2; ++i) snap[i] = in[i];\n'
+        snap_ok = [
+            ('a snapshot loop into a local array', GI.replace('void harness_toyGet(void) {', DECL_S).replace(END, END + SNAP_LOOP)),
+            ('a constant-index snapshot', GI.replace('void harness_toyGet(void) {', DECL_S).replace(END, END + '  snap[1] = in[1];\n')),
+        ]
+        for name, text in snap_ok:
+            r = setup_get(t)
+            t.write(r, 'proofs/C-90/harness.c', text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py'])
+            t.expect('scan (snapshot): %s passes' % name, rc == 0, out)
+        snap_bad = [
+            ('in[0] &= 0x7f; before the call', GI.replace(END, END + '  in[0] &= 0x7f;\n'), 'between END SETUP and the call under proof'),
+            ('a snapshot whose S is a pointer', GI.replace('void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  u8 *snap;\n  int i;').replace(END, END + SNAP_LOOP), 'not a pointer'),
+            ('a snapshot into an array then passed to the call', GI.replace('void harness_toyGet(void) {', DECL_S).replace(END, END + SNAP_LOOP).replace('toyGet(in)', 'toyGet(snap)'), 'appears in the call under proof'),
+            ('a snapshot loop body with a second statement (braces)', GI.replace('void harness_toyGet(void) {', DECL_S).replace(END, END + '  for(i = 0; i < 2; ++i){ snap[i] = in[i]; in[i] = 0; }\n'), 'between END SETUP and the call under proof'),
+            ('a snapshot loop body with a second statement (comma)', GI.replace('void harness_toyGet(void) {', DECL_S).replace(END, END + '  for(i = 0; i < 2; ++i) snap[i] = in[i], in[i] = 0;\n'), 'between END SETUP and the call under proof'),
+            ('a snapshot into a static array', GI.replace('void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  static u8 snap[2];\n  int i;').replace(END, END + SNAP_LOOP), 'static'),
+            ('a snapshot whose array SETUP names', GI.replace('void harness_toyGet(void) {', DECL_S).replace(END, '  __CPROVER_assume(sizeof(snap) == 2);\n' + END + SNAP_LOOP), 'appears in SETUP'),
+            ('a loop counter two snapshot loops assign', GI.replace('void harness_toyGet(void) {', DECL_S + '\n  u8 snap2[2];').replace(END, END + SNAP_LOOP + '  for(i = 0; i < 2; ++i) snap2[i] = in[i];\n'), 'assigned by another snapshot loop'),
+            ('a snapshot loop counting with i++', GI.replace('void harness_toyGet(void) {', DECL_S).replace(END, END + '  for(i = 0; i < 2; i++) snap[i] = in[i];\n'), 'between END SETUP and the call under proof'),
+        ]
+        for name, text, needle in snap_bad:
+            r = setup_get(t)
+            t.write(r, 'proofs/C-90/harness.c', text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py'])
+            t.expect('scan rejects (snapshot): %s' % name, rc != 0 and needle in out and 'RESULT scan FAIL' in res, out)
         r = setup_get(t)
         t.write(r, 'proofs/C-90/harness.c', G.replace('void harness', BOX).replace(
             'void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  struct box *b;\n  int n;').replace(

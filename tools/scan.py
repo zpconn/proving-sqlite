@@ -31,7 +31,11 @@ Rejects:
      ENFORCE function, else the first call to a card function) that comes before END SETUP, is missing, or
      sits inside a condition or loop, which would hide the inputs that skip it. SETUP blocks outside entry
      functions. (Checkpoint 0 follow-up 2:) between END SETUP and the call under proof, anything but
-     declarations (no stores through pointers or subscripts, assignments, calls or control flow); in SETUP,
+     declarations and snapshots (no stores through pointers or subscripts, assignments, calls or control flow).
+     A snapshot is exactly `S[k] = X[k];` with a constant k, or the whole body of
+     `for(i = <const>; i < <const>; ++i)` as `S[i] = X[i]`, no braces, where S is an array declared once in the
+     entry function (not a pointer, not static, no initializer), i a plain local declared there and used by no
+     other snapshot loop, and neither appears in the call's statement or in SETUP; in SETUP,
      taking an address, `->` but in `p->field = value`, string literals, casts to pointer types but on malloc,
      naming a local array outside sizeof, and a data pointer assigned anything but a malloc result, pointer
      arithmetic on one, or 0; anywhere in a harness, any preprocessor directive but #include (so no macro hides a
@@ -509,6 +513,56 @@ def setup_statement_problem(stmt, ptrs=frozenset(), arrays=frozenset()):
     return None
 
 
+_INT = r'(?:0[xX][0-9a-fA-F]+|[0-9]+)'
+_ID = r'[A-Za-z_][A-Za-z0-9_]*'
+# the one store allowed between END SETUP and the call under proof (checkpoint 0 follow-up 2): `S[k] = X[k]` with a
+# constant k, or the whole body of `for(i = <const>; i < <const>; ++i)` as `S[i] = X[i]`; no braces
+SNAPSHOT_ALONE_RX = re.compile(r'(?P<S>%s)\s*\[\s*(?P<k>%s)\s*\]\s*=\s*(?P<X>%s)\s*\[\s*(?P=k)\s*\]' % (_ID, _INT, _ID))
+SNAPSHOT_LOOP_RX = re.compile(
+    r'for\s*\(\s*(?P<i>%s)\s*=\s*%s\s*;\s*(?P=i)\s*<\s*%s\s*;\s*\+\+\s*(?P=i)\s*\)\s*'
+    r'(?P<S>%s)\s*\[\s*(?P=i)\s*\]\s*=\s*(?P<X>%s)\s*\[\s*(?P=i)\s*\]' % (_ID, _INT, _INT, _ID, _ID))
+
+
+def _declarations_of(name, decls):
+    """The declaration statements among decls that declare name at the entry function's top level."""
+    return [d for d in decls if is_declaration(d) and re.search(r'(?<![A-Za-z0-9_.>])%s\b' % re.escape(name), d)
+            and re.match(r'^\s*(?:%s\s+)+' % _ID, d)]
+
+
+def snapshot_problem(snap, decls, call_stmt, setup_text, counters):
+    """Why a snapshot statement is not the allowed form, or None. S must be an array declared once in the entry
+    function (not a pointer, not static, no initializer); i, for the loop form, a plain local declared there and
+    used by no other snapshot loop; and neither may appear in the call statement or in SETUP."""
+    S, X = snap.group('S'), snap.group('X')
+    i = snap.groupdict().get('i')
+    names = [S, X] + ([i] if i else [])
+    if len(set(names)) != len(names):
+        return 'S, X and the loop counter must be different names'
+    ds = _declarations_of(S, decls)
+    if len(ds) != 1:
+        return '%s must be declared once in the entry function, as an array (found %d declarations)' % (S, len(ds))
+    d = ds[0]
+    if re.search(r'\b(static|extern|register)\b', d):
+        return '%s may not be static or extern' % S
+    if not re.search(r'(?<![*A-Za-z0-9_])\s*%s\s*\[\s*%s\s*\]' % (re.escape(S), _INT), d) or \
+            re.search(r'\*\s*%s\b' % re.escape(S), d):
+        return '%s must be declared as an array with a constant size, not a pointer' % S
+    if i:
+        di = _declarations_of(i, decls)
+        if len(di) != 1 or re.search(r'\b(static|extern)\b', di[0]) or re.search(r'\*\s*%s\b|\b%s\s*\[' % (
+                re.escape(i), re.escape(i)), di[0]):
+            return 'the loop counter %s must be a plain local declared once in the entry function' % i
+        if i in counters:
+            return 'the loop counter %s is assigned by another snapshot loop before the call' % i
+        counters.append(i)
+    for n in [S] + ([i] if i else []):
+        if re.search(r'\b%s\b' % re.escape(n), call_stmt):
+            return '%s appears in the call under proof\'s statement' % n
+        if re.search(r'\b%s\b' % re.escape(n), setup_text):
+            return '%s appears in SETUP' % n
+    return None
+
+
 def check_entries(s, where, raw, code, proofs, card):
     """Rule 11, for each proof's ENTRY function."""
     defs = {name: (start, b, e) for name, start, b, e in top_level_functions(code)}
@@ -566,14 +620,27 @@ def check_entries(s, where, raw, code, proofs, card):
             s.bad(where, 'line %d: the call under proof (%s) must be a statement of %s\'s body, not inside a condition '
                          'or loop (that hides the inputs that skip it)' % (code.count('\n', 0, m.start()) + 1, m.group(1), ent))
         # checkpoint 0 follow-up 2: between END SETUP and the call under proof, nothing that could narrow its inputs
-        # (a store through a pointer or subscript, a plain assignment, a call, any control flow): declarations only
+        # (a store through a pointer or subscript, a plain assignment, a call, any control flow): declarations only,
+        # and snapshot copies (snapshot_problem) into local arrays the call never sees
         if depth == 0 and stmt_start >= 0 and b + 1 + stmt_start + 1 > sb:
-            for off, st in split_statements(code[sb:b + 1 + stmt_start + 1], sb):
-                if st.strip() and not is_declaration(st):
+            cs = b + 1 + stmt_start + 1
+            region = split_statements(code[sb:cs], sb)
+            decls = [x for _, x in split_statements(code[b + 1:sa], b + 1)] + [x for _, x in region if is_declaration(x)]
+            call_stmt = split_statements(code[cs:e], cs)[0][1]
+            setup_text = code[setups[0].end():ends[0].start()]
+            counters = []
+            for off, st in region:
+                ln = code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1
+                snap = SNAPSHOT_ALONE_RX.fullmatch(st.strip()) or SNAPSHOT_LOOP_RX.fullmatch(st.strip())
+                if snap:
+                    why = snapshot_problem(snap, decls, call_stmt, setup_text, counters)
+                    if why:
+                        s.bad(where, 'line %d: snapshot before the call under proof (%s): %s: %s' % (
+                            ln, m.group(1), why, ' '.join(st.split())[:80]))
+                elif st.strip() and not is_declaration(st):
                     s.bad(where, 'line %d: between END SETUP and the call under proof (%s), entry function %s may only '
-                                 'declare variables (no stores, assignments, calls or control flow): %s' % (
-                                     code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1, m.group(1), ent,
-                                     ' '.join(st.split())[:80]))
+                                 'declare variables or snapshot into a local array (no stores, assignments, calls or '
+                                 'control flow): %s' % (ln, m.group(1), ent, ' '.join(st.split())[:80]))
     for m in setup_rx.finditer(raw):
         if not any(b <= m.start() < e for b, e in entry_ranges):
             s.bad(where, 'line %d: SETUP block outside an entry function' % (raw.count('\n', 0, m.start()) + 1))
