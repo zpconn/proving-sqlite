@@ -59,6 +59,29 @@ ok   scan rejects (C1): #pragma GCC system_header
 ok   scan rejects (C1): #line
 ok   scan rejects (C1): abort() in a contract
 ok   scan rejects (C1): abort() in preds.h
+ok   scan rejects (follow-up 2): a #define that hides a store in SETUP
+ok   scan rejects (follow-up 2): an #undef
+ok   scan rejects (follow-up 2): a store through a subscript between END SETUP and the call
+ok   scan rejects (follow-up 2): a store through a pointer between END SETUP and the call
+ok   scan rejects (follow-up 2): an if between END SETUP and the call
+ok   scan rejects (follow-up 2): a loop between END SETUP and the call
+ok   scan rejects (follow-up 2): a helper that stores, called between END SETUP and the call
+ok   scan rejects (follow-up 2): SETUP takes an address
+ok   scan rejects (follow-up 2): SETUP reads a member through -> in an assume
+ok   scan rejects (follow-up 2): SETUP reads a member through -> in an assignment
+ok   scan rejects (follow-up 2): a string literal in SETUP
+ok   scan rejects (follow-up 2): a cast to a data pointer in SETUP
+ok   scan rejects (follow-up 2): a data pointer set to a local array in SETUP
+ok   scan rejects (follow-up 2): a data pointer set to an integer in SETUP
+ok   scan rejects (follow-up 2): a loop invariant on a harness loop
+ok   scan rejects (follow-up 2): PROOF() on a harness loop
+ok   scan rejects (follow-up 2): __builtin_unreachable after the call
+ok   scan rejects (follow-up 2): __builtin_assume after the call
+ok   scan rejects (follow-up 2): __attribute__((constructor))
+ok   scan rejects (follow-up 2): a digraph subscript in a SETUP assume
+ok   scan rejects (follow-up 2): a trigraph subscript in a SETUP assume
+ok   scan rejects (follow-up 2): a line splice that hides an assume
+ok   scan (follow-up 2): a SETUP with field stores, a cast malloc, pointer arithmetic and sizeof(T *) passes
 ok   scan rejects (C2): a shadow header in proofs/C-90/contracts/
 ok   scan rejects (C2): a symlinked harness.c
 ok   scan rejects (C2): an extra file in overlay/
@@ -110,4 +133,4 @@ ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant 
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 112/112
+RESULT tool-tests PASS 135/135

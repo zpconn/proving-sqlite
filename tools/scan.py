@@ -30,7 +30,13 @@ Rejects:
      primitives, allocations and field or pointer assignments that read no data; and a call under proof (the
      ENFORCE function, else the first call to a card function) that comes before END SETUP, is missing, or
      sits inside a condition or loop, which would hide the inputs that skip it. SETUP blocks outside entry
-     functions;
+     functions. (Checkpoint 0 follow-up 2:) between END SETUP and the call under proof, anything but
+     declarations (no stores through pointers or subscripts, assignments, calls or control flow); in SETUP,
+     taking an address, `->` but in `p->field = value`, string literals, casts to pointer types but on malloc,
+     naming a local array outside sizeof, and a data pointer assigned anything but a malloc result, pointer
+     arithmetic on one, or 0; anywhere in a harness, any preprocessor directive but #include (so no macro hides a
+     statement from these rules), line splices, digraphs and trigraphs, loop and function contract clauses
+     (PROOF included), __builtin_* outside HARNESS_BUILTINS, __attribute__ and asm;
  12. files in proofs/C-NN/ but harness.c, Makefile, NOTES.md and the ignored build/ directory; files in
      overlay/ but sqlite3.c; files in proofs/include/ but proof.h and preds.h; symlinks anywhere under
      proofs/, overlay/ or tests/repro/; preprocessor directives a harness or header has no use for
@@ -81,6 +87,16 @@ PATH_ENDERS_RX = re.compile(r'\b(%s|__VERIFIER_[A-Za-z0-9_]*)\b' % '|'.join(re.e
 SETUP_CALLS = {'malloc', 'sizeof', '__CPROVER_assume', '__CPROVER_r_ok', '__CPROVER_w_ok', '__CPROVER_rw_ok',
                '__CPROVER_same_object', '__CPROVER_POINTER_OFFSET', '__CPROVER_POINTER_OBJECT', '__CPROVER_OBJECT_SIZE'}
 DEREF_RX = re.compile(r'(^|[(,!=<>&|?:~+\-])\s*\*')
+# Rule 11 (checkpoint 0 follow-up 2): what a harness may not hold anywhere
+HARNESS_BUILTINS = {'__builtin_expect', '__builtin_offsetof', '__builtin_clz', '__builtin_clzl', '__builtin_clzll',
+                    '__builtin_ctz', '__builtin_ctzl', '__builtin_ctzll', '__builtin_popcount', '__builtin_popcountl',
+                    '__builtin_popcountll', '__builtin_bswap16', '__builtin_bswap32', '__builtin_bswap64'}
+CONTRACT_CLAUSE_RX = re.compile(r'\b(__CPROVER_(?:loop_invariant|decreases|assigns|frees|loop_entry|requires|ensures)'
+                                r'|PROOF(?=\s*\())')
+PTR_CAST_RX = re.compile(r'\(\s*(?:(?:const|volatile|struct|union|enum|unsigned|signed)\s+)*[A-Za-z_]\w*'
+                         r'(?:\s+[A-Za-z_]\w*)*[\s*]*\*[\s*]*\)')
+LHS_ARROW_RX = re.compile(r'[A-Za-z_]\w*\s*->\s*[A-Za-z_]\w*(?:\s*\.\s*[A-Za-z_]\w*)*')
+TOKEN_RX = re.compile(r'[A-Za-z_]\w*|0[xX][0-9a-fA-F]+\w*|\d+\w*|->|&&|\|\||\+\+|--|[<>=!]=|<<|>>|.', re.S)
 CARD_DIR_FILES = {'harness.c', 'Makefile', 'NOTES.md'}
 ALLOWED_DIRECTIVES = {'include', 'define', 'undef', 'if', 'ifdef', 'ifndef', 'elif', 'else', 'endif', 'error', 'pragma'}
 
@@ -403,14 +419,80 @@ def top_assignment(stmt):
     return None
 
 
-def setup_statement_problem(stmt):
-    """Rule 11: what a SETUP statement may be. None if allowed."""
+def unary_amp(t):
+    """True if t takes an address: a '&' token not preceded by an operand."""
+    toks = [x for x in TOKEN_RX.findall(t) if not x.isspace()]
+    for i, x in enumerate(toks):
+        if x == '&':
+            prev = toks[i - 1] if i else None
+            if prev is None or not (re.match(r'^[A-Za-z_0-9]', prev) and prev not in C_KEYWORDS or prev in (')', ']')):
+                return True
+    return False
+
+
+def pointer_names(stmt):
+    """Names a declaration declares as pointers (`T *a, *b`, `T *a = ...`)."""
+    head = stmt.split('=', 1)[0] if '=' in stmt else stmt
+    return set(re.findall(r'\*\s*([A-Za-z_]\w*)', head))
+
+
+def array_names(stmt):
+    head = stmt.split('=', 1)[0] if '=' in stmt else stmt
+    return set(re.findall(r'\b([A-Za-z_]\w*)\s*\[', head))
+
+
+def strip_parens(x):
+    x = x.strip()
+    while x.startswith('(') and balanced(x, 0) == len(x):
+        x = x[1:-1].strip()
+    return x
+
+
+def pointer_rhs_ok(rhs, ptrs):
+    """A data pointer may hold only a malloc result (cast or not), pointer arithmetic on a pointer that does, or 0."""
+    r = strip_parens(rhs)
+    m = re.match(r'^(?:\(\s*[A-Za-z_][\w\s]*\*[\s*]*\)\s*)?malloc\s*\(', r)
+    if m and balanced(r, m.end() - 1) == len(r):
+        return True
+    if r in ('0', 'NULL'):
+        return True
+    m = re.match(r'^([A-Za-z_]\w*)\s*(?:[+-](.*))?$', r, re.S)
+    return bool(m and m.group(1) in ptrs and not re.search(r'[*&"\[]|->', m.group(2) or ''))
+
+
+def setup_statement_problem(stmt, ptrs=frozenset(), arrays=frozenset()):
+    """Rule 11: what a SETUP statement may be. None if allowed. ptrs and arrays: the entry function's pointer and
+    array variables."""
     t = stmt.strip()
     bad_calls = [c for c in calls_in(t) if c not in SETUP_CALLS]
     if re.search(r'[{}]', t) or re.search(r'\b(if|while|for|switch|do|else|case|return|goto)\b', t):
         return 'a SETUP block holds straight-line statements only'
     if bad_calls:
         return 'a SETUP block may call only malloc and CPROVER primitives (calls %s)' % ', '.join(sorted(set(bad_calls)))
+    # checkpoint 0 follow-up 2
+    if '"' in t:
+        return 'a SETUP block may not hold string literals (they fix data bytes)'
+    if unary_amp(t):
+        return 'a SETUP block may not take an address (a pointer to a local or a field narrows what the code can reach)'
+    nosize = re.sub(r'\bsizeof\s*\(', 'sizeof_(', t)
+    named = [a for a in arrays if re.search(r'(?<!sizeof_\()\b%s\b' % re.escape(a), nosize)]
+    if named:
+        return 'a SETUP block may not name a local array outside sizeof (it stands for its address): %s' % ', '.join(sorted(named))
+    a = top_assignment(t)
+    arrows = t.count('->')
+    if arrows and not (a and arrows == 1 and LHS_ARROW_RX.fullmatch(a[0].strip())):
+        return 'a SETUP block may not read a member through a pointer (->); only `p->field = value` may use one'
+    for m in PTR_CAST_RX.finditer(t):
+        if re.search(r'\bsizeof\s*$', t[:m.start()]):
+            continue
+        if not re.match(r'\s*malloc\s*\(', t[m.end():]):
+            return 'a SETUP block may cast to a data pointer type only a malloc result (%s)' % m.group(0)
+    if a:
+        lhs = a[0].strip()
+        declared = re.search(r'\*\s*([A-Za-z_]\w*)$', lhs)       # `T *p = ...`
+        is_ptr = bool(declared) or (re.fullmatch(r'[A-Za-z_]\w*', lhs) is not None and lhs in ptrs)
+        if is_ptr and not pointer_rhs_ok(a[1], ptrs):
+            return 'a data pointer may hold only a malloc result or pointer arithmetic on one'
     if re.match(r'^__CPROVER_assume\s*\(', t):
         e = balanced(t, t.index('('))
         return None if e == len(t) else 'an assume must be a statement of its own'
@@ -451,12 +533,20 @@ def check_entries(s, where, raw, code, proofs, card):
                 ent, len(setups), len(ends)))
             continue
         sa, sb = setups[0].start(), ends[0].end()
+        ptrs, arrays = set(), set()
         for off, st in split_statements(code[b + 1:sa], b + 1):
             if not is_declaration(st):
                 s.bad(where, 'line %d: before SETUP, entry function %s may only declare variables: %s' % (
                     code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1, ent, ' '.join(st.split())[:80]))
-        for off, st in split_statements(code[setups[0].end():ends[0].start()], setups[0].end()):
-            why = setup_statement_problem(st)
+            ptrs |= pointer_names(st)
+            arrays |= array_names(st)
+        setup_stmts = split_statements(code[setups[0].end():ends[0].start()], setups[0].end())
+        for off, st in setup_stmts:
+            if is_declaration(st) or (top_assignment(st) and not re.search(r'[\[\]>.]|^\s*\*', top_assignment(st)[0])):
+                ptrs |= pointer_names(st)
+                arrays |= array_names(st)
+        for off, st in setup_stmts:
+            why = setup_statement_problem(st, frozenset(ptrs), frozenset(arrays))
             if why:
                 s.bad(where, 'line %d: %s: %s' % (code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1, why,
                                                     ' '.join(st.split())[:80]))
@@ -475,6 +565,15 @@ def check_entries(s, where, raw, code, proofs, card):
         if depth != 0 or re.search(r'\b(if|else|while|for|do|switch|case)\b|\?|&&|\|\|', prefix):
             s.bad(where, 'line %d: the call under proof (%s) must be a statement of %s\'s body, not inside a condition '
                          'or loop (that hides the inputs that skip it)' % (code.count('\n', 0, m.start()) + 1, m.group(1), ent))
+        # checkpoint 0 follow-up 2: between END SETUP and the call under proof, nothing that could narrow its inputs
+        # (a store through a pointer or subscript, a plain assignment, a call, any control flow): declarations only
+        if depth == 0 and stmt_start >= 0 and b + 1 + stmt_start + 1 > sb:
+            for off, st in split_statements(code[sb:b + 1 + stmt_start + 1], sb):
+                if st.strip() and not is_declaration(st):
+                    s.bad(where, 'line %d: between END SETUP and the call under proof (%s), entry function %s may only '
+                                 'declare variables (no stores, assignments, calls or control flow): %s' % (
+                                     code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1, m.group(1), ent,
+                                     ' '.join(st.split())[:80]))
     for m in setup_rx.finditer(raw):
         if not any(b <= m.start() < e for b, e in entry_ranges):
             s.bad(where, 'line %d: SETUP block outside an entry function' % (raw.count('\n', 0, m.start()) + 1))
@@ -594,7 +693,37 @@ def check_harness(s, card_dir, sqlite_ids, proofs=(), card=None):
     check_zero_fill(s, where, code)
     check_function_defs(s, where, code, sqlite_ids)
     check_path_enders(s, where, code)
+    check_harness_text(s, where, code)
     check_entries(s, where, raw, code, proofs, card)
+
+
+def check_harness_text(s, where, code):
+    """Rule 11, anywhere in a harness (checkpoint 0 follow-up 2): no directive but #include, so no macro can hide a
+    statement from the other rules; no line splices, digraphs or trigraphs, which spell tokens these rules look for
+    differently; no loop or function contract clauses (an invariant on a harness loop is assumed after it); no
+    __builtin_* outside HARNESS_BUILTINS (__builtin_unreachable and __builtin_assume are assumes); no __attribute__
+    or asm."""
+    def line(i):
+        return code.count('\n', 0, i) + 1
+    for m in re.finditer(r'^[ \t]*#[ \t]*([A-Za-z_]\w*)', code, re.M):
+        if m.group(1) != 'include':
+            s.bad(where, 'line %d: #%s: a harness may use no preprocessor directive but #include' % (line(m.start()), m.group(1)))
+    c = without_strings(code)
+    for m in re.finditer(r'\\[ \t]*\n', c):
+        s.bad(where, 'line %d: backslash-newline (a line splice) not allowed in a harness' % line(m.start()))
+    for m in re.finditer(r'<:|:>|<%|%>|%:', c):
+        s.bad(where, 'line %d: digraph %s not allowed in a harness' % (line(m.start()), m.group(0)))
+    for m in re.finditer(r'\?\?[=/\'()!<>\-]', c):
+        s.bad(where, 'line %d: trigraph %s not allowed in a harness' % (line(m.start()), m.group(0)))
+    for m in CONTRACT_CLAUSE_RX.finditer(c):
+        s.bad(where, 'line %d: %s: no loop or function contract clauses in a harness (a harness loop\'s invariant is '
+                     'assumed after it)' % (line(m.start()), m.group(1)))
+    for m in re.finditer(r'\b__builtin_\w+', c):
+        if m.group(0) not in HARNESS_BUILTINS:
+            s.bad(where, 'line %d: %s not allowed in a harness (allowed: %s)' % (
+                line(m.start()), m.group(0), ', '.join(sorted(HARNESS_BUILTINS))))
+    for m in re.finditer(r'\b(__attribute__|__attribute|asm|__asm__|__asm)\b', c):
+        s.bad(where, 'line %d: %s not allowed in a harness' % (line(m.start()), m.group(1)))
 
 
 def check_card_makefile(s, card_dir):

@@ -29,16 +29,14 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 - D: Codex can block: two sessions.toml settings plus the builder's wait advice. 15-minute wait: 748,078 tokens before, 36,925 after.
 - E: auth-failure patterns pause the vendor, add a triage item, resume with `campaign.py resume-vendor`.
 - Tests: tool tests 95/95, selftest 49/49, full gate PASS (13-tool-tests.txt, 13-selftest.txt, 13-full-gate.log).
-- Auditor follow-ups 5–8 done: sessions.toml's commands must be campaign.py's exactly, with its hash in the journal; reviewers get their own seeded CLAUDE_CONFIG_DIR, no /run/user, DBus or XDG variables, ~/.claude, ~/.claude.json, gh, aws or docker; usage, report and review files only as regular files; builders get TMPDIR in the worktree and no /tmp. Selftest 78/78; real reviewer session in the new sandbox logs in and runs.
-- Auditor follow-up 4 done: preds.h, contracts/ and spec/ may #define only their include guard (scan rule 15); tool tests 112/112.
-- Auditor follow-up 3 done: "## Unreached lines" entries are one line or a range within one uncovered stretch, with a reason, and fail if the run covers them; tool tests 104/104.
-- Auditor follow-up 1 done: the gate calls tools/prove.py instead of make on card Makefiles and skips one load_card rejects; tool tests 97/97, `make gate CARD=C-02` PASS (13-checkpoint0.md).
+- Auditor follow-ups 1–8 done (13-checkpoint0.md, one section each; every new test fails on the code before it): gate calls prove.py, never make on card Makefiles (1); harness discipline in scan rule 11 (2); strict Unreached lines entries checked against the run (3); shared headers #define only their guard (4); exact session commands and a sessions.toml hash per session (5); reviewer sandbox with its own CLAUDE_CONFIG_DIR, no /run/user, DBus, ~/.claude or other tools' logins, checked in a real session (6); worktree files read and written only as regular files (7); builder TMPDIR in the worktree, no /tmp (8). Tool tests 135/135, selftest 78/78. C-02's harness now fails scan (question 5), so the full gate does too.
 
 **Open questions for Zach:**
 1. SQLite 3.54.1 is out; the pin stays 3.53.4 per §1.1.
 2. Codex builders had ChatGPT connectors (Gmail, Sites deploy, ~300 tools), web search and subagents available despite `--ignore-user-config`; the pilot never used them, and they are now disabled. Anything else to turn off?
 3. Claude's login now expires 2026-12-07 22:27 UTC. An expired login now pauses the vendor with a triage item instead of failing cards.
 4. A reviewer can still read the rest of / (other ~/.config dirs, /mnt/c) and reach host sockets such as the system DBus, with network on. Hide $HOME and /mnt wholesale, binding back what Claude needs? (13-checkpoint0.md, follow-up 6)
+5. C-02's merged harness copies buffer before the call to check P2's unchanged suffix; the new rule 11 refuses that, so the full gate fails. Reopen C-02 for a builder round, or allow a snapshot copy into a local array the call never sees? (13-checkpoint0.md, follow-up 2)
 
 ## What bring-up showed GOAL.md or the plan got wrong
 
@@ -73,3 +71,4 @@ Evidence paths are under evidence/bringup/. Pilot: 7 sessions, 6.62M tokens, 41 
 - Follow-up item 3 (coverage explanations) done with six tests that fail on 8822461.
 - Follow-up item 4 (no macros in shared headers but the include guard) done with six tests that fail on ae6421e.
 - Follow-up items 5–8 (session commands, reviewer sandbox, worktree files, builder TMPDIR) done; the new selftest steps fail on 9dc55a3 (38/66), pass now (78/78); real sandbox check run (48,875 tokens).
+- Follow-up item 2 (harness discipline) done with 22 tests that fail on f7544f5; C-02 now fails scan, left for a decision.

@@ -396,6 +396,46 @@ def main():
             t.write(r, rel, text)
             rc, out, res = t.run(r, [py, 'tools/scan.py'])
             t.expect('scan rejects (C1): %s' % name, rc != 0 and needle in out, out)
+        # checkpoint 0 follow-up 2: harness discipline, one case per way of narrowing the inputs
+        DECL_R = 'void harness_toyGet(void) {\n  int r;'
+        BOX = 'struct box { int n; u8 *z; };\nvoid harness'
+        f2 = [
+            ('a #define that hides a store in SETUP', G.replace('void harness', '#define PIN p[0] = 0\nvoid harness').replace(END, '  PIN;\n' + END), '#define: a harness may use no preprocessor directive'),
+            ('an #undef', G.replace('void harness', '#undef toyLen\nvoid harness'), '#undef: a harness may use no preprocessor directive'),
+            ('a store through a subscript between END SETUP and the call', G.replace(END, END + '  p[0] = 0x7f;\n'), 'between END SETUP and the call under proof'),
+            ('a store through a pointer between END SETUP and the call', G.replace(END, END + '  *p = 0x7f;\n'), 'between END SETUP and the call under proof'),
+            ('an if between END SETUP and the call', G.replace(END, END + '  if (p[0] & 0x80) p[1] = 0;\n'), 'between END SETUP and the call under proof'),
+            ('a loop between END SETUP and the call', G.replace('void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  int i;').replace(END, END + '  for (i = 0; i < 2; i++) p[i] = 1;\n'), 'between END SETUP and the call under proof'),
+            ('a helper that stores, called between END SETUP and the call', G.replace('void harness', 'static void pin(u8 *q) { q[0] = 1; }\nvoid harness').replace(END, END + '  pin(p);\n'), 'between END SETUP and the call under proof'),
+            ('SETUP takes an address', G.replace('  u8 *p = malloc(2);', '  u8 one;\n  u8 *p = &one;'), 'may not take an address'),
+            ('SETUP reads a member through -> in an assume', G.replace('void harness', BOX).replace('  u8 *p = malloc(2);', '  struct box *b = malloc(sizeof(struct box));\n  __CPROVER_assume(b != 0 && b->n < 4);\n  u8 *p = malloc(2);'), 'may not read a member through a pointer'),
+            ('SETUP reads a member through -> in an assignment', G.replace('void harness', BOX).replace('  u8 *p = malloc(2);', '  struct box *b = malloc(sizeof(struct box));\n  u8 *p = b->z;'), 'may not read a member through a pointer'),
+            ('a string literal in SETUP', G.replace('  u8 *p = malloc(2);', '  u8 *p = (u8 *)"\\x01\\x02";'), 'may not hold string literals'),
+            ('a cast to a data pointer in SETUP', G.replace('  u8 *p = malloc(2);', '  unsigned long a;\n  u8 *p = (u8 *)a;'), 'may cast to a data pointer type only a malloc result'),
+            ('a data pointer set to a local array in SETUP', G.replace('  u8 *p = malloc(2);', '  u8 buf[2];\n  u8 *p = buf;'), 'may not name a local array'),
+            ('a data pointer set to an integer in SETUP', G.replace('  u8 *p = malloc(2);', '  unsigned long a;\n  u8 *p = 0;\n  p = a;'), 'a data pointer may hold only a malloc result'),
+            ('a loop invariant on a harness loop', G.replace('  toyGet(p);', '  toyGet(p);\n  { int i; for (i = 0; i < 2; i++) __CPROVER_loop_invariant(i <= 2) { } }'), '__CPROVER_loop_invariant: no loop or function contract clauses'),
+            ('PROOF() on a harness loop', G.replace('#include <stdlib.h>', '#include <stdlib.h>\n#include "proof.h"').replace('  toyGet(p);', '  toyGet(p);\n  { int i; for (i = 0; i < 2; i++) PROOF(__CPROVER_decreases(2 - i)) { } }'), 'PROOF: no loop or function contract clauses'),
+            ('__builtin_unreachable after the call', G.replace('void harness_toyGet(void) {', DECL_R).replace('  toyGet(p);', '  r = toyGet(p);\n  if (r > 0x7f) __builtin_unreachable();'), '__builtin_unreachable not allowed in a harness'),
+            ('__builtin_assume after the call', G.replace('void harness_toyGet(void) {', DECL_R).replace('  toyGet(p);', '  r = toyGet(p);\n  __builtin_assume(r < 0x80);'), '__builtin_assume not allowed in a harness'),
+            ('__attribute__((constructor))', G.replace('void harness', '__attribute__((constructor)) static void early(void) { }\nvoid harness'), '__attribute__ not allowed in a harness'),
+            ('a digraph subscript in a SETUP assume', G.replace('  __CPROVER_assume(p != 0);', '  __CPROVER_assume(p != 0 && p<:0:> < 0x80);'), 'digraph <: not allowed'),
+            ('a trigraph subscript in a SETUP assume', G.replace('  __CPROVER_assume(p != 0);', '  __CPROVER_assume(p != 0 && p??(0??) < 0x80);'), 'trigraph ??( not allowed'),
+            ('a line splice that hides an assume', G.replace('  toyGet(p);', '  toyGet(p);\n  __CPROVER_ass\\\nume(p[1] < 5);'), 'line splice'),
+        ]
+        for name, text, needle in f2:
+            r = setup_get(t)
+            t.write(r, 'proofs/C-90/harness.c', text)
+            rc, out, res = t.run(r, [py, 'tools/scan.py'])
+            t.expect('scan rejects (follow-up 2): %s' % name, rc != 0 and needle in out and 'RESULT scan FAIL' in res, out)
+        r = setup_get(t)
+        t.write(r, 'proofs/C-90/harness.c', G.replace('void harness', BOX).replace(
+            'void harness_toyGet(void) {', 'void harness_toyGet(void) {\n  struct box *b;\n  int n;').replace(
+            '  u8 *p = malloc(2);\n  __CPROVER_assume(p != 0);',
+            '  __CPROVER_assume(n >= 0 && n < 4);\n  b = malloc(sizeof(struct box));\n  __CPROVER_assume(b != 0);\n  b->n = n;\n'
+            '  u8 *p = (u8 *)malloc(2 + sizeof(u8 *));\n  __CPROVER_assume(p != 0);\n  b->z = p + 1;'))
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan (follow-up 2): a SETUP with field stores, a cast malloc, pointer arithmetic and sizeof(T *) passes', rc == 0, out)
         # checkpoint 0, decision C2: files and symlinks
         r = setup_get(t)
         t.write(r, 'proofs/C-90/contracts/toyGet.h', '#error shadow\n')

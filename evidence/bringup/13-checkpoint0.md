@@ -205,3 +205,45 @@ Network stays on. A tmpfs over $HOME and /mnt, binding back only what Claude Cod
   - guard cases refuse a missing key, `=false`, and another sandbox_workspace_write key;
   - a unit start gives TMPDIR in the worktree;
   - all 29 fake codex sessions in the full run saw TMPDIR = their worktree's tmp/.
+
+## Follow-up 2: harness discipline (scan.py rule 11)
+
+The auditor's option taken for macros: harnesses may use no preprocessor directive but #include, so no #define or #undef, rather than applying the rules to preprocessed text. Function-like SQLite macros in SETUP or before the call already count as calls, and both places refuse calls they don't allow.
+
+**New checks** (scan.py `check_harness_text`, `setup_statement_problem`, `check_entries`):
+- **Between END SETUP and the call under proof:** only declarations. This is stricter than the list: plain assignments and calls are refused too, because `value = 0;` or a helper that stores narrows the inputs just as `p[0] = 0;` does.
+- **In SETUP:**
+  - no unary `&`;
+  - `->` only as the target of `p->field = value`, never read;
+  - no string literals;
+  - no cast to a pointer type except on malloc (`sizeof(T *)` is not a cast);
+  - no local array named outside sizeof, since an array name stands for its address;
+  - a pointer variable (declared `T *p`) may be assigned only `malloc(...)`, `(T *)malloc(...)`, another such pointer plus or minus an offset, or 0.
+
+  Assumes get the same checks, so a field is bounded through a local: `__CPROVER_assume(n < 4); m->n = n;`.
+- **Anywhere in a harness:**
+  - no directive but #include;
+  - no `__CPROVER_loop_invariant`, `decreases`, `assigns`, `frees`, `loop_entry`, `requires` or `ensures`, and no `PROOF(`;
+  - no `__builtin_*` outside a short list (expect, offsetof, clz/ctz/popcount, bswap);
+  - no `__attribute__` or `asm`;
+  - no backslash-newline, digraph (`<:` is `[`) or trigraph (`??(` is `[`). Each spells a token these rules look for in a way they would miss.
+
+**Tests.**
+- 22 rejection cases in tools/tests/test_tools.py, at least one per pattern. They cover:
+  - a #define hiding a SETUP store, and an #undef;
+  - between END SETUP and the call: a subscript store, a pointer store, an if, a loop, and a helper that stores;
+  - in SETUP: `&local`, a `->` read in an assume and in an assignment, a string literal, a cast of an integer to `u8 *`, a pointer set to a local array, and a pointer set to an integer;
+  - anywhere: a loop invariant and a PROOF() on a harness loop, __builtin_unreachable and __builtin_assume after the call, `__attribute__((constructor))`, a digraph and a trigraph subscript in a SETUP assume, and a line splice hiding an assume.
+- Each must give `RESULT scan FAIL`. All 22 fail against the tools at f7544f5: their scan passed every one.
+- One accepted case passes on both: field stores, a cast malloc, pointer arithmetic and `sizeof(u8 *)`.
+- Tool tests 135/135.
+
+**Effect on the repository: C-02's merged harness now fails the scan.**
+- Its harness_roundtrip copies the encoder's buffer between END SETUP and the call under proof, to check afterwards that the bytes past the encoding are unchanged (P2 "suffix is unchanged"):
+  `scan: proofs/C-02/harness.c: line 21: between END SETUP and the call under proof (sqlite3PutVarint), entry function harness_roundtrip may only declare variables (no stores, assignments, calls or control flow): for(i=0; i<9; ++i) before[i] = buffer[i]`
+- That copy narrows nothing: it reads the nondet bytes and writes a local array the call never receives. But the rule as written refuses it, and an unchanged-suffix check seems to need some copy taken before the call.
+- C-01 passes. `make gate CARD=C-NN` still passes for other cards, because scan then checks only that card's harness. The full gate fails until C-02 changes.
+- I did not change the harness (no proof edits by the orchestrator).
+- **Two ways forward:**
+  - reopen C-02 for a builder round under the new rule;
+  - let scan allow one snapshot form: `S[i] = X[i]`, alone or in a counted for loop, where S is a local array that the call statement doesn't name and SETUP never names.
