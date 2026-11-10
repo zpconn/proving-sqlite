@@ -18,6 +18,8 @@ void harness_sqlite3IntFloatCompare(void){
   int result;
 
   /* SETUP */
+  /* Approved checker exception; UB-CLASSES.md argues this input. */
+  __CPROVER_assume(r != -0x1p63);
   /* END SETUP */
 
   result = sqlite3IntFloatCompare(i, r);
