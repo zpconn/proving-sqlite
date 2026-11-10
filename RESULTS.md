@@ -38,6 +38,9 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 | C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | lp64-le | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
 | C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | ilp32-le | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
 | C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | lp64-be | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-le | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | ilp32-le | PASS | 0 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-be | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
 
 Where each card's numbers come from (the commit whose gate produced them, and its log):
 
@@ -48,3 +51,4 @@ Where each card's numbers come from (the commit whose gate produced them, and it
 - C-06: proofs 611459274de8 evidence/gate/C-06-r1.log; coverage 611459274de8 evidence/gate/C-06-r1.log; mutants 611459274de8 evidence/gate/C-06-r1.log
 - C-07: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants 91105b3cfb71 evidence/gate/C-07-r1.log
 - C-09: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants fb1215b4b2b6 evidence/gate/C-09-r1.log
+- C-10: proofs 106da82e3f24 evidence/gate/C-10-r1.log; coverage 106da82e3f24 evidence/gate/C-10-r1.log; mutants 106da82e3f24 evidence/gate/C-10-r1.log

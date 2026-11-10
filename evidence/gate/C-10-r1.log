@@ -1,0 +1,81 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 0 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 0 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 38 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-10 --base 6befa69418b0638d967604b050d1411758df0b32
+  scan: 8 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (28s)
+gate: cards to run: C-10
+==== includes C-10: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-10
+    includes C-10 lp64-le: 152 files, 0 not allowed
+    includes C-10 ilp32-le: 152 files, 0 not allowed
+    includes C-10 lp64-be: 152 files, 0 not allowed
+  RESULT includes C-10 all PASS
+==== includes C-10 PASS (0s)
+==== prove C-10: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-10 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-10/build
+  RESULT prove C-10/decode lp64-le PASS 43s 359 properties 0 failed
+  RESULT prove C-10 lp64-le PASS 43s 359 properties 0 failed
+  RESULT prove C-10/decode ilp32-le PASS 43s 359 properties 0 failed
+  RESULT prove C-10 ilp32-le PASS 43s 359 properties 0 failed
+  RESULT prove C-10/decode lp64-be PASS 43s 359 properties 0 failed
+  RESULT prove C-10 lp64-be PASS 43s 359 properties 0 failed
+  RESULT prove C-10 all PASS 129s 1077 properties 0 failed
+==== prove C-10 PASS (128s)
+==== coverage C-10: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-10 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-10/build
+    coverage decode lp64-le vdbeRecordDecodeInt: 21/21 lines; uncovered none
+    coverage decode ilp32-le vdbeRecordDecodeInt: 21/21 lines; uncovered none
+    coverage decode lp64-be vdbeRecordDecodeInt: 21/21 lines; uncovered none
+  RESULT coverage C-10 all PASS 63/63 lines 0 uncovered 0 unexplained
+==== coverage C-10 PASS (100s)
+==== mutants C-10: /usr/bin/python3 tools/mutate.py --card C-10 --with  --json proofs/C-10/build/mutants.json
+  MUTANT M-038 vdbeRecordDecodeInt:92578 'aKey+4'->'aKey+5' KILLED by C-10/decode lp64-le: 3 failed: [vdbeRecordDecodeInt.pointer_dereference.144] dereference failure: pointer outside object bounds in (aKey + (signed long int)5)[(signed long int)3]; [vdbeRecordDecodeInt.pointer_dereference.145] dereference failure: invalid integer address in (aKey + (signed long int)5)[(signed long int)3]; [vdbeRecordDecodeInt.pointer_dereference.146] dereference failure: dead object in *((i64 *)&x)
+  MUTANT M-039 vdbeRecordDecodeInt:92573 '<<32'->'<<63' KILLED by C-10/decode lp64-le: 2 failed: [vdbeRecordDecodeInt.overflow.8] arithmetic overflow on signed shl in (i64)1 << 63; [vdbeRecordDecodeInt.overflow.10] arithmetic overflow on signed * in ((i64)1 << 63) * (signed long int)(256 * (signed int)(i8)aKey[(signed long int)0] | (signed int)aKey[(signed long int)1])
+  RESULT mutate C-10 PASS 2/2 killed 0 equivalent
+==== mutants C-10 PASS (53s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 0 spans
+  lock                     PASS    0s  RESULT lock PASS 38 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   28s  RESULT probe all PASS
+  includes C-10            PASS    0s  RESULT includes C-10 all PASS
+  prove C-10               PASS  129s  RESULT prove C-10 all PASS 129s 1077 properties 0 failed
+  coverage C-10            PASS  101s  RESULT coverage C-10 all PASS 63/63 lines 0 uncovered 0 unexplained
+  mutants C-10             PASS   54s  RESULT mutate C-10 PASS 2/2 killed 0 equivalent
+RESULT gate C-10 PASS 314s 0 failed

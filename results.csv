@@ -32,3 +32,6 @@ C-07,P1,get7,serialGet7,lp64-be,PASS,0,209,0,10,10,,4,4,0,APPROVE (C-07-r1.md),,
 C-09,P3,decode,sqlite3VdbeSerialGet serialGet,lp64-le,PASS,1,612,0,50,50,,7,7,0,APPROVE (C-09-r1.md),,fb1215b4b2b6 evidence/gate/C-09-r1.log,fb1215b4b2b6 evidence/gate/C-09-r1.log,fb1215b4b2b6 evidence/gate/C-09-r1.log
 C-09,P3,decode,sqlite3VdbeSerialGet serialGet,ilp32-le,PASS,1,612,0,50,50,,7,7,0,APPROVE (C-09-r1.md),,fb1215b4b2b6 evidence/gate/C-09-r1.log,fb1215b4b2b6 evidence/gate/C-09-r1.log,fb1215b4b2b6 evidence/gate/C-09-r1.log
 C-09,P3,decode,sqlite3VdbeSerialGet serialGet,lp64-be,PASS,1,612,0,50,50,,7,7,0,APPROVE (C-09-r1.md),,fb1215b4b2b6 evidence/gate/C-09-r1.log,fb1215b4b2b6 evidence/gate/C-09-r1.log,fb1215b4b2b6 evidence/gate/C-09-r1.log
+C-10,P1,decode,vdbeRecordDecodeInt,lp64-le,PASS,1,359,0,21,21,,2,2,0,APPROVE (C-10-r1.md),,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log
+C-10,P1,decode,vdbeRecordDecodeInt,ilp32-le,PASS,0,359,0,21,21,,2,2,0,APPROVE (C-10-r1.md),,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log
+C-10,P1,decode,vdbeRecordDecodeInt,lp64-be,PASS,1,359,0,21,21,,2,2,0,APPROVE (C-10-r1.md),,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log
