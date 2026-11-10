@@ -1,0 +1,81 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 1 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 1 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 38 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-12 --base 21546114ad62ee53bbadc393e5b6a4f5c08978c6
+  scan: 9 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (21s)
+gate: cards to run: C-12
+==== includes C-12: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-12
+    includes C-12 lp64-le: 152 files, 0 not allowed
+    includes C-12 ilp32-le: 152 files, 0 not allowed
+    includes C-12 lp64-be: 152 files, 0 not allowed
+  RESULT includes C-12 all PASS
+==== includes C-12 PASS (0s)
+==== prove C-12: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-12 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-12/build
+  RESULT prove C-12/zero lp64-le PASS 25s 79 properties 0 failed
+  RESULT prove C-12 lp64-le PASS 25s 79 properties 0 failed
+  RESULT prove C-12/zero ilp32-le PASS 36s 79 properties 0 failed
+  RESULT prove C-12 ilp32-le PASS 36s 79 properties 0 failed
+  RESULT prove C-12/zero lp64-be PASS 28s 79 properties 0 failed
+  RESULT prove C-12 lp64-be PASS 28s 79 properties 0 failed
+  RESULT prove C-12 all PASS 89s 237 properties 0 failed
+==== prove C-12 PASS (88s)
+==== coverage C-12: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-12 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-12/build
+    coverage zero lp64-le isAllZero: 4/5 lines; uncovered sqlite3.c:92371
+    coverage zero ilp32-le isAllZero: 4/5 lines; uncovered sqlite3.c:92371
+    coverage zero lp64-be isAllZero: 4/5 lines; uncovered sqlite3.c:92371
+  RESULT coverage C-12 all PASS 12/15 lines 3 uncovered 0 unexplained
+==== coverage C-12 PASS (61s)
+==== mutants C-12: /usr/bin/python3 tools/mutate.py --card C-12 --with  --json proofs/C-12/build/mutants.json
+  MUTANT M-044 isAllZero:92371 'i<n'->'i<=n' KILLED by C-12/zero lp64-le: 36 failed: [isAllZero.assigns.1] Check that i is assignable; [isAllZero.assigns.2] Check that i is assignable; [isAllZero.loop_assigns.2] Check assigns clause inclusion for loop isAllZero.0; [isAllZero.loop_decreases.1] Check variant decreases after step for loop isAllZero.0; [isAllZero.loop_invariant_base.2] Check invariant before entry for loop isAllZero.0; [isAllZero.loop_invariant_step.1] Check invariant after step for loop isAllZero.0; [isAllZero.loop_invariant_step.2] Check invariant after step for loop isAllZero.0; [isAllZero.loop_step_unwinding.1] Check step was unwound for loop isAllZero.0; [isAllZero.overflow.2] arithmetic overflow on signed + in i + 1; [isAllZero.overflow.3] arithmetic overflow on signed - in n - i; [isAllZero.overflow.4] arithmetic overflow on signed + in i + 1; [isAllZero.overflow.5] arithmetic overflow on signed - in n - i; [isAllZero.pointer_dereference.7] dereference failure: pointer NULL in *__havoc_target; [isAllZero.pointer_dereference.8] dereference failure: pointer invalid in *__havoc_target; [isAllZero.pointer_dereference.9] dereference failure: deallocated dynamic object in *__havoc_target; [isAllZero.pointer_dereference.10] dereference failure: dead object in *__havoc_target; [isAllZero.pointer_dereference.11] dereference failure: pointer outside object bounds in *__havoc_target; [isAllZero.pointer_dereference.12] dereference failure: invalid integer address in *__havoc_target; [isAllZero.pointer_arithmetic.7] pointer arithmetic: pointer NULL in z + (signed long int)i; [isAllZero.pointer_arithmetic.8] pointer arithmetic: pointer invalid in z + (signed long int)i; [isAllZero.pointer_arithmetic.9] pointer arithmetic: deallocated dynamic object in z + (signed long int)i; [isAllZero.pointer_arithmetic.10] pointer arithmetic: dead object in z + (signed long int)i; [isAllZero.pointer_arithmetic.11] pointer arithmetic: pointer outside object bounds in z + (signed long int)i; [isAllZero.pointer_arithmetic.12] pointer arithmetic: invalid integer address in z + (signed long int)i; [isAllZero.pointer_dereference.5] dereference failure: pointer outside object bounds in z[(signed long int)i]; [isAllZero.pointer_dereference.6] dereference failure: invalid integer address in z[(signed long int)i]; [isAllZero.pointer_dereference.13] dereference failure: pointer NULL in z[(signed long int)i]; [isAllZero.pointer_dereference.14] dereference failure: pointer invalid in z[(signed long int)i]; [isAllZero.pointer_dereference.15] dereference failure: deallocated dynamic object in z[(signed long int)i]; [isAllZero.pointer_dereference.16] dereference failure: dead object in z[(signed long int)i]; [isAllZero.pointer_dereference.17] dereference failure: pointer outside object bounds in z[(signed long int)i]; [isAllZero.pointer_dereference.18] dereference failure: invalid integer address in z[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  MUTANT M-045 isAllZero:92371 'i=0'->'i=-1' KILLED by C-12/zero lp64-le: 42 failed: [isAllZero.assigns.1] Check that i is assignable; [isAllZero.assigns.2] Check that i is assignable; [isAllZero.loop_assigns.2] Check assigns clause inclusion for loop isAllZero.0; [isAllZero.loop_decreases.1] Check variant decreases after step for loop isAllZero.0; [isAllZero.loop_invariant_base.2] Check invariant before entry for loop isAllZero.0; [isAllZero.loop_invariant_step.1] Check invariant after step for loop isAllZero.0; [isAllZero.loop_invariant_step.2] Check invariant after step for loop isAllZero.0; [isAllZero.loop_step_unwinding.1] Check step was unwound for loop isAllZero.0; [isAllZero.overflow.2] arithmetic overflow on signed + in i + 1; [isAllZero.overflow.3] arithmetic overflow on signed - in n - i; [isAllZero.overflow.4] arithmetic overflow on signed + in i + 1; [isAllZero.overflow.5] arithmetic overflow on signed - in n - i; [isAllZero.pointer_dereference.7] dereference failure: pointer NULL in *__havoc_target; [isAllZero.pointer_dereference.8] dereference failure: pointer invalid in *__havoc_target; [isAllZero.pointer_dereference.9] dereference failure: deallocated dynamic object in *__havoc_target; [isAllZero.pointer_dereference.10] dereference failure: dead object in *__havoc_target; [isAllZero.pointer_dereference.11] dereference failure: pointer outside object bounds in *__havoc_target; [isAllZero.pointer_dereference.12] dereference failure: invalid integer address in *__havoc_target; [isAllZero.pointer_arithmetic.5] pointer arithmetic: pointer outside object bounds in z + (signed long int)i; [isAllZero.pointer_arithmetic.6] pointer arithmetic: invalid integer address in z + (signed long int)i; [isAllZero.pointer_arithmetic.7] pointer arithmetic: pointer NULL in z + (signed long int)i; [isAllZero.pointer_arithmetic.8] pointer arithmetic: pointer invalid in z + (signed long int)i; [isAllZero.pointer_arithmetic.9] pointer arithmetic: deallocated dynamic object in z + (signed long int)i; [isAllZero.pointer_arithmetic.10] pointer arithmetic: dead object in z + (signed long int)i; [isAllZero.pointer_arithmetic.11] pointer arithmetic: pointer outside object bounds in z + (signed long int)i; [isAllZero.pointer_arithmetic.12] pointer arithmetic: invalid integer address in z + (signed long int)i; [isAllZero.pointer_dereference.1] dereference failure: pointer NULL in z[(signed long int)i]; [isAllZero.pointer_dereference.2] dereference failure: pointer invalid in z[(signed long int)i]; [isAllZero.pointer_dereference.3] dereference failure: deallocated dynamic object in z[(signed long int)i]; [isAllZero.pointer_dereference.4] dereference failure: dead object in z[(signed long int)i]; [isAllZero.pointer_dereference.5] dereference failure: pointer outside object bounds in z[(signed long int)i]; [isAllZero.pointer_dereference.6] dereference failure: invalid integer address in z[(signed long int)i]; [isAllZero.pointer_dereference.13] dereference failure: pointer NULL in z[(signed long int)i]; [isAllZero.pointer_dereference.14] dereference failure: pointer invalid in z[(signed long int)i]; [isAllZero.pointer_dereference.15] dereference failure: deallocated dynamic object in z[(signed long int)i]; [isAllZero.pointer_dereference.16] dereference failure: dead object in z[(signed long int)i]; [isAllZero.pointer_dereference.17] dereference failure: pointer outside object bounds in z[(signed long int)i]; [isAllZero.pointer_dereference.18] dereference failure: invalid integer address in z[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  RESULT mutate C-12 PASS 2/2 killed 0 equivalent
+==== mutants C-12 PASS (62s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 1 spans
+  lock                     PASS    0s  RESULT lock PASS 38 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   22s  RESULT probe all PASS
+  includes C-12            PASS    0s  RESULT includes C-12 all PASS
+  prove C-12               PASS   89s  RESULT prove C-12 all PASS 89s 237 properties 0 failed
+  coverage C-12            PASS   62s  RESULT coverage C-12 all PASS 12/15 lines 3 uncovered 0 unexplained
+  mutants C-12             PASS   62s  RESULT mutate C-12 PASS 2/2 killed 0 equivalent
+RESULT gate C-12 PASS 237s 0 failed

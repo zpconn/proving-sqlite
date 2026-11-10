@@ -41,6 +41,9 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 | C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-le | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
 | C-10 | P1 | decode | vdbeRecordDecodeInt | ilp32-le | PASS | 0 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
 | C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-be | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | lp64-le | PASS | 1 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | ilp32-le | PASS | 0 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | lp64-be | PASS | 0 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
 
 Where each card's numbers come from (the commit whose gate produced them, and its log):
 
@@ -52,3 +55,4 @@ Where each card's numbers come from (the commit whose gate produced them, and it
 - C-07: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants 91105b3cfb71 evidence/gate/C-07-r1.log
 - C-09: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants fb1215b4b2b6 evidence/gate/C-09-r1.log
 - C-10: proofs 106da82e3f24 evidence/gate/C-10-r1.log; coverage 106da82e3f24 evidence/gate/C-10-r1.log; mutants 106da82e3f24 evidence/gate/C-10-r1.log
+- C-12: proofs 3dbacd2bcc92 evidence/gate/C-12-r1.log; coverage 3dbacd2bcc92 evidence/gate/C-12-r1.log; mutants 3dbacd2bcc92 evidence/gate/C-12-r1.log

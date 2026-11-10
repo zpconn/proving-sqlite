@@ -35,3 +35,6 @@ C-09,P3,decode,sqlite3VdbeSerialGet serialGet,lp64-be,PASS,1,612,0,50,50,,7,7,0,
 C-10,P1,decode,vdbeRecordDecodeInt,lp64-le,PASS,1,359,0,21,21,,2,2,0,APPROVE (C-10-r1.md),,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log
 C-10,P1,decode,vdbeRecordDecodeInt,ilp32-le,PASS,0,359,0,21,21,,2,2,0,APPROVE (C-10-r1.md),,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log
 C-10,P1,decode,vdbeRecordDecodeInt,lp64-be,PASS,1,359,0,21,21,,2,2,0,APPROVE (C-10-r1.md),,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log,106da82e3f24 evidence/gate/C-10-r1.log
+C-12,P1,zero,isAllZero,lp64-le,PASS,1,79,0,4,5,92371,2,2,0,APPROVE (C-12-r1.md),,3dbacd2bcc92 evidence/gate/C-12-r1.log,3dbacd2bcc92 evidence/gate/C-12-r1.log,3dbacd2bcc92 evidence/gate/C-12-r1.log
+C-12,P1,zero,isAllZero,ilp32-le,PASS,0,79,0,4,5,92371,2,2,0,APPROVE (C-12-r1.md),,3dbacd2bcc92 evidence/gate/C-12-r1.log,3dbacd2bcc92 evidence/gate/C-12-r1.log,3dbacd2bcc92 evidence/gate/C-12-r1.log
+C-12,P1,zero,isAllZero,lp64-be,PASS,0,79,0,4,5,92371,2,2,0,APPROVE (C-12-r1.md),,3dbacd2bcc92 evidence/gate/C-12-r1.log,3dbacd2bcc92 evidence/gate/C-12-r1.log,3dbacd2bcc92 evidence/gate/C-12-r1.log
