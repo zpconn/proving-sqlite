@@ -29,6 +29,15 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 | C-06 | P1 | onebyte | sqlite3VdbeOneByteSerialTypeLen | ilp32-le | PASS | 0 | 15 | 0 | 2/2 | 4/4 | APPROVE (C-06-r1.md) |  |
 | C-06 | P1 | serial | sqlite3VdbeSerialTypeLen | lp64-be | PASS | 0 | 15 | 0 | 4/4 | 4/4 | APPROVE (C-06-r1.md) |  |
 | C-06 | P1 | onebyte | sqlite3VdbeOneByteSerialTypeLen | lp64-be | PASS | 0 | 15 | 0 | 2/2 | 4/4 | APPROVE (C-06-r1.md) |  |
+| C-07 | P1 | get | serialGet | lp64-le | PASS | 0 | 228 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get7 | serialGet7 | lp64-le | PASS | 0 | 209 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get | serialGet | ilp32-le | PASS | 0 | 228 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get7 | serialGet7 | ilp32-le | PASS | 0 | 209 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get | serialGet | lp64-be | PASS | 0 | 228 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get7 | serialGet7 | lp64-be | PASS | 0 | 209 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | lp64-le | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
+| C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | ilp32-le | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
+| C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | lp64-be | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
 
 Where each card's numbers come from (the commit whose gate produced them, and its log):
 
@@ -37,3 +46,5 @@ Where each card's numbers come from (the commit whose gate produced them, and it
 - C-03: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants 994880ea6ae3 evidence/gate/C-03-r1.log
 - C-05: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants 10cf282389d3 evidence/gate/C-05-r1.log
 - C-06: proofs 611459274de8 evidence/gate/C-06-r1.log; coverage 611459274de8 evidence/gate/C-06-r1.log; mutants 611459274de8 evidence/gate/C-06-r1.log
+- C-07: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants 91105b3cfb71 evidence/gate/C-07-r1.log
+- C-09: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants fb1215b4b2b6 evidence/gate/C-09-r1.log
