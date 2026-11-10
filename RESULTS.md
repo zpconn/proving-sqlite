@@ -38,6 +38,18 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 | C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | lp64-le | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
 | C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | ilp32-le | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
 | C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | lp64-be | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-le | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | ilp32-le | PASS | 0 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-be | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | lp64-le | PASS | 1 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | ilp32-le | PASS | 0 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | lp64-be | PASS | 0 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
+| C-13 | P1 | setnull | sqlite3VdbeMemSetNull | lp64-le | PASS | 0 | 69 | 0 | 3/5 | 2/2 | APPROVE (C-13-r1.md) |  |
+| C-13 | P1 | setnull | sqlite3VdbeMemSetNull | ilp32-le | PASS | 0 | 69 | 0 | 3/5 | 2/2 | APPROVE (C-13-r1.md) |  |
+| C-13 | P1 | setnull | sqlite3VdbeMemSetNull | lp64-be | PASS | 0 | 69 | 0 | 3/5 | 2/2 | APPROVE (C-13-r1.md) |  |
+| C-14 | P1 | alloc | sqlite3VdbeAllocUnpackedRecord | lp64-le | PASS | 0 | 133 | 0 | 10/10 | 2/2 | APPROVE (C-14-r1.md) | A-002 |
+| C-14 | P1 | alloc | sqlite3VdbeAllocUnpackedRecord | ilp32-le | PASS | 0 | 133 | 0 | 10/10 | 2/2 | APPROVE (C-14-r1.md) | A-002 |
+| C-14 | P1 | alloc | sqlite3VdbeAllocUnpackedRecord | lp64-be | PASS | 0 | 133 | 0 | 10/10 | 2/2 | APPROVE (C-14-r1.md) | A-002 |
 
 Where each card's numbers come from (the commit whose gate produced them, and its log):
 
@@ -48,3 +60,7 @@ Where each card's numbers come from (the commit whose gate produced them, and it
 - C-06: proofs 611459274de8 evidence/gate/C-06-r1.log; coverage 611459274de8 evidence/gate/C-06-r1.log; mutants 611459274de8 evidence/gate/C-06-r1.log
 - C-07: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants 91105b3cfb71 evidence/gate/C-07-r1.log
 - C-09: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants fb1215b4b2b6 evidence/gate/C-09-r1.log
+- C-10: proofs 106da82e3f24 evidence/gate/C-10-r1.log; coverage 106da82e3f24 evidence/gate/C-10-r1.log; mutants 106da82e3f24 evidence/gate/C-10-r1.log
+- C-12: proofs 3dbacd2bcc92 evidence/gate/C-12-r1.log; coverage 3dbacd2bcc92 evidence/gate/C-12-r1.log; mutants 3dbacd2bcc92 evidence/gate/C-12-r1.log
+- C-13: proofs 4fc99b4c992c evidence/gate/C-13-r1.log; coverage 4fc99b4c992c evidence/gate/C-13-r1.log; mutants 4fc99b4c992c evidence/gate/C-13-r1.log
+- C-14: proofs b708ed7b5881 evidence/gate/C-14-r1.log; coverage b708ed7b5881 evidence/gate/C-14-r1.log; mutants b708ed7b5881 evidence/gate/C-14-r1.log

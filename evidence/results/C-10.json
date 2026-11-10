@@ -1,0 +1,207 @@
+{
+ "card": "C-10",
+ "coverage_summary": [
+  {
+   "card": "C-10",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "vdbeRecordDecodeInt": {
+     "blocks": 43,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92553,
+      92554,
+      92555,
+      92557,
+      92559,
+      92560,
+      92562,
+      92563,
+      92565,
+      92566,
+      92568,
+      92569,
+      92571,
+      92573,
+      92575,
+      92576,
+      92578,
+      92579,
+      92581,
+      92583,
+      92584
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "decode",
+   "seconds": 1
+  },
+  {
+   "card": "C-10",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "vdbeRecordDecodeInt": {
+     "blocks": 43,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92553,
+      92554,
+      92555,
+      92557,
+      92559,
+      92560,
+      92562,
+      92563,
+      92565,
+      92566,
+      92568,
+      92569,
+      92571,
+      92573,
+      92575,
+      92576,
+      92578,
+      92579,
+      92581,
+      92583,
+      92584
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "decode",
+   "seconds": 1
+  },
+  {
+   "card": "C-10",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "vdbeRecordDecodeInt": {
+     "blocks": 43,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92553,
+      92554,
+      92555,
+      92557,
+      92559,
+      92560,
+      92562,
+      92563,
+      92565,
+      92566,
+      92568,
+      92569,
+      92571,
+      92573,
+      92575,
+      92576,
+      92578,
+      92579,
+      92581,
+      92583,
+      92584
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "decode",
+   "seconds": 1
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-10/decode lp64-le: 3 failed: [vdbeRecordDecodeInt.pointer_dereference.144] dereference failure: pointer outside object bounds in (aKey + (signed long int)5)[(signed long int)3]; [vdbeRecordDecodeInt.pointer_dereference.145] dereference failure: invalid integer address in (aKey + (signed long int)5)[(signed long int)3]; [vdbeRecordDecodeInt.pointer_dereference.146] dereference failure: dead object in *((i64 *)&x)",
+   "mutant": {
+    "card": "C-10",
+    "equivalent": null,
+    "from": "aKey+4",
+    "function": "vdbeRecordDecodeInt",
+    "id": "M-038",
+    "line": 92578,
+    "review": null,
+    "to": "aKey+5"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-10/decode lp64-le: 2 failed: [vdbeRecordDecodeInt.overflow.8] arithmetic overflow on signed shl in (i64)1 << 63; [vdbeRecordDecodeInt.overflow.10] arithmetic overflow on signed * in ((i64)1 << 63) * (signed long int)(256 * (signed int)(i8)aKey[(signed long int)0] | (signed int)aKey[(signed long int)1])",
+   "mutant": {
+    "card": "C-10",
+    "equivalent": null,
+    "from": "<<32",
+    "function": "vdbeRecordDecodeInt",
+    "id": "M-039",
+    "line": 92573,
+    "review": null,
+    "to": "<<63"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-10",
+   "cbmc_seconds": 1,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "decode",
+   "properties": 359,
+   "seconds": 43,
+   "status": "PASS"
+  },
+  {
+   "card": "C-10",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "decode",
+   "properties": 359,
+   "seconds": 43,
+   "status": "PASS"
+  },
+  {
+   "card": "C-10",
+   "cbmc_seconds": 1,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "decode",
+   "properties": 359,
+   "seconds": 43,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "106da82e3f2472a1b085fda5867a1ae2dd542484",
+   "gate": "make gate CARD=C-10 (merge of C-10 r1)",
+   "gate_log": "evidence/gate/C-10-r1.log"
+  },
+  "mutants": {
+   "commit": "106da82e3f2472a1b085fda5867a1ae2dd542484",
+   "gate": "make gate CARD=C-10 (merge of C-10 r1)",
+   "gate_log": "evidence/gate/C-10-r1.log"
+  },
+  "prove_summary": {
+   "commit": "106da82e3f2472a1b085fda5867a1ae2dd542484",
+   "gate": "make gate CARD=C-10 (merge of C-10 r1)",
+   "gate_log": "evidence/gate/C-10-r1.log"
+  }
+ }
+}
