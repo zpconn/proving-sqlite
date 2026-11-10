@@ -182,7 +182,7 @@
     }
    },
    "proof": "put",
-   "seconds": 1
+   "seconds": 0
   }
  ],
  "mutants": [
@@ -268,7 +268,7 @@
    "float_to_int_properties": 0,
    "proof": "put64",
    "properties": 110,
-   "seconds": 32,
+   "seconds": 29,
    "status": "PASS"
   },
   {
@@ -294,7 +294,7 @@
    "float_to_int_properties": 0,
    "proof": "put64",
    "properties": 110,
-   "seconds": 29,
+   "seconds": 31,
    "status": "PASS"
   },
   {
@@ -307,7 +307,7 @@
    "float_to_int_properties": 0,
    "proof": "put",
    "properties": 115,
-   "seconds": 26,
+   "seconds": 32,
    "status": "PASS"
   },
   {
@@ -320,7 +320,7 @@
    "float_to_int_properties": 0,
    "proof": "put64",
    "properties": 110,
-   "seconds": 35,
+   "seconds": 31,
    "status": "PASS"
   },
   {
@@ -333,15 +333,15 @@
    "float_to_int_properties": 0,
    "proof": "put",
    "properties": 115,
-   "seconds": 36,
+   "seconds": 26,
    "status": "PASS"
   }
  ],
  "provenance": {
   "coverage_summary": {
-   "commit": "10cf282389d3f2219fe23aa7c5f8877944d24d99",
-   "gate": "make gate CARD=C-05 (merge of C-05 r1)",
-   "gate_log": "evidence/gate/C-05-r1.log"
+   "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
+   "gate": "make gate CARD=C-03 (merge of C-03 r1)",
+   "gate_log": "evidence/gate/C-03-r1.log"
   },
   "mutants": {
    "commit": "5219e5648758280810ba7104856c48c9519fd66f",
@@ -350,9 +350,9 @@
    "note": "backfilled at checkpoint 0 from git history: the commit that last wrote the field and its gate log"
   },
   "prove_summary": {
-   "commit": "10cf282389d3f2219fe23aa7c5f8877944d24d99",
-   "gate": "make gate CARD=C-05 (merge of C-05 r1)",
-   "gate_log": "evidence/gate/C-05-r1.log"
+   "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
+   "gate": "make gate CARD=C-03 (merge of C-03 r1)",
+   "gate_log": "evidence/gate/C-03-r1.log"
   }
  }
 }

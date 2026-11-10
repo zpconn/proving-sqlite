@@ -1,0 +1,11 @@
+$ ./boundary   (cc -fsanitize=address,undefined,float-cast-overflow, against upstream/sqlite3.c)
+i=0 r=-0x1p+63 compare=1 want=1
+i=-1 r=-0x1p+63 compare=1 want=1
+i=1 r=-0x1p+63 compare=1 want=1
+i=-9223372036854775808 r=-0x1p+63 compare=0 want=0
+i=-9223372036854775807 r=-0x1p+63 compare=1 want=1
+i=9223372036854775807 r=-0x1p+63 compare=1 want=1
+exit 0
+$ ./control
+control.c:3:1: runtime error: -9.22337e+18 is outside the range of representable values of type 'long long int'
+exit 1

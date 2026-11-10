@@ -1,0 +1,174 @@
+{
+ "card": "C-14",
+ "coverage_summary": [
+  {
+   "card": "C-14",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeAllocUnpackedRecord": {
+     "blocks": 22,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92099,
+      92100,
+      92102,
+      92103,
+      92104,
+      92105,
+      92106,
+      92107,
+      92108,
+      92109
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "alloc",
+   "seconds": 0
+  },
+  {
+   "card": "C-14",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeAllocUnpackedRecord": {
+     "blocks": 22,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92099,
+      92100,
+      92102,
+      92103,
+      92104,
+      92105,
+      92106,
+      92107,
+      92108,
+      92109
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "alloc",
+   "seconds": 0
+  },
+  {
+   "card": "C-14",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeAllocUnpackedRecord": {
+     "blocks": 22,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92099,
+      92100,
+      92102,
+      92103,
+      92104,
+      92105,
+      92106,
+      92107,
+      92108,
+      92109
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "alloc",
+   "seconds": 0
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-14/alloc lp64-le: 1 failed: [contract_sqlite3VdbeAllocUnpackedRecord.postcondition.4] Check ensures clause of contract contract::contract_sqlite3VdbeAllocUnpackedRecord for function sqlite3VdbeAllocUnpackedRecord",
+   "mutant": {
+    "card": "C-14",
+    "equivalent": null,
+    "from": "+1)",
+    "function": "sqlite3VdbeAllocUnpackedRecord",
+    "id": "M-048",
+    "line": 92102,
+    "review": null,
+    "to": "+0)"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-14/alloc lp64-le: 2 failed: [contract_sqlite3VdbeAllocUnpackedRecord.postcondition.3] Check ensures clause of contract contract::contract_sqlite3VdbeAllocUnpackedRecord for function sqlite3VdbeAllocUnpackedRecord; [contract_sqlite3VdbeAllocUnpackedRecord.postcondition.4] Check ensures clause of contract contract::contract_sqlite3VdbeAllocUnpackedRecord for function sqlite3VdbeAllocUnpackedRecord",
+   "mutant": {
+    "card": "C-14",
+    "equivalent": null,
+    "from": "nKeyField + 1",
+    "function": "sqlite3VdbeAllocUnpackedRecord",
+    "id": "M-049",
+    "line": 92107,
+    "review": null,
+    "to": "nKeyField + 2"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-14",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "alloc",
+   "properties": 133,
+   "seconds": 25,
+   "status": "PASS"
+  },
+  {
+   "card": "C-14",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "alloc",
+   "properties": 133,
+   "seconds": 26,
+   "status": "PASS"
+  },
+  {
+   "card": "C-14",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "alloc",
+   "properties": 133,
+   "seconds": 24,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "b708ed7b588141333f8905324272d8b848e888e8",
+   "gate": "make gate CARD=C-14 (merge of C-14 r1)",
+   "gate_log": "evidence/gate/C-14-r1.log"
+  },
+  "mutants": {
+   "commit": "b708ed7b588141333f8905324272d8b848e888e8",
+   "gate": "make gate CARD=C-14 (merge of C-14 r1)",
+   "gate_log": "evidence/gate/C-14-r1.log"
+  },
+  "prove_summary": {
+   "commit": "b708ed7b588141333f8905324272d8b848e888e8",
+   "gate": "make gate CARD=C-14 (merge of C-14 r1)",
+   "gate_log": "evidence/gate/C-14-r1.log"
+  }
+ }
+}

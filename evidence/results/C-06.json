@@ -1,0 +1,280 @@
+{
+ "card": "C-06",
+ "coverage_summary": [
+  {
+   "card": "C-06",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeSerialTypeLen": {
+     "blocks": 5,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91863,
+      91864,
+      91868,
+      91870
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "serial",
+   "seconds": 0
+  },
+  {
+   "card": "C-06",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeOneByteSerialTypeLen": {
+     "blocks": 2,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91873,
+      91874
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "onebyte",
+   "seconds": 0
+  },
+  {
+   "card": "C-06",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeSerialTypeLen": {
+     "blocks": 5,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91863,
+      91864,
+      91868,
+      91870
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "serial",
+   "seconds": 0
+  },
+  {
+   "card": "C-06",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeOneByteSerialTypeLen": {
+     "blocks": 2,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91873,
+      91874
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "onebyte",
+   "seconds": 0
+  },
+  {
+   "card": "C-06",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeSerialTypeLen": {
+     "blocks": 5,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91863,
+      91864,
+      91868,
+      91870
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "serial",
+   "seconds": 0
+  },
+  {
+   "card": "C-06",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeOneByteSerialTypeLen": {
+     "blocks": 2,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91873,
+      91874
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "onebyte",
+   "seconds": 0
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-06/serial lp64-le: 1 failed: [sqlite3VdbeSerialTypeLen.array_bounds.1] array 'sqlite3SmallTypeSizes' upper bound in sqlite3SmallTypeSizes[(signed long int)serial_type]",
+   "mutant": {
+    "card": "C-06",
+    "equivalent": null,
+    "from": ">=128",
+    "function": "sqlite3VdbeSerialTypeLen",
+    "id": "M-023",
+    "line": 91863,
+    "review": null,
+    "to": ">=129"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-06/serial lp64-le: 2 failed: [sqlite3VdbeSerialTypeLen.division-by-zero.1] division by zero in (serial_type - (unsigned int)12) / (unsigned int)0; [contract_sqlite3VdbeSerialTypeLen.postcondition.1] Check ensures clause of contract contract::contract_sqlite3VdbeSerialTypeLen for function sqlite3VdbeSerialTypeLen",
+   "mutant": {
+    "card": "C-06",
+    "equivalent": null,
+    "from": "/2",
+    "function": "sqlite3VdbeSerialTypeLen",
+    "id": "M-024",
+    "line": 91864,
+    "review": null,
+    "to": "/0"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-06/onebyte lp64-le: 1 failed: [sqlite3VdbeOneByteSerialTypeLen.array_bounds.1] array 'sqlite3SmallTypeSizes' upper bound in sqlite3SmallTypeSizes[(signed long int)128]",
+   "mutant": {
+    "card": "C-06",
+    "equivalent": null,
+    "from": "[serial_type]",
+    "function": "sqlite3VdbeOneByteSerialTypeLen",
+    "id": "M-025",
+    "line": 91873,
+    "review": null,
+    "to": "[128]"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-06/onebyte lp64-le: 1 failed: [sqlite3VdbeOneByteSerialTypeLen.array_bounds.1] array 'sqlite3SmallTypeSizes' upper bound in sqlite3SmallTypeSizes[(signed long int)255]",
+   "mutant": {
+    "card": "C-06",
+    "equivalent": null,
+    "from": "[serial_type]",
+    "function": "sqlite3VdbeOneByteSerialTypeLen",
+    "id": "M-026",
+    "line": 91873,
+    "review": null,
+    "to": "[255]"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-06",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "serial",
+   "properties": 15,
+   "seconds": 33,
+   "status": "PASS"
+  },
+  {
+   "card": "C-06",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "onebyte",
+   "properties": 15,
+   "seconds": 24,
+   "status": "PASS"
+  },
+  {
+   "card": "C-06",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "serial",
+   "properties": 15,
+   "seconds": 31,
+   "status": "PASS"
+  },
+  {
+   "card": "C-06",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "onebyte",
+   "properties": 15,
+   "seconds": 24,
+   "status": "PASS"
+  },
+  {
+   "card": "C-06",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "serial",
+   "properties": 15,
+   "seconds": 31,
+   "status": "PASS"
+  },
+  {
+   "card": "C-06",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "onebyte",
+   "properties": 15,
+   "seconds": 20,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "611459274de89f8fc92c06239b870870d0af982c",
+   "gate": "make gate CARD=C-06 (merge of C-06 r1)",
+   "gate_log": "evidence/gate/C-06-r1.log"
+  },
+  "mutants": {
+   "commit": "611459274de89f8fc92c06239b870870d0af982c",
+   "gate": "make gate CARD=C-06 (merge of C-06 r1)",
+   "gate_log": "evidence/gate/C-06-r1.log"
+  },
+  "prove_summary": {
+   "commit": "611459274de89f8fc92c06239b870870d0af982c",
+   "gate": "make gate CARD=C-06 (merge of C-06 r1)",
+   "gate_log": "evidence/gate/C-06-r1.log"
+  }
+ }
+}

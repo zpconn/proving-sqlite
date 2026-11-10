@@ -92368,7 +92368,11 @@ static int vdbeCompareMemString(
 */
 static int isAllZero(const char *z, int n){
   int i;
-  for(i=0; i<n; i++){
+  for(i=0; i<n; i++)PROOF(
+    __CPROVER_assigns(i)
+    __CPROVER_loop_invariant(0 <= i && i <= (n > 0 ? n : 0))
+    __CPROVER_decreases(n > 0 ? n - i : 0)
+  ){
     if( z[i] ) return 0;
   }
   return 1;

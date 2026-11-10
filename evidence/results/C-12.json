@@ -1,0 +1,177 @@
+{
+ "card": "C-12",
+ "coverage_summary": [
+  {
+   "card": "C-12",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "isAllZero": {
+     "blocks": 61,
+     "blocks_failed": 12,
+     "goal_lines": [
+      92370,
+      92371,
+      92372,
+      92374,
+      92375
+     ],
+     "uncovered": [
+      92371
+     ],
+     "uncovered_blocks": [
+      [
+       92371
+      ]
+     ]
+    }
+   },
+   "proof": "zero",
+   "seconds": 0
+  },
+  {
+   "card": "C-12",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "isAllZero": {
+     "blocks": 61,
+     "blocks_failed": 12,
+     "goal_lines": [
+      92370,
+      92371,
+      92372,
+      92374,
+      92375
+     ],
+     "uncovered": [
+      92371
+     ],
+     "uncovered_blocks": [
+      [
+       92371
+      ]
+     ]
+    }
+   },
+   "proof": "zero",
+   "seconds": 0
+  },
+  {
+   "card": "C-12",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "isAllZero": {
+     "blocks": 61,
+     "blocks_failed": 12,
+     "goal_lines": [
+      92370,
+      92371,
+      92372,
+      92374,
+      92375
+     ],
+     "uncovered": [
+      92371
+     ],
+     "uncovered_blocks": [
+      [
+       92371
+      ]
+     ]
+    }
+   },
+   "proof": "zero",
+   "seconds": 0
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-12/zero lp64-le: 36 failed: [isAllZero.assigns.1] Check that i is assignable; [isAllZero.assigns.2] Check that i is assignable; [isAllZero.loop_assigns.2] Check assigns clause inclusion for loop isAllZero.0; [isAllZero.loop_decreases.1] Check variant decreases after step for loop isAllZero.0; [isAllZero.loop_invariant_base.2] Check invariant before entry for loop isAllZero.0; [isAllZero.loop_invariant_step.1] Check invariant after step for loop isAllZero.0; [isAllZero.loop_invariant_step.2] Check invariant after step for loop isAllZero.0; [isAllZero.loop_step_unwinding.1] Check step was unwound for loop isAllZero.0; [isAllZero.overflow.2] arithmetic overflow on signed + in i + 1; [isAllZero.overflow.3] arithmetic overflow on signed - in n - i; [isAllZero.overflow.4] arithmetic overflow on signed + in i + 1; [isAllZero.overflow.5] arithmetic overflow on signed - in n - i; [isAllZero.pointer_dereference.7] dereference failure: pointer NULL in *__havoc_target; [isAllZero.pointer_dereference.8] dereference failure: pointer invalid in *__havoc_target; [isAllZero.pointer_dereference.9] dereference failure: deallocated dynamic object in *__havoc_target; [isAllZero.pointer_dereference.10] dereference failure: dead object in *__havoc_target; [isAllZero.pointer_dereference.11] dereference failure: pointer outside object bounds in *__havoc_target; [isAllZero.pointer_dereference.12] dereference failure: invalid integer address in *__havoc_target; [isAllZero.pointer_arithmetic.7] pointer arithmetic: pointer NULL in z + (signed long int)i; [isAllZero.pointer_arithmetic.8] pointer arithmetic: pointer invalid in z + (signed long int)i; [isAllZero.pointer_arithmetic.9] pointer arithmetic: deallocated dynamic object in z + (signed long int)i; [isAllZero.pointer_arithmetic.10] pointer arithmetic: dead object in z + (signed long int)i; [isAllZero.pointer_arithmetic.11] pointer arithmetic: pointer outside object bounds in z + (signed long int)i; [isAllZero.pointer_arithmetic.12] pointer arithmetic: invalid integer address in z + (signed long int)i; [isAllZero.pointer_dereference.5] dereference failure: pointer outside object bounds in z[(signed long int)i]; [isAllZero.pointer_dereference.6] dereference failure: invalid integer address in z[(signed long int)i]; [isAllZero.pointer_dereference.13] dereference failure: pointer NULL in z[(signed long int)i]; [isAllZero.pointer_dereference.14] dereference failure: pointer invalid in z[(signed long int)i]; [isAllZero.pointer_dereference.15] dereference failure: deallocated dynamic object in z[(signed long int)i]; [isAllZero.pointer_dereference.16] dereference failure: dead object in z[(signed long int)i]; [isAllZero.pointer_dereference.17] dereference failure: pointer outside object bounds in z[(signed long int)i]; [isAllZero.pointer_dereference.18] dereference failure: invalid integer address in z[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0",
+   "mutant": {
+    "card": "C-12",
+    "equivalent": null,
+    "from": "i<n",
+    "function": "isAllZero",
+    "id": "M-044",
+    "line": 92371,
+    "review": null,
+    "to": "i<=n"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-12/zero lp64-le: 42 failed: [isAllZero.assigns.1] Check that i is assignable; [isAllZero.assigns.2] Check that i is assignable; [isAllZero.loop_assigns.2] Check assigns clause inclusion for loop isAllZero.0; [isAllZero.loop_decreases.1] Check variant decreases after step for loop isAllZero.0; [isAllZero.loop_invariant_base.2] Check invariant before entry for loop isAllZero.0; [isAllZero.loop_invariant_step.1] Check invariant after step for loop isAllZero.0; [isAllZero.loop_invariant_step.2] Check invariant after step for loop isAllZero.0; [isAllZero.loop_step_unwinding.1] Check step was unwound for loop isAllZero.0; [isAllZero.overflow.2] arithmetic overflow on signed + in i + 1; [isAllZero.overflow.3] arithmetic overflow on signed - in n - i; [isAllZero.overflow.4] arithmetic overflow on signed + in i + 1; [isAllZero.overflow.5] arithmetic overflow on signed - in n - i; [isAllZero.pointer_dereference.7] dereference failure: pointer NULL in *__havoc_target; [isAllZero.pointer_dereference.8] dereference failure: pointer invalid in *__havoc_target; [isAllZero.pointer_dereference.9] dereference failure: deallocated dynamic object in *__havoc_target; [isAllZero.pointer_dereference.10] dereference failure: dead object in *__havoc_target; [isAllZero.pointer_dereference.11] dereference failure: pointer outside object bounds in *__havoc_target; [isAllZero.pointer_dereference.12] dereference failure: invalid integer address in *__havoc_target; [isAllZero.pointer_arithmetic.5] pointer arithmetic: pointer outside object bounds in z + (signed long int)i; [isAllZero.pointer_arithmetic.6] pointer arithmetic: invalid integer address in z + (signed long int)i; [isAllZero.pointer_arithmetic.7] pointer arithmetic: pointer NULL in z + (signed long int)i; [isAllZero.pointer_arithmetic.8] pointer arithmetic: pointer invalid in z + (signed long int)i; [isAllZero.pointer_arithmetic.9] pointer arithmetic: deallocated dynamic object in z + (signed long int)i; [isAllZero.pointer_arithmetic.10] pointer arithmetic: dead object in z + (signed long int)i; [isAllZero.pointer_arithmetic.11] pointer arithmetic: pointer outside object bounds in z + (signed long int)i; [isAllZero.pointer_arithmetic.12] pointer arithmetic: invalid integer address in z + (signed long int)i; [isAllZero.pointer_dereference.1] dereference failure: pointer NULL in z[(signed long int)i]; [isAllZero.pointer_dereference.2] dereference failure: pointer invalid in z[(signed long int)i]; [isAllZero.pointer_dereference.3] dereference failure: deallocated dynamic object in z[(signed long int)i]; [isAllZero.pointer_dereference.4] dereference failure: dead object in z[(signed long int)i]; [isAllZero.pointer_dereference.5] dereference failure: pointer outside object bounds in z[(signed long int)i]; [isAllZero.pointer_dereference.6] dereference failure: invalid integer address in z[(signed long int)i]; [isAllZero.pointer_dereference.13] dereference failure: pointer NULL in z[(signed long int)i]; [isAllZero.pointer_dereference.14] dereference failure: pointer invalid in z[(signed long int)i]; [isAllZero.pointer_dereference.15] dereference failure: deallocated dynamic object in z[(signed long int)i]; [isAllZero.pointer_dereference.16] dereference failure: dead object in z[(signed long int)i]; [isAllZero.pointer_dereference.17] dereference failure: pointer outside object bounds in z[(signed long int)i]; [isAllZero.pointer_dereference.18] dereference failure: invalid integer address in z[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0",
+   "mutant": {
+    "card": "C-12",
+    "equivalent": null,
+    "from": "i=0",
+    "function": "isAllZero",
+    "id": "M-045",
+    "line": 92371,
+    "review": null,
+    "to": "i=-1"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-12",
+   "cbmc_seconds": 1,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "zero",
+   "properties": 79,
+   "seconds": 25,
+   "status": "PASS"
+  },
+  {
+   "card": "C-12",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "zero",
+   "properties": 79,
+   "seconds": 36,
+   "status": "PASS"
+  },
+  {
+   "card": "C-12",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "zero",
+   "properties": 79,
+   "seconds": 28,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "3dbacd2bcc9222e3f5103458e80c763846745ee1",
+   "gate": "make gate CARD=C-12 (merge of C-12 r1)",
+   "gate_log": "evidence/gate/C-12-r1.log"
+  },
+  "mutants": {
+   "commit": "3dbacd2bcc9222e3f5103458e80c763846745ee1",
+   "gate": "make gate CARD=C-12 (merge of C-12 r1)",
+   "gate_log": "evidence/gate/C-12-r1.log"
+  },
+  "prove_summary": {
+   "commit": "3dbacd2bcc9222e3f5103458e80c763846745ee1",
+   "gate": "make gate CARD=C-12 (merge of C-12 r1)",
+   "gate_log": "evidence/gate/C-12-r1.log"
+  }
+ }
+}

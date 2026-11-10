@@ -14,12 +14,53 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 | C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-le | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
 | C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | ilp32-le | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
 | C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-be | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
+| C-03 | P1 | separate | sqlite3GetVarint | lp64-le | PASS | 1 | 331 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | shared | sqlite3GetVarint | lp64-le | PASS | 1 | 339 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | separate | sqlite3GetVarint | ilp32-le | PASS | 0 | 331 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | shared | sqlite3GetVarint | ilp32-le | PASS | 1 | 339 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | separate | sqlite3GetVarint | lp64-be | PASS | 1 | 331 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | shared | sqlite3GetVarint | lp64-be | PASS | 1 | 339 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
 | C-05 | P1 | len | sqlite3VarintLen | lp64-le | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
 | C-05 | P1 | len | sqlite3VarintLen | ilp32-le | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
 | C-05 | P1 | len | sqlite3VarintLen | lp64-be | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
+| C-06 | P1 | serial | sqlite3VdbeSerialTypeLen | lp64-le | PASS | 0 | 15 | 0 | 4/4 | 4/4 | APPROVE (C-06-r1.md) |  |
+| C-06 | P1 | onebyte | sqlite3VdbeOneByteSerialTypeLen | lp64-le | PASS | 0 | 15 | 0 | 2/2 | 4/4 | APPROVE (C-06-r1.md) |  |
+| C-06 | P1 | serial | sqlite3VdbeSerialTypeLen | ilp32-le | PASS | 0 | 15 | 0 | 4/4 | 4/4 | APPROVE (C-06-r1.md) |  |
+| C-06 | P1 | onebyte | sqlite3VdbeOneByteSerialTypeLen | ilp32-le | PASS | 0 | 15 | 0 | 2/2 | 4/4 | APPROVE (C-06-r1.md) |  |
+| C-06 | P1 | serial | sqlite3VdbeSerialTypeLen | lp64-be | PASS | 0 | 15 | 0 | 4/4 | 4/4 | APPROVE (C-06-r1.md) |  |
+| C-06 | P1 | onebyte | sqlite3VdbeOneByteSerialTypeLen | lp64-be | PASS | 0 | 15 | 0 | 2/2 | 4/4 | APPROVE (C-06-r1.md) |  |
+| C-07 | P1 | get | serialGet | lp64-le | PASS | 0 | 228 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get7 | serialGet7 | lp64-le | PASS | 0 | 209 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get | serialGet | ilp32-le | PASS | 0 | 228 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get7 | serialGet7 | ilp32-le | PASS | 0 | 209 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get | serialGet | lp64-be | PASS | 0 | 228 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-07 | P1 | get7 | serialGet7 | lp64-be | PASS | 0 | 209 | 0 | 10/10 | 4/4 | APPROVE (C-07-r1.md) |  |
+| C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | lp64-le | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
+| C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | ilp32-le | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
+| C-09 | P3 | decode | sqlite3VdbeSerialGet serialGet | lp64-be | PASS | 1 | 612 | 0 | 50/50 | 7/7 | APPROVE (C-09-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-le | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | ilp32-le | PASS | 0 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-be | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | lp64-le | PASS | 1 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | ilp32-le | PASS | 0 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
+| C-12 | P1 | zero | isAllZero | lp64-be | PASS | 0 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |
+| C-13 | P1 | setnull | sqlite3VdbeMemSetNull | lp64-le | PASS | 0 | 69 | 0 | 3/5 | 2/2 | APPROVE (C-13-r1.md) |  |
+| C-13 | P1 | setnull | sqlite3VdbeMemSetNull | ilp32-le | PASS | 0 | 69 | 0 | 3/5 | 2/2 | APPROVE (C-13-r1.md) |  |
+| C-13 | P1 | setnull | sqlite3VdbeMemSetNull | lp64-be | PASS | 0 | 69 | 0 | 3/5 | 2/2 | APPROVE (C-13-r1.md) |  |
+| C-14 | P1 | alloc | sqlite3VdbeAllocUnpackedRecord | lp64-le | PASS | 0 | 133 | 0 | 10/10 | 2/2 | APPROVE (C-14-r1.md) | A-002 |
+| C-14 | P1 | alloc | sqlite3VdbeAllocUnpackedRecord | ilp32-le | PASS | 0 | 133 | 0 | 10/10 | 2/2 | APPROVE (C-14-r1.md) | A-002 |
+| C-14 | P1 | alloc | sqlite3VdbeAllocUnpackedRecord | lp64-be | PASS | 0 | 133 | 0 | 10/10 | 2/2 | APPROVE (C-14-r1.md) | A-002 |
 
 Where each card's numbers come from (the commit whose gate produced them, and its log):
 
-- C-01: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants 5219e5648758 evidence/gate/C-01-r2.log
-- C-02: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants affc94a4a51c evidence/gate/C-02-r1.log
-- C-05: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants 10cf282389d3 evidence/gate/C-05-r1.log
+- C-01: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants 5219e5648758 evidence/gate/C-01-r2.log
+- C-02: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants affc94a4a51c evidence/gate/C-02-r1.log
+- C-03: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants 994880ea6ae3 evidence/gate/C-03-r1.log
+- C-05: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants 10cf282389d3 evidence/gate/C-05-r1.log
+- C-06: proofs 611459274de8 evidence/gate/C-06-r1.log; coverage 611459274de8 evidence/gate/C-06-r1.log; mutants 611459274de8 evidence/gate/C-06-r1.log
+- C-07: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants 91105b3cfb71 evidence/gate/C-07-r1.log
+- C-09: proofs fb1215b4b2b6 evidence/gate/C-09-r1.log; coverage fb1215b4b2b6 evidence/gate/C-09-r1.log; mutants fb1215b4b2b6 evidence/gate/C-09-r1.log
+- C-10: proofs 106da82e3f24 evidence/gate/C-10-r1.log; coverage 106da82e3f24 evidence/gate/C-10-r1.log; mutants 106da82e3f24 evidence/gate/C-10-r1.log
+- C-12: proofs 3dbacd2bcc92 evidence/gate/C-12-r1.log; coverage 3dbacd2bcc92 evidence/gate/C-12-r1.log; mutants 3dbacd2bcc92 evidence/gate/C-12-r1.log
+- C-13: proofs 4fc99b4c992c evidence/gate/C-13-r1.log; coverage 4fc99b4c992c evidence/gate/C-13-r1.log; mutants 4fc99b4c992c evidence/gate/C-13-r1.log
+- C-14: proofs b708ed7b5881 evidence/gate/C-14-r1.log; coverage b708ed7b5881 evidence/gate/C-14-r1.log; mutants b708ed7b5881 evidence/gate/C-14-r1.log

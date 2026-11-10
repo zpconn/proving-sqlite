@@ -1,0 +1,89 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 0 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 0 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 38 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-06 --base 87abb8a274ac9da23d7b789b05520fdfc27e03ff
+  scan: 4 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (24s)
+gate: cards to run: C-06
+==== includes C-06: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-06
+    includes C-06 lp64-le: 153 files, 0 not allowed
+    includes C-06 ilp32-le: 153 files, 0 not allowed
+    includes C-06 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-06 all PASS
+==== includes C-06 PASS (0s)
+==== prove C-06: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-06 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-06/build
+  RESULT prove C-06/serial lp64-le PASS 33s 15 properties 0 failed
+  RESULT prove C-06/onebyte lp64-le PASS 24s 15 properties 0 failed
+  RESULT prove C-06 lp64-le PASS 57s 30 properties 0 failed
+  RESULT prove C-06/serial ilp32-le PASS 31s 15 properties 0 failed
+  RESULT prove C-06/onebyte ilp32-le PASS 24s 15 properties 0 failed
+  RESULT prove C-06 ilp32-le PASS 55s 30 properties 0 failed
+  RESULT prove C-06/serial lp64-be PASS 31s 15 properties 0 failed
+  RESULT prove C-06/onebyte lp64-be PASS 20s 15 properties 0 failed
+  RESULT prove C-06 lp64-be PASS 51s 30 properties 0 failed
+  RESULT prove C-06 all PASS 163s 90 properties 0 failed
+==== prove C-06 PASS (163s)
+==== coverage C-06: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-06 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-06/build
+    coverage serial lp64-le sqlite3VdbeSerialTypeLen: 4/4 lines; uncovered none
+    coverage onebyte lp64-le sqlite3VdbeOneByteSerialTypeLen: 2/2 lines; uncovered none
+    coverage serial ilp32-le sqlite3VdbeSerialTypeLen: 4/4 lines; uncovered none
+    coverage onebyte ilp32-le sqlite3VdbeOneByteSerialTypeLen: 2/2 lines; uncovered none
+    coverage serial lp64-be sqlite3VdbeSerialTypeLen: 4/4 lines; uncovered none
+    coverage onebyte lp64-be sqlite3VdbeOneByteSerialTypeLen: 2/2 lines; uncovered none
+  RESULT coverage C-06 all PASS 18/18 lines 0 uncovered 0 unexplained
+==== coverage C-06 PASS (138s)
+==== mutants C-06: /usr/bin/python3 tools/mutate.py --card C-06 --with  --json proofs/C-06/build/mutants.json
+  MUTANT M-023 sqlite3VdbeSerialTypeLen:91863 '>=128'->'>=129' KILLED by C-06/serial lp64-le: 1 failed: [sqlite3VdbeSerialTypeLen.array_bounds.1] array 'sqlite3SmallTypeSizes' upper bound in sqlite3SmallTypeSizes[(signed long int)serial_type]
+  MUTANT M-024 sqlite3VdbeSerialTypeLen:91864 '/2'->'/0' KILLED by C-06/serial lp64-le: 2 failed: [sqlite3VdbeSerialTypeLen.division-by-zero.1] division by zero in (serial_type - (unsigned int)12) / (unsigned int)0; [contract_sqlite3VdbeSerialTypeLen.postcondition.1] Check ensures clause of contract contract::contract_sqlite3VdbeSerialTypeLen for function sqlite3VdbeSerialTypeLen
+  MUTANT M-025 sqlite3VdbeOneByteSerialTypeLen:91873 '[serial_type]'->'[128]' KILLED by C-06/onebyte lp64-le: 1 failed: [sqlite3VdbeOneByteSerialTypeLen.array_bounds.1] array 'sqlite3SmallTypeSizes' upper bound in sqlite3SmallTypeSizes[(signed long int)128]
+  MUTANT M-026 sqlite3VdbeOneByteSerialTypeLen:91873 '[serial_type]'->'[255]' KILLED by C-06/onebyte lp64-le: 1 failed: [sqlite3VdbeOneByteSerialTypeLen.array_bounds.1] array 'sqlite3SmallTypeSizes' upper bound in sqlite3SmallTypeSizes[(signed long int)255]
+  RESULT mutate C-06 PASS 4/4 killed 0 equivalent
+==== mutants C-06 PASS (173s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 0 spans
+  lock                     PASS    0s  RESULT lock PASS 38 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   25s  RESULT probe all PASS
+  includes C-06            PASS    0s  RESULT includes C-06 all PASS
+  prove C-06               PASS  163s  RESULT prove C-06 all PASS 163s 90 properties 0 failed
+  coverage C-06            PASS  138s  RESULT coverage C-06 all PASS 18/18 lines 0 uncovered 0 unexplained
+  mutants C-06             PASS  173s  RESULT mutate C-06 PASS 4/4 killed 0 equivalent
+RESULT gate C-06 PASS 501s 0 failed
