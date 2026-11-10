@@ -35,6 +35,7 @@ That reference is written from the serial type table of SQLite's file format doc
   - 10: NULL with MEM_Zero, n = 0 and u.nZero = 0;
   - 11: NULL.
 - **D3. For t ≥ 12, nothing is read.** m points at b (MEM_Ephem: the bytes are not copied), with length (t−12)/2. It is a blob if t is even and text if t is odd. For odd t, (t−12)/2 in integer arithmetic is the table's (t−13)/2.
+- **D4. Types 8 and 9 decode as 0 and 1 with no schema-format check.** The table gives each "(Only available for schema format 4 and higher.)"; the schema format number is a database header field (§1.3.10, offset 44), and format 4 is the one that "adds two new boolean record type values (serial types 8 and 9)". sqlite3VdbeSerialGet has no schema format to look at and checks none: `pMem->u.i = serial_type-8; pMem->flags = MEM_Int;` (upstream/sqlite3.c:92071–92072). So P3, and the reference, give the integers 0 and 1 for types 8 and 9 whatever the database's schema format. Whether a record in a format 1–3 database can hold them is the writer's matter, outside milestone 1.
 
 "Leaves in m" is about the value: m's flags exactly, and the field the type uses. That field is u.i for an integer, the bits of u.r for a real, and z and n for a blob or text, plus n and u.nZero for type 10. Nothing is said of Mem's other fields, which the code doesn't set: m->enc for text is the caller's.
 
@@ -45,3 +46,4 @@ That reference is written from the serial type table of SQLite's file format doc
 3. **P1, "every option in proofs/CHECKS"**: CHECKS has no single float-to-integer option (bring-up §1.4, PROGRESS.md item 4), so the `%float-to-int` pass stands for it.
 4. **P1, loops**: unwinding with unwinding assertions is allowed for a loop bounded by construction at 16 iterations or fewer (builder §2.6, checkpoint 0 decision A), besides loop contracts.
 5. **P2, sqlite3VarintLen**: GOAL.md's statement matches what §1.8.1 measured, so it is unchanged; the measured values are cited.
+6. **P3, types 8 and 9** (auditor, checkpoint 1 fix 3): the table limits them to schema format 4 and higher; the code doesn't check, so P3 states that as departure D4.

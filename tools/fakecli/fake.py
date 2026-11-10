@@ -6,7 +6,7 @@ codex --json events plus a rollout log under $HOME/.codex/sessions (running toke
 
 Behaviors: done, approve, reject, needs-zach, finding, stuck, crash, limit, auth (the login has expired), outside,
 commit-outside, own-review, symlink (a May change path left as a symlink), exec-mode (an executable harness.c),
-touch-tracked, probe (a reviewer records what its sandbox lets it see, then approves), burn, slow:<seconds>,
+touch-tracked, probe (a session records what its sandbox lets it see, then approves or reports DONE), burn, slow:<seconds>,
 answer-review, missing (exit 0, no report), usage-symlink (a builder replaces .campaign/usage with a symlink to
 $FAKECLI_OUTSIDE, waits for campaign.py to write it, then reports DONE), report-fifo (a builder's report is a FIFO).
 `codex login status` and `claude auth status` report logged in unless $HOME/.fakecli-logged-out exists. Attempt
@@ -167,8 +167,52 @@ if beh == 'burn':
         spend(150000, 1000)
         time.sleep(0.2)
     finish(0)
+
+
+def probe():
+    """Record what this session's sandbox lets it see and write (checkpoint 0 follow-up 6; checkpoint 1, Q2 and Q4)."""
+    seen = {}
+    for name, path in json.loads(os.environ.get('FAKECLI_PROBE') or '{}').items():
+        seen[name] = os.path.exists(path)
+    try:
+        seen['~/.claude.json readable'] = bool(open(os.path.join(home, '.claude.json')).read())
+    except OSError:
+        seen['~/.claude.json readable'] = False
+    for k in ('DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'):
+        seen['env ' + k] = k in os.environ
+    try:
+        open(os.path.join(cwd, '.probe-write'), 'w').write('x')
+        seen['own worktree writable'] = True
+    except OSError:
+        seen['own worktree writable'] = False
+    cfg = os.environ.get('CLAUDE_CONFIG_DIR') or ''
+    try:
+        if not cfg:
+            raise OSError('CLAUDE_CONFIG_DIR unset')
+        open(os.path.join(cfg, '.probe-write'), 'w').write('x')
+        os.remove(os.path.join(cfg, '.probe-write'))
+        seen['own CLAUDE_CONFIG_DIR writable, with the login'] = bool(cfg) and os.path.exists(os.path.join(cfg, '.credentials.json'))
+    except OSError:
+        seen['own CLAUDE_CONFIG_DIR writable, with the login'] = False
+    try:
+        open(os.path.join(home, '.claude', '.probe-write'), 'w').write('x')
+        seen['wrote ~/.claude/.probe-write'] = True     # into a tmpfs: the selftest checks the host's stays absent
+    except OSError:
+        seen['wrote ~/.claude/.probe-write'] = False
+    try:
+        open(os.path.join(home, '.probe-write'), 'w').write('x')
+        seen['wrote $HOME/.probe-write'] = True
+    except OSError:
+        seen['wrote $HOME/.probe-write'] = False
+    log({'t': time.time(), 'vendor': vendor, 'key': key, 'probe': seen, 'cwd': cwd, 'config': cfg})
+    os.remove(os.path.join(cwd, '.probe-write'))
+
+
 if role == 'builder':
-    if beh == 'outside':
+    if beh == 'probe':
+        probe()
+        builder_files('DONE')
+    elif beh == 'outside':
         write('tools/evil.py', 'x = 1\n')
         builder_files('DONE')
     elif beh == 'commit-outside':
@@ -210,36 +254,7 @@ if role == 'builder':
 else:
     verdict = {'approve': 'APPROVE', 'reject': 'REJECT', 'needs-zach': 'NEEDS-ZACH', 'touch-tracked': 'APPROVE'}.get(beh, 'APPROVE')
     if beh == 'probe':
-        seen = {}
-        for name, path in json.loads(os.environ.get('FAKECLI_PROBE') or '{}').items():
-            seen[name] = os.path.exists(path)
-        try:
-            seen['~/.claude.json readable'] = bool(open(os.path.join(home, '.claude.json')).read())
-        except OSError:
-            seen['~/.claude.json readable'] = False
-        for k in ('DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'):
-            seen['env ' + k] = k in os.environ
-        try:
-            open(os.path.join(cwd, '.probe-write'), 'w').write('x')
-            seen['own worktree writable'] = True
-        except OSError:
-            seen['own worktree writable'] = False
-        cfg = os.environ.get('CLAUDE_CONFIG_DIR') or ''
-        try:
-            if not cfg:
-                raise OSError('CLAUDE_CONFIG_DIR unset')
-            open(os.path.join(cfg, '.probe-write'), 'w').write('x')
-            os.remove(os.path.join(cfg, '.probe-write'))
-            seen['own CLAUDE_CONFIG_DIR writable, with the login'] = bool(cfg) and os.path.exists(os.path.join(cfg, '.credentials.json'))
-        except OSError:
-            seen['own CLAUDE_CONFIG_DIR writable, with the login'] = False
-        try:
-            open(os.path.join(home, '.claude', '.probe-write'), 'w').write('x')
-            seen['wrote ~/.claude/.probe-write'] = True     # into a tmpfs: the selftest checks the host's stays absent
-        except OSError:
-            seen['wrote ~/.claude/.probe-write'] = False
-        log({'t': time.time(), 'vendor': vendor, 'key': key, 'probe': seen, 'cwd': cwd, 'config': cfg})
-        os.remove(os.path.join(cwd, '.probe-write'))
+        probe()
     if beh == 'touch-tracked':
         with open(os.path.join(cwd, 'cards', '%s.md' % card), 'a') as f:
             f.write('\nreviewer was here\n')

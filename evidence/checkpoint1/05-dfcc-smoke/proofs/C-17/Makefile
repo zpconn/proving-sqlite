@@ -1,0 +1,9 @@
+CARD := C-17
+PROOFS := p0
+p0_ENTRY := harness_sqlite3VdbeRecordCompareWithSkip
+p0_ENFORCE := sqlite3VdbeRecordCompareWithSkip/contract_sqlite3VdbeRecordCompareWithSkip
+p0_REPLACE := isAllZero/contract_isAllZero serialGet7/contract_serialGet7 sqlite3CorruptError/contract_sqlite3CorruptError sqlite3GetVarint32/contract_sqlite3GetVarint32 sqlite3IntFloatCompare/contract_sqlite3IntFloatCompare sqlite3VarintLen/contract_sqlite3VarintLen sqlite3VdbeSerialGet/contract_sqlite3VdbeSerialGet sqlite3VdbeSerialTypeLen/contract_sqlite3VdbeSerialTypeLen vdbeCompareMemString/contract_vdbeCompareMemString vdbeRecordDecodeInt/contract_vdbeRecordDecodeInt
+p0_LOOPS := unwind
+p0_UNWINDSET := sqlite3VdbeRecordCompareWithSkip_wrapped_for_contract_checking.0:2,memcmp.0:17
+p0_OBJECT_BITS := 12
+include ../Makefile.common

@@ -31,7 +31,9 @@ Bring-up (GOAL.md §1) settled these. The evidence for each is under `evidence/b
 
 ## Contracts: `proofs/contracts/<fn>.h`
 
-Contracts are clauses on a separate declaration, `contract_<fn>`, with the function's own signature. `--enforce-contract fn/contract_fn` checks `fn` against it, and `--replace-call-with-contract fn/contract_fn` uses it at call sites; both work on static functions. SQLite's text gets only loop annotations. A boundary contract (one for a function no card proves) names its ledger entry in a comment: `Ledger: A-NNN`.
+Contracts are clauses on a separate declaration, `contract_<fn>`, with the function's own signature. `--enforce-contract fn/contract_fn` checks `fn` against it, and `--replace-call-with-contract fn/contract_fn` uses it at call sites; both work on static functions. SQLite's text gets only loop annotations. A boundary contract (one for a function no card proves) names its ledger entry in a comment, `Ledger: A-NNN`, and is that entry's clause word for word (scan.py compares them, comments and spacing aside). The three in milestone 1, sqlite3DbMallocRaw.h, vdbeCompareMemString.h and sqlite3CorruptError.h, were written at checkpoint 1 and are frozen; builders replace calls with them and do not edit them.
+
+**Bodies removed.** Before drop-unused-functions, tools/prove.py removes the body of every REPLACE function and of every callee on the card's "Unreached callees, bodies removed" line (checkpoint 1, fix 1). Otherwise drop-unused keeps what those bodies reach, and for sqlite3VdbeMemSetNull that includes os_unix's syscall table, on which DFCC aborts. A call that a proof does reach to an unreached callee fails it: under DFCC as "undefined function should be unreachable", otherwise as a function without a body.
 
 **Statics and globals.** Under DFCC (a proof with ENFORCE, REPLACE or a loop contract), every static and global, SQLite's included, starts unconstrained: SQLite's initializers (such as `sqlite3PendingByte = 0x40000000`) are not assumed. That over-approximates SQLite's initialized globals. A proof without contracts (COVER only) keeps every initializer, and a static local starts at zero. So an input is always a plain local of the entry function, never a static or a global.
 
@@ -46,10 +48,11 @@ Shared headers (contracts, `proofs/include/preds.h`, `proofs/spec/`) #define not
 
 ## Running
 
-- `make -C proofs/C-NN prove [CONFIG=lp64-le|ilp32-le|lp64-be]`, `make -C proofs/C-NN coverage`, `tools/mutate.py --card C-NN`, `tools/check_overlay.py`, `tools/scan.py --card C-NN --base main`.
+- `tools/prove.py prove --card-dir proofs/C-NN [--config lp64-le|ilp32-le|lp64-be]`, `tools/prove.py coverage --card-dir proofs/C-NN [--config ...]`, `tools/mutate.py --card C-NN`, `tools/check_overlay.py`, `tools/scan.py --card C-NN --base main`. Without `--config` they run every configuration.
+- **Never `make -C proofs/C-NN`, in any session** (checkpoint 1, fix 2). make evaluates the card's Makefile, so a builder's line such as `PY := <cmd>; python3` would run `<cmd>` in whoever's session runs make, before scan or prove.py could reject it. tools/prove.py reads the Makefile with its own declarative parser and never runs it; the gate does the same.
 - **Long runs under Codex (builders):** wait once, never poll (builder §2.9). In one exec cell:
   ~~~
-  const r = await tools.exec_command({cmd: "make -C proofs/C-NN prove CONFIG=lp64-le > $TMPDIR/C-NN.log 2>&1; tail -5 $TMPDIR/C-NN.log", yield_time_ms: 1000});
+  const r = await tools.exec_command({cmd: "tools/prove.py prove --card-dir proofs/C-NN --config lp64-le > $TMPDIR/C-NN.log 2>&1; tail -5 $TMPDIR/C-NN.log", yield_time_ms: 1000});
   // if r is still running (it has a session_id and no exit code):
   text(await tools.write_stdin({session_id: <its session_id>, chars: "", yield_time_ms: 3600000}));
   ~~~

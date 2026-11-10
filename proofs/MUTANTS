@@ -1,9 +1,12 @@
 # proofs/MUTANTS: one-token mutants (GOAL.md §2.4). tools/mutate.py applies each to a scratch copy of the overlay.
-# A mutant is killed when some proof fails. card= names the card whose proofs must kill it: UB-relevant mutants
-# belong to the P1 card of their function, functional ones (no UB, wrong value) to the P2/P3 card.
+# card= names the card whose proofs must kill it: UB-relevant mutants belong to the P1 card of their function,
+# functional ones (no UB, wrong value) to the P2/P3 card. A mutant is killed only when a proof of its own card fails
+# (checkpoint 1, D1): another card's failing proof is reported and does not count.
 # Format: M-NNN <function> <upstream line> '<from>' '<to>' card=C-NN [equivalent='<argument>' review=<file>]
-# M-001 to M-016 are the pilot set (bring-up); M-017 to M-062 complete it at checkpoint 1 (GOAL.md §2.4): at least two
-# per Appendix A function. While a card has no proofs, its surviving mutants are PENDING in the full gate (tools/mutate.py).
+# M-001 to M-016 are the pilot set (bring-up); M-017 to M-062 complete it at checkpoint 1 (GOAL.md §2.4), at least two
+# per Appendix A function; M-063 to M-065 come from the checkpoint 1 audit (fix 6). While a card has no proofs here
+# or on main, its mutants are PENDING (not run); `make gate ALLOW_PENDING=1` passes them, and plain `make gate`,
+# the §5 gate, fails on any (tools/mutate.py).
 # Expected equivalent: none. Every mutant below is either UB the frozen checks catch on any proof of the function
 # (out-of-footprint reads and writes, undefined shifts, signed overflow, division by zero, a float-to-int conversion
 # out of range, a loop that never ends), or a wrong value that P2 or P3 compares. Four kills also need what a
@@ -103,3 +106,9 @@ M-060 vdbeRecordCompareString 92974 'MIN(' 'MAX(' card=C-19
 # vdbeRecordCompareInt (92845), P1: a header offset past the slack, an undefined shift.
 M-061 vdbeRecordCompareInt 92849 '0x3F' '0x7F' card=C-20
 M-062 vdbeRecordCompareInt 92888 '<<32' '<<64' card=C-20
+# Checkpoint 1 fix 6 (auditor): is A-001's bound tight; and two P3 value mutants.
+# sqlite3VdbeRecordUnpack, P1: the loop runs one field further, so the decoders read a byte past max(nKey, 1) + 8.
+M-063 sqlite3VdbeRecordUnpack 92134 '(u32)nKey' '(u32)nKey+1' card=C-15
+# sqlite3VdbeSerialGet, P3: type 5's low four bytes taken one byte early; type 10's n = 1 against D2's n = 0.
+M-064 sqlite3VdbeSerialGet 92055 'buf+2' 'buf+1' card=C-09
+M-065 sqlite3VdbeSerialGet 92006 'pMem->n = 0' 'pMem->n = 1' card=C-09

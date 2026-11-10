@@ -1,0 +1,384 @@
+ok   overlay: upstream + one multi-line span passes
+ok   overlay: a one-space change to SQLite text fails
+ok   overlay: code hidden between commented PROOF( and ) fails
+ok   overlay: code inside a PROOF span passes check_overlay but fails scan
+ok   overlay: upstream not matching pin.txt fails
+ok   prove: enforced contract with 2-byte footprint passes
+ok   prove: RESULT is the last line of output (GNUMAKEFLAGS=--no-print-directory, as campaign.py sets)
+ok   prove: footprint one less (1 byte) fails on p[1]
+ok   prove: lp64-be runs
+ok   prove: loop contract on a while loop passes
+ok   prove: false loop invariant fails
+ok   prove: a call to a function without a body fails
+ok   prove: a Makefile variable outside the schema fails
+ok   prove: a check-disabling option in SOLVER fails
+ok   prove: ENFORCE pairing f with another function's contract fails
+ok   prove rejects (argument types): a harness whose entry never calls its ENFORCE function
+ok   prove rejects (argument types): a COVER-only proof whose entry calls no card function
+ok   prove (argument types): C-01 as merged passes
+ok   prove (argument types): C-02 as merged passes
+ok   prove rejects (argument types): C-01 with u32 value in harness_sqlite3PutVarint
+ok   prove rejects (argument types): C-01 with int value in harness_sqlite3PutVarint
+ok   prove rejects (argument types): C-01 with u8 value in harness_sqlite3PutVarint
+ok   prove rejects (argument types): C-01 with a u32 offset in output + offset (k must be size_t)
+ok   coverage: unreachable line 33 is flagged and unexplained fails
+ok   coverage: the gap cited in NOTES.md outside "Unreached lines" (a requires table) is not an explanation
+ok   coverage: the same gap listed under "## Unreached lines" in NOTES.md passes
+ok   coverage: an enforced function is measured on its wrapped body (no false gaps)
+ok   coverage: a range within one uncovered block, with a reason, explains the gap
+ok   coverage rejects: a blanket range wider than the uncovered block (the auditor's 37900-38099)
+ok   coverage rejects: a range that runs one line past the uncovered block
+ok   coverage rejects: an entry naming a line this run covers
+ok   coverage rejects: an entry with no reason
+ok   coverage rejects: an entry naming more than one line or range
+ok   coverage rejects: prose under "## Unreached lines" instead of entries
+ok   scan: clean card passes
+ok   scan rejects: assume outside SETUP
+ok   scan rejects: assume on data bytes in SETUP
+ok   scan rejects: assume dereferencing data in SETUP
+ok   scan rejects: pragma disabling a check
+ok   scan rejects: define before sqlite3.c
+ok   scan rejects: harness defines toyLog, which SQLite's (toy) code calls
+ok   scan rejects: macro hiding assume
+ok   scan rejects: zero-filled buffer
+ok   scan rejects: file-scope buffer
+ok   scan rejects: contract declared in harness
+ok   scan rejects: CHECKS with --no-bounds-check
+ok   scan rejects: CHECKS missing unwinding assertions
+ok   scan rejects: CONFIGS with an extra -D
+ok   scan rejects (C1): abort() as a hidden assume
+ok   scan rejects (C1): __VERIFIER_assume
+ok   scan rejects (C1): exit through a function pointer
+ok   scan rejects (C1): longjmp
+ok   scan rejects (C1): __CPROVER_array_set on the data
+ok   scan rejects (C1): return in the entry function
+ok   scan rejects (C1): goto in the entry function
+ok   scan rejects (C1): two SETUP blocks
+ok   scan rejects (C1): no SETUP block
+ok   scan rejects (C1): a statement before SETUP
+ok   scan rejects (C1): a data byte stored in SETUP
+ok   scan rejects (C1): a data byte copied into a local in SETUP
+ok   scan rejects (C1): a predicate called from a SETUP assume
+ok   scan rejects (C1): the call under proof inside a condition
+ok   scan rejects (C1): the call under proof in a short-circuit
+ok   scan rejects (C1): an entry function that never calls the function under proof
+ok   scan rejects (C1): a SETUP block in a helper
+ok   scan rejects (C1): #pragma GCC system_header
+ok   scan rejects (C1): #line
+ok   scan rejects (C1): abort() in a contract
+ok   scan rejects (C1): abort() in preds.h
+ok   scan rejects (follow-up 2): a #define that hides a store in SETUP
+ok   scan rejects (follow-up 2): an #undef
+ok   scan rejects (follow-up 2): a store through a subscript between END SETUP and the call
+ok   scan rejects (follow-up 2): a store through a pointer between END SETUP and the call
+ok   scan rejects (follow-up 2): an if between END SETUP and the call
+ok   scan rejects (follow-up 2): a loop between END SETUP and the call
+ok   scan rejects (follow-up 2): a helper that stores, called between END SETUP and the call
+ok   scan rejects (follow-up 2): SETUP takes an address
+ok   scan rejects (follow-up 2): SETUP reads a member through -> in an assume
+ok   scan rejects (follow-up 2): SETUP reads a member through -> in an assignment
+ok   scan rejects (follow-up 2): a string literal in SETUP
+ok   scan rejects (follow-up 2): a cast to a data pointer in SETUP
+ok   scan rejects (follow-up 2): a data pointer set to a local array in SETUP
+ok   scan rejects (follow-up 2): a data pointer set to an integer in SETUP
+ok   scan rejects (follow-up 2): a loop invariant on a harness loop
+ok   scan rejects (follow-up 2): PROOF() on a harness loop
+ok   scan rejects (follow-up 2): __builtin_unreachable after the call
+ok   scan rejects (follow-up 2): __builtin_assume after the call
+ok   scan rejects (follow-up 2): __attribute__((constructor))
+ok   scan rejects (follow-up 2): a digraph subscript in a SETUP assume
+ok   scan rejects (follow-up 2): a trigraph subscript in a SETUP assume
+ok   scan rejects (follow-up 2): a line splice that hides an assume
+ok   scan (snapshot): C-02's merged harness passes
+ok   scan (snapshot): a snapshot loop into a local array passes
+ok   scan (snapshot): a constant-index snapshot passes
+ok   scan rejects (snapshot): in[0] &= 0x7f; before the call
+ok   scan rejects (snapshot): a snapshot whose S is a pointer
+ok   scan rejects (snapshot): a snapshot into an array then passed to the call
+ok   scan rejects (snapshot): a snapshot loop body with a second statement (braces)
+ok   scan rejects (snapshot): a snapshot loop body with a second statement (comma)
+ok   scan rejects (snapshot): a snapshot into a static array
+ok   scan rejects (snapshot): a snapshot whose array SETUP names
+ok   scan rejects (snapshot): a loop counter two snapshot loops assign
+ok   scan rejects (snapshot): a snapshot loop counting with i++
+ok   scan (card calls): a copy of the repo passes
+ok   scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value | 1)
+ok   scan rejects (card calls): C-01 with sqlite3PutVarint(output + offset, value + value) (only even values)
+ok   scan rejects (card calls): C-01 with a sqlite3.c macro (SQLITE_ROW) as the id argument
+ok   scan rejects (card calls): C-01 with a sqlite3.c macro (SQLITE_ROW) as x in x + y
+ok   scan rejects (card calls): C-01 with a sqlite3.c macro (SQLITE_ROW) as y in x + y
+ok   scan rejects (card calls): C-01 with an enum constant (K) as the id argument
+ok   scan rejects (card calls): C-01 with an enum constant (K) as x in x + y
+ok   scan rejects (card calls): C-01 with an enum constant (K) as y in x + y
+ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as the id argument
+ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as x in x + y
+ok   scan rejects (card calls): C-01 with a sqlite3.c global (sqlite3PendingByte) as y in x + y
+ok   scan rejects (entry storage class): C-01 with static u64 value; before SETUP
+ok   scan rejects (entry storage class): C-01 with static u64 value; in SETUP
+ok   scan rejects (entry storage class): C-01 with extern int sqlite3PendingByte; before SETUP, passed to the call
+ok   scan rejects (entry storage class): C-01 with extern int sqlite3PendingByte; in SETUP, passed to the call
+ok   scan rejects (entry storage class): C-01 with _Thread_local u64 value; before SETUP
+ok   scan rejects (declaration macros): C-01 with SQLITE_PRIVATE u64 value; before SETUP
+ok   scan rejects (declaration macros): C-01 with SQLITE_PRIVATE u64 value; in SETUP
+ok   scan rejects (declaration macros): C-01 with SQLITE_EXTERN int sqlite3PendingByte; before SETUP, passed to the call
+ok   scan rejects (declaration macros): C-01 with SQLITE_EXTERN int sqlite3PendingByte; in SETUP, passed to the call
+ok   scan rejects (declaration macros): C-01 with a system header's macro type (bool from <stdbool.h>) before SETUP
+ok   scan (declaration macros): C-01 with typedef names (u64, i64, u32, size_t) declared before and in SETUP passes
+ok   scan (card calls): C-01 with a file-scope enum it does not pass to the call passes
+ok   scan rejects (card calls): C-02 through sqlite3.c's getVarint32 macro with encoded + 1
+ok   scan (card calls): &id and id + id arguments passes
+ok   scan rejects (card calls): a constant offset in the call under proof
+ok   scan rejects (card calls): a cast argument
+ok   scan rejects (card calls): x + y with x an integer
+ok   scan rejects (card calls): x + y with y the same pointer
+ok   scan rejects (card calls): x + y with x a pointer declared after the call
+ok   scan rejects (card calls): a conditional argument
+ok   scan rejects (card calls): a narrowed second call after the call under proof
+ok   scan rejects (card calls): a card call inside an assert
+ok   scan rejects (card calls): a call through a function pointer
+ok   scan rejects (card calls): a helper that calls the card function
+ok   scan rejects (card calls): a sqlite3.c macro that expands to the card function, with p + 1
+ok   scan (follow-up 2): a SETUP with field stores, a cast malloc, pointer arithmetic and sizeof(T *) passes
+ok   scan rejects (C2): a shadow header in proofs/C-90/contracts/
+ok   scan rejects (C2): a symlinked harness.c
+ok   scan rejects (C2): an extra file in overlay/
+ok   scan rejects (C2): a symlink under tests/repro/
+ok   scan rejects (C10): a card function no proof's COVER names
+ok   scan (C4): preds.h gaining a predicate passes
+ok   scan rejects (C4): a predicate in preds.h changed
+ok   scan (follow-up 4): preds.h with only its include guard passes
+ok   scan (follow-up 4): guarded preds.h gaining a predicate passes
+ok   scan --base rejects (follow-up 4): a macro redefining an existing predicate in preds.h
+ok   scan --base rejects (follow-up 4): an #undef and redefinition of an existing predicate in preds.h
+ok   scan --base rejects (follow-up 4): an object-like macro naming a SQLite function in preds.h
+ok   scan rejects (follow-up 4): a macro in a contract
+ok   scan rejects (follow-up 4): a #define in proofs/spec/
+ok   scan rejects (follow-up 4): an include guard named after a SQLite function
+ok   scan rejects: span with an assignment
+ok   scan rejects: span with clauses out of order
+ok   scan rejects: span with an assume
+ok   scan rejects: span calling an unknown function
+ok   scan rejects: span after an if, not a loop
+ok   scan rejects: span after a do-while condition
+ok   scan rejects: span in a function no card names
+ok   scan --card: a span changed in another card's function is rejected
+ok   scan rejects: boundary contract without a ledger entry
+ok   scan: boundary contract naming its ledger entry passes
+ok   scan rejects: ledger entry named but absent from LEDGER.md
+FAIL scan rejects: a Depends on item whose card proves none of the card's callees, with no reason
+     | scan: 1 card directories, contracts, predicates and overlay spans pass
+     | RESULT scan PASS 0 problems
+FAIL scan: a Depends on item that is not a callee passes with its reason in parentheses
+     | scan: cards/: C-91: Depends on item '(not' is not C-NN
+     | scan: proofs/contracts/toyGet.h: boundary contract (no card proves toyGet) must name its ledger entry: "Ledger: A-NNN"
+     | RESULT scan FAIL 2 problems
+ok   scan: a boundary header equal to its ledger clause (spacing and comments aside) passes
+FAIL scan rejects: a boundary header that is not its ledger clause word for word
+     | scan: 1 card directories, contracts, predicates and overlay spans pass
+     | RESULT scan PASS 0 problems
+FAIL scan rejects: a ledger clause whose boundary header does not exist
+     | scan: 1 card directories, contracts, predicates and overlay spans pass
+     | RESULT scan PASS 0 problems
+ok   scan rejects: replacing an in-scope callee whose contract no card enforces
+ok   mutate: out-of-bounds mutant killed, functional mutant survives -> FAIL, overlay untouched
+ok   mutate: survivor with a reviewed equivalence argument passes
+ok   mutate: ambiguous mutant (token occurs several times) is an error
+ok   mutate --adhoc: planted shift bug is killed
+FAIL mutate: a MUTANTS line with no card= is an error
+     | MUTANT M-001 toyGet:27 '0x7f'->'0x3f' SURVIVED every proof passed on lp64-le
+     | RESULT mutate all FAIL 0/1 killed 0 equivalent
+FAIL mutate --card: a card with no mutant of its own fails (its gate would pass vacuously)
+     | RESULT mutate C-90 PASS 0/0 killed 0 equivalent
+FAIL mutate --card C-95 --with C-90: a mutant only C-90's proofs kill SURVIVED (C-90's failure does not count)
+     | MUTANT M-001 toyGet:27 'p[1]'->'p[2]' KILLED by C-90/get lp64-le: 2 failed: [toyGet.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)2]; [toyGet.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)2]
+     | RESULT mutate C-95 PASS 1/1 killed 0 equivalent
+FAIL mutate --all: the same mutant survives when its card has proofs, whoever else kills it
+     | MUTANT M-001 toyGet:27 'p[1]'->'p[2]' KILLED by C-90/get lp64-le: 2 failed: [toyGet.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)2]; [toyGet.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)2]
+     | RESULT mutate all PASS 1/1 killed 0 equivalent
+FAIL mutate --all: a mutant of a card with no proofs is PENDING, not run, even if another card would kill it; and --all fails on it (the §5 gate)
+     | MUTANT M-001 toyGet:27 'p[1]'->'p[2]' KILLED by C-90/get lp64-le: 2 failed: [toyGet.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)2]; [toyGet.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)2]
+     | RESULT mutate all PASS 1/1 killed 0 equivalent
+FAIL mutate --all --allow-pending: the pending mutant passes
+     | usage: mutate.py [-h] [--card CARD] [--all] [--with WITH_] [--adhoc ADHOC]
+     |                  [--config CONFIG] [--overlay OVERLAY] [--scratch SCRATCH]
+     |                  [--timeout TIMEOUT] [--json JSON]
+     | mutate.py: error: unrecognized arguments: --allow-pending
+FAIL mutate --all: a card with proofs on main but none here is not pending: the mutant fails
+     | usage: mutate.py [-h] [--card CARD] [--all] [--with WITH_] [--adhoc ADHOC]
+     |                  [--config CONFIG] [--overlay OVERLAY] [--scratch SCRATCH]
+     |                  [--timeout TIMEOUT] [--json JSON]
+     | mutate.py: error: unrecognized arguments: --allow-pending
+FAIL gate (full): any pending mutant fails it
+     |   RESULT prove C-90 lp64-be PASS 0s 59 properties 0 failed
+     |   RESULT prove C-90 all PASS 0s 177 properties 0 failed
+     | ==== prove C-90 PASS (0s)
+     | ==== coverage C-90: /usr/bin/python3 /tmp/tooltests-wly8gjj9/r173/tools/prove.py coverage --card-dir /tmp/tooltests-wly8gjj9/r173/proofs/C-90 --config all --overlay /tmp/tooltests-wly8gjj9/r173/overlay --build-dir /tmp/tooltests-wly8gjj9/r173/proofs/C-90/build
+     |     coverage get lp64-le toyGet: 3/3 lines; uncovered none
+     |     coverage get ilp32-le toyGet: 3/3 lines; uncovered none
+     |     coverage get lp64-be toyGet: 3/3 lines; uncovered none
+     |   RESULT coverage C-90 all PASS 9/9 lines 0 uncovered 0 unexplained
+     | ==== coverage C-90 PASS (0s)
+     | gate: functions with fewer than two mutants in proofs/MUTANTS: toyGet
+     | ==== mutants all: /usr/bin/python3 tools/mutate.py --all --json proofs/build/mutants-all.json
+     |   MUTANT M-001 toyGet:27 'p[1]'->'p[2]' KILLED by C-90/get lp64-le: 2 failed: [toyGet.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)2]; [toyGet.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)2]
+     |   RESULT mutate all PASS 1/1 killed 0 equivalent
+     | ==== mutants all PASS (0s)
+     | ==== summary
+     |   check_overlay            PASS    0s  RESULT check_overlay PASS 0 spans
+     |   lock                     PASS    0s  RESULT lock PASS 0 files (no proof.lock)
+     |   scan                     FAIL    0s  (no RESULT line, rc 1)
+     |   probe                    FAIL    0s  RESULT probe all FAIL
+     |   includes C-90            PASS    0s  RESULT includes C-90 all PASS
+     |   prove C-90               PASS    1s  RESULT prove C-90 all PASS 0s 177 properties 0 failed
+     |   coverage C-90            PASS    1s  RESULT coverage C-90 all PASS 9/9 lines 0 uncovered 0 unexplained
+     |   mutant count             FAIL    0s  fewer than two mutants: toyGet
+     |   mutants all              PASS    0s  RESULT mutate all PASS 1/1 killed 0 equivalent
+     | RESULT gate all FAIL 1s failed: scan, probe, mutant count
+FAIL gate --allow-pending (make gate ALLOW_PENDING=1): the pending mutant passes the mutants step
+     | usage: gate.py [-h] [--card CARD] [--base BASE] [--config CONFIG]
+     |                {gate,prove,coverage}
+     | gate.py: error: unrecognized arguments: --allow-pending
+ok   lock: freshly written lock checks
+ok   lock: sessions.toml is exempt
+ok   lock: a changed tool fails
+ok   lock: a new file under a frozen path fails
+FAIL lock: a boundary header (proofs/contracts/sqlite3CorruptError.h) is frozen
+     | lock: tools/scan.py changed since proof.lock
+     | RESULT lock FAIL 25 files
+ok   lock (C7): before the freeze, no proof.lock passes
+ok   lock (C7): proof.lock deleted after the freeze commit fails
+ok   lock (C7): ... and still fails once its deletion is committed
+ok   lock (C7): no proof.lock while HANDOFF.md exists fails
+ok   includes: a harness that includes the overlay, proofs/contracts/ and system headers passes on every configuration
+ok   includes: a shadow proofs/C-90/contracts/toyGet.h (quoted includes resolve there first) fails
+ok   includes: a header that pulls in upstream/ or a nested proofs/include/contracts/ file fails
+ok   gate: a card Makefile with a rule load_card rejects fails the gate, and make never runs it (no marker)
+ok   gate: make prove skips the rejected card Makefile too (no marker)
+ok   gate: preds.h unchanged: make gate CARD=C-90 runs C-90 only, with its includes step
+ok   gate: preds.h changed: make gate CARD=C-90 also reruns C-91, whose harness includes preds.h
+ok   cards.callers_of: two cards sharing functions name each other, never themselves (pilot: "C-02, C-02")
+ok   collect_results: a caller's gate (no mutants.json) keeps the card's mutant results, and each field records its own commit and gate log (pilot: C-02 lost its mutants)
+FAIL campaign.py: a builder (codex) session starts inside bwrap, and a codex command without it is refused (Q2)
+     | FAIL codex-bwrap: []
+FAIL campaign.py: a codex command that leaves $HOME or /mnt visible, or $HOME writable, is refused (Q2, Q4)
+     | FAIL codex-home-hidden:
+FAIL campaign.py: a codex command that shows ~/.codex/rules or lets codex write ~/.codex/skills is refused (Q2)
+     | FAIL codex-rules-hidden:
+FAIL campaign.py: a codex session is refused while ~/.codex/AGENTS.md exists (Q2)
+     | FAIL codex-agents-md:
+FAIL campaign.py: a reviewer (claude) command that leaves $HOME or /mnt visible, or $HOME writable, is refused (Q4)
+     | FAIL claude-home-hidden: []
+FAIL campaign.py: a claude command without --disable-slash-commands or --strict-mcp-config is refused (Q2)
+     | FAIL claude-no-skills-mcp:
+FAIL campaign.py: a claude command without its own tmpfs over ~/.claude is refused (Q4 keeps it)
+     | FAIL claude-keeps-dot-claude:
+FAIL campaign.py: a seventh builder round is never started: the card goes to triage (D4)
+     | FAIL d4-round-7: GitError: git worktree add -b card/C-01 /tmp/tooltests-wly8gjj9/r204-wt/C-01 main (in /tmp/tooltests-wly8gjj9/r204): fatal: invalid reference: main
+FAIL campaign.py: campaign.py builds and runs a repro itself, sandboxed: no $HOME, no network (fix 2)
+     | FAIL repro-sandboxed: AttributeError: module 'campaign' has no attribute 'run_repros'
+FAIL docs: builder, reviewer and HOWTO instructions run tools/prove.py, never make in a card directory
+     | agents/builder/GOAL.md:37: 9. **Long runs.** A CBMC run can take 10 minutes, and `make prove` runs three configurations. Wait for a run once, in on
+     | agents/builder/GOAL.md:42: 2. Run `make -C proofs/C-NN prove` (every configuration; see rule 9), read the failures, fix the harness or the contract
+     | agents/builder/GOAL.md:43: 3. Then run `make -C proofs/C-NN coverage`, `tools/mutate.py --card C-NN`, `tools/check_overlay.py` and `tools/scan.py`.
+     | agents/reviewer/GOAL.md:12: 2. **Rerun everything before believing it:** `make -C proofs/C-NN prove` on every configuration, coverage, `tools/mutate
+     | proofs/HOWTO.md:49: - `make -C proofs/C-NN prove [CONFIG=lp64-le|ilp32-le|lp64-be]`, `make -C proofs/C-NN coverage`, `tools/mutate.py --card
+     | proofs/HOWTO.md:52: const r = await tools.exec_command({cmd: "make -C proofs/C-NN prove CONFIG=lp64-le > $TMPDIR/C-NN.log 2>&1; tail -5 $TMP
+FAIL docs: reviewer rule 8 reads campaign.py's repro output instead of building builder-written repros
+     | that names who must make it true.
+     |    - For a footprint, the required value minus one must fail.
+     | 4. **Not vacuous.**
+     |    - Coverage reaches every line of the card's functions, or each gap is listed under `## Unreached lines` in NOTES.md and the explanation is right; an unreachable line can mean a requires is too strong.
+     |    - The function's return is reachable.
+     |    - Each of the card's mutants is killed, or its equivalence argument holds.
+     | 5. **Ensures and assigns.** They're what the code does, which the proof shows. They give the callers' cards what those need, and no more. Assigns lists every write.
+     | 6. **Loops.** Every loop has assigns, an invariant and decreases, or is unwound with unwinding assertions and a justified bound.
+     | 7. **Boundary contracts used.** For each callee replaced by a ledger contract, read its source: is the contract true of it? Is the ledger draft honest about who must make it true?
+     | 8. **Findings.** For a FINDING, build `tests/repro` natively against unmodified upstream and run it under ASan or UBSan.
+     |    - Does it fail as claimed?
+     |    - Is it reachable from SQL or the public API, or only when a ledger entry is violated? In the second case it's a ledger matter, not a finding.
+     | 9. **Words.** Proved, tested, assumed and trusted are used correctly. Nothing in NOTES.md or the report claims more than the proof shows.
+     | 
+     | ## 3. Verdict
+     | 
+     | `reviews/C-NN-r<round>.md`. First line: APPROVE, REJECT or NEEDS-ZACH. On a FINDING round, APPROVE means the repro fails as the report claims on unmodified upstream; the card then goes to the orchestrator, not to merge. Use NEEDS-ZACH for questions only he can settle, such as whether an assumption about SQLite's callers is acceptable in the ledger.
+     | 
+     | Then number each issue and give:
+     | - its severity: blocker, major or minor;
+     | - what's wrong;
+     | - the evidence: the command and the relevant output lines;
+     | - the specific change that would fix it.
+     | 
+     | At most 80 lines. If you approve with minor issues, list them; the orchestrator files them.
+FAIL fix 3: P3 states departure D4 (types 8 and 9, schema format 4), and record_format.h cites it at rows 8, 9
+     | (MEM_Ephem: the bytes are not copied), with length (t−12)/2. It is a blob if t is even and text if t is odd. For odd t, (t−12)/2 in integer arithmetic is the table's (t−13)/2.
+     | 
+     | "Leaves in m" is about the value: m's flags exactly, and the field the type uses. That field is u.i for an integer, the bits of u.r for a real, and z and n for a blob or text, plus n and u.nZero for type 10. Nothing is said of Mem's other fields, which the code doesn't set: m->enc for text is the caller's.
+     | 
+     | ## Changes from GOAL.md §2
+     | 
+     | 1. **P3's k for types 10 and 11** (Zach, checkpoint 1 instructions): GOAL.md says k is "t's size in the file format table for t ≤ 11", but the table at the pin gives "variable" for 10 and 11 (evidence/spec/fileformat2.html). The code reads nothing for them, so k is 0, stated as departure D2.
+     | 2. **P3, "leaves in m"**: GOAL.md does not say which Mem fields count. This file names them (above), including MEM_Ephem for t ≥ 12, which is how the code says "points at b" (upstream/sqlite3.c:92082).
+     | 3. **P1, "every option in proofs/CHECKS"**: CHECKS has no single float-to-integer option (bring-up §1.4, PROGRESS.md item 4), so the `%float-to-int` pass stands for it.
+     | 4. **P1, loops**: unwinding with unwinding assertions is allowed for a loop bounded by construction at 16 iterations or fewer (builder §2.6, checkpoint 0 decision A), besides loop contracts.
+     | 5. **P2, sqlite3VarintLen**: GOAL.md's statement matches what §1.8.1 measured, so it is unchanged; the measured values are cited.
+FAIL fix 4: A-003 says the clause leaves out the encoding-change path's allocation and db->mallocFailed, and why
+     | ## A-003 vdbeCompareMemString compares two strings and writes at most *prcErr
+     | - Function(s): vdbeCompareMemString (92350), a boundary callee of sqlite3VdbeRecordCompareWithSkip (C-17, call at 92734).
+     | - Clause, as CBMC states it (proofs/contracts/vdbeCompareMemString.h, written by C-17's builder):
+     |   ~~~
+     |   int contract_vdbeCompareMemString(const Mem *pMem1, const Mem *pMem2, const CollSeq *pColl, u8 *prcErr)
+     |     __CPROVER_requires(__CPROVER_r_ok(pMem1, sizeof(Mem)) && __CPROVER_r_ok(pMem2, sizeof(Mem))
+     |                        && __CPROVER_r_ok(pColl, sizeof(CollSeq)))
+     |     __CPROVER_requires(pMem1->n >= 0 && __CPROVER_r_ok(pMem1->z, pMem1->n)
+     |                        && pMem2->n >= 0 && __CPROVER_r_ok(pMem2->z, pMem2->n))
+     |     __CPROVER_requires(prcErr == NULL || __CPROVER_w_ok(prcErr, 1))
+     |     __CPROVER_assigns(prcErr != NULL: *prcErr);
+     |   ~~~
+     | - Plain English:
+     |   - Given two string Mems whose n bytes at z are readable, and a collation, it returns some int.
+     |   - It writes nothing but *prcErr, which it may set to SQLITE_NOMEM.
+     |   - The result's sign is the collation's business; the clause says nothing about it.
+     | - Why the proof needs it: vdbeCompareMemString calls the collation's xCmp (92359, 92344), which is application code. When the encodings differ, it converts through vdbemem.c (sqlite3ValueText) and allocates. Neither is in milestone 1.
+     | - Who must make it true:
+     |   - the application: a collation's xCmp reads only the n bytes it is given, and changes nothing the caller can see;
+     |   - call
+FAIL Q5: A-001 and C-15 state the read extent max(nKey, 1) + 8, derived from the lines that bound it, and drop "not by nKey"
+     | ## A-001 Readable slack after a record
+     | - Function(s): sqlite3VdbeRecordUnpack (C-15). Also, where their proofs show they need it, vdbeRecordCompareInt (C-20), sqlite3VdbeRecordCompareWithSkip (C-17) and vdbeRecordCompareString (C-19). Each card states its own slack.
+     | - Clause, as CBMC states it: `__CPROVER_requires(__CPROVER_r_ok(pKey, (size_t)nKey + S))` on sqlite3VdbeRecordUnpack, with S a constant (for C-20: `__CPROVER_r_ok(pKey1, (size_t)nKey1 + S)`).
+     |   - S is not yet fixed. Each card determines the smallest S that works: its proof passes at S and fails at S − 1 (builder §2.4).
+     |   - S is then written here before the entry leaves draft.
+     |   - If the slack a card needs grows with the field count, the clause is restated in terms of it, or the card reports a FINDING.
+     | - Plain English: whoever p# C-15: sqlite3VdbeRecordUnpack
+     | - Property: P1
+     | - Functions: sqlite3VdbeRecordUnpack (upstream/sqlite3.c:92116)
+     | - In-scope callees, with approved contracts: sqlite3GetVarint32 (C-04), sqlite3VdbeSerialGet (C-08), sqlite3VdbeSerialTypeLen (C-06), sqlite3VdbeMemSetNull (C-13)
+     | - Boundary callees, with l
+FAIL fix 7: UB-CLASSES argues integer-to-double conversion (6.3.1.4p2) at sqlite3IntFloatCompare
+     | # UB-CLASSES
+     | 
+     | The kinds of undefined behavior in C11 Annex J.2 that can arise in the 22 functions of GOAL.md Appendix A, each with how milestone 1 handles it:
+     | - **checked:** by a CBMC option in `proofs/CHECKS`, named here. Each was shown to fire on a toy: `evidence/bringup/toys/04-checks/` (`run.sh`
+FAIL fix 6: proofs/MUTANTS has the audit's three mutants, and each applies exactly once to the overlay
+     | ([], [])
+FAIL D2: the boundary headers are off C-14's and C-17's May change lines, and builder §1 no longer lets builders write them
+     | proofs/C-14/harness.c, proofs/C-14/Makefile, proofs/C-14/NOTES.md, proofs/contracts/sqlite3VdbeAllocUnpackedRecord.h, proofs/contracts/sqlite3DbMallocRaw.h, proofs/include/preds.h, tests/repro/F-draft-C-14-1.c, tests/repro/F-draft-C-14-2.c, tests/repro/F-draft-C-14-3.c, reports/C-14-b1.md, reports/C-14-b2.md, reports/C-14-b3.md, reports/C-14-b4.md, reports/C-14-b5.md, reports/C-14-b6.md | proofs/C-17/harness.c, proofs/C-17/Makefile, proofs/C-17/NOTES.md, proofs/contracts/sqlite3VdbeRecordCompareWithSkip.h, proofs/contracts/vdbeCompareMemString.h, proofs/contracts/sqlite3CorruptError.h, overlay/sqlite3.c, proofs/include/preds.h, tests/repro/F-draft-C-17-1.c, tests/repro/F-draft-C-17-2.c, tests/repro/F-draft-C-17-3.c, reports/C-17-b1.md, reports/C-17-b2.md, reports/C-17-b3.md, reports/C-17-b4.md, reports/C-17-b5.md, reports/C-17-b6.md
+FAIL prove: the card's unreached callee loses its body, so DFCC does not abort on the syscall table, and the proof passes
+     | ERROR mc lp64-le: dfcc failed (-6); see proofs/C-96/build/lp64-le/mc.dfcc
+     | RESULT prove C-96/mc lp64-le FAIL 0s 0 properties 0 failed
+     | RESULT prove C-96 lp64-le FAIL 0s 0 properties 0 failed
+FAIL prove: an unreached callee the proof does reach fails it (undefined function should be unreachable)
+     | ERROR mc lp64-le: dfcc failed (-6); see proofs/C-96/build/lp64-le/mc.dfcc
+     | RESULT prove C-96/mc lp64-le FAIL 0s 0 properties 0 failed
+     | RESULT prove C-96 lp64-le FAIL 0s 0 properties 0 failed
+FAIL prove: a REPLACEd callee loses its body before drop-unused, so DFCC does not abort, and the proof passes
+     | ERROR o lp64-le: dfcc failed (-6); see proofs/C-97/build/lp64-le/o.dfcc
+     | RESULT prove C-97/o lp64-le FAIL 0s 0 properties 0 failed
+     | RESULT prove C-97 lp64-le FAIL 0s 0 properties 0 failed
+FAIL cards: a card function listed as its own unreached callee is rejected
+     | scan: 2 card directories, contracts, predicates and overlay spans pass
+     | RESULT scan PASS 0 problems
+ok   probe: lp64-be with -funsigned-char passes, char signedness included
+ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
+ok   scan: CONFIGS may carry -funsigned-char but not another char flag
+RESULT tool-tests FAIL 193/228

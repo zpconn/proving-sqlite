@@ -2,7 +2,8 @@
 #   make prove               every merged proof, every configuration
 #   make coverage            coverage of every merged proof
 #   make probe               the configuration probe
-#   make gate                the full gate
+#   make gate                the full gate; it fails on any pending mutant (the §5 gate)
+#   make gate ALLOW_PENDING=1  the full gate during the campaign: mutants of cards with no proofs yet are pending
 #   make gate CARD=C-NN      the gate for one card and the cards whose proofs call its functions
 #                            (BASE=<commit>: also require PROOF spans changed since it to be in C-NN's functions)
 # Each target's last line of standard output is its RESULT line.
@@ -11,6 +12,7 @@ PY := python3
 CARD ?=
 BASE ?=
 CONFIG ?= all
+ALLOW_PENDING ?=
 
 .PHONY: prove coverage probe gate
 prove:
@@ -20,4 +22,4 @@ coverage:
 probe:
 	@$(PY) tools/prove.py probe --config $(CONFIG)
 gate:
-	@$(PY) tools/gate.py gate $(if $(CARD),--card $(CARD),) $(if $(BASE),--base $(BASE),)
+	@$(PY) tools/gate.py gate $(if $(CARD),--card $(CARD),) $(if $(BASE),--base $(BASE),) $(if $(ALLOW_PENDING),--allow-pending,)

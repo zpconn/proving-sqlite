@@ -35,6 +35,7 @@ import re
 import shutil
 import signal
 import stat
+import shlex
 import subprocess
 import sys
 import threading
@@ -51,6 +52,7 @@ import cards as cardlib  # noqa: E402
 
 MAX_SESSIONS = 4                 # GOAL.md §0.9: builders and reviewers together
 MAX_ROUNDS = 3                   # REJECTs before triage
+MAX_BUILDER_ROUNDS = 6           # checkpoint 1, D4: May change lines list reports b1-b6; round 7 goes to triage for Zach
 MAX_INTERRUPTIONS = 3            # per round
 SESSION_WALL_LIMIT = 12 * 3600   # a session running longer than this is killed and counts as an interruption
 PAUSE_DEFAULT = 30 * 60          # usage limit with no reset time: 30 min, doubling to 4 h
@@ -245,20 +247,47 @@ _CODEX_SAFE = ['--ignore-user-config', '--strict-config',
                '--disable', 'apps', '--disable', 'plugins', '--disable', 'remote_plugin', '--disable', 'tool_suggest',
                '--disable', 'multi_agent', '--disable', 'multi_agent_v2', '--disable', 'image_generation',
                '--disable', 'browser_use', '--disable', 'browser_use_external', '--disable', 'computer_use',
-               '--disable', 'in_app_browser', '--disable', 'goals',
+               '--disable', 'in_app_browser', '--disable', 'goals', '--disable', 'hooks', '--disable', 'memories',
                '-m', '{model}', '-c', 'model_reasoning_effort="{effort}"', '-']
-_BWRAP = ['bwrap', '--ro-bind', '/', '/', '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp',
-          '--tmpfs', '/run/user', '--unsetenv', 'DBUS_SESSION_BUS_ADDRESS', '--unsetenv', 'XDG_RUNTIME_DIR',
-          '--tmpfs', '{home}/.codex', '--tmpfs', '{home}/.claude', '--ro-bind', '/dev/null', '{home}/.claude.json',
-          '--tmpfs', '{home}/.config/gh', '--tmpfs', '{home}/.aws', '--tmpfs', '{home}/.docker',
-          '--tmpfs', '{wtroot}', '--tmpfs', '{repo}', '--ro-bind', '{repo}/.git', '{repo}/.git',
-          '--bind', '{config}', '{config}', '--setenv', 'CLAUDE_CONFIG_DIR', '{config}',
-          '--bind', '{dir}', '{dir}', '--chdir', '{dir}']
-_CLAUDE_TAIL = ['--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
+# On WSL /etc/resolv.conf is a link to this file; with /mnt hidden, DNS needs it back (read-only). prepare_mounts
+# drops the bind where the file does not exist.
+WSL_RESOLV = '/mnt/wsl/resolv.conf'
+# Checkpoint 1, Q2 and Q4: every session starts inside bubblewrap with all of $HOME and /mnt hidden (on WSL,
+# /mnt/wslg/distro is a second view of /, home included), and $HOME read-only; only what the CLI needs is bound back.
+_BWRAP_BASE = ['bwrap', '--ro-bind', '/', '/', '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp',
+               '--tmpfs', '/run/user', '--unsetenv', 'DBUS_SESSION_BUS_ADDRESS', '--unsetenv', 'XDG_RUNTIME_DIR',
+               '--tmpfs', '/mnt', '--ro-bind', WSL_RESOLV, WSL_RESOLV, '--remount-ro', '/mnt', '--tmpfs', '{home}']
+_BWRAP_TAIL = ['--tmpfs', '{wtroot}', '--tmpfs', '{repo}', '--ro-bind', '{repo}/.git', '{repo}/.git']
+# claude: its install, read-only; its own config directory and the worktree, writable
+_BWRAP = (_BWRAP_BASE +
+          ['--ro-bind', '{home}/.local/share/claude', '{home}/.local/share/claude',
+           '--ro-bind', '{home}/.local/bin/claude', '{home}/.local/bin/claude',
+           # kept from checkpoint 0 (Q4), though the $HOME tmpfs covers them; ~/.config/gh, ~/.aws and ~/.docker no longer
+           # get their own (~/.aws may be a link into /mnt/c, which would put a mount point under the hidden /mnt)
+           '--tmpfs', '{home}/.codex', '--tmpfs', '{home}/.claude', '--ro-bind', '/dev/null', '{home}/.claude.json'] +
+          _BWRAP_TAIL +
+          ['--bind', '{config}', '{config}', '--setenv', 'CLAUDE_CONFIG_DIR', '{config}',
+           '--bind', '{dir}', '{dir}', '--remount-ro', '{home}', '--chdir', '{dir}'])
+# codex: node and codex (under nvm), read-only; ~/.codex, writable (its login, which codex refreshes in place under a
+# lock, and its session logs, which resume reads), less what it would load from there: the bundled skills, the
+# approval rules (Zach's interactive allow-list: `git push`, `gh repo create --push`, ...) and memories, each behind an
+# empty read-only tmpfs; and the worktree, writable. codex's own workspace-write sandbox runs inside this one.
+CODEX_HIDDEN = ('{home}/.codex/skills', '{home}/.codex/rules', '{home}/.codex/memories')
+# What codex would load from the ~/.codex it needs, or from /etc/codex, and that no flag or mount turns off: none exists
+# today, and campaign.py refuses to start a codex session if one appears (checkpoint 1, Q2)
+CODEX_REFUSE = ('{home}/.codex/AGENTS.md', '{home}/.codex/AGENTS.override.md', '{home}/.codex/hooks.json',
+                '{home}/.codex/agents', '/etc/codex')
+_BWRAP_CODEX = (_BWRAP_BASE +
+                ['--ro-bind', '{home}/.nvm', '{home}/.nvm', '--bind', '{home}/.codex', '{home}/.codex'] +
+                [x for d in CODEX_HIDDEN for x in ('--tmpfs', d, '--remount-ro', d)] + _BWRAP_TAIL +
+                ['--bind', '{dir}', '{dir}', '--remount-ro', '{home}', '--chdir', '{dir}'])
+# checkpoint 1, Q2: no skills or commands (the account's synced skills land in the config directory at startup), and
+# no MCP servers but --mcp-config's, which is never given (the account's claude.ai connectors included)
+_CLAUDE_TAIL = ['--disable-slash-commands', '--strict-mcp-config', '--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
                 '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
 SESSION_COMMANDS = {
-    'codex': {'start': ['codex', 'exec', '--json'] + _CODEX_SAFE,
-              'resume': ['codex', 'exec', 'resume', '{session}', '--json'] + _CODEX_SAFE,
+    'codex': {'start': _BWRAP_CODEX + ['codex', 'exec', '--json'] + _CODEX_SAFE,
+              'resume': _BWRAP_CODEX + ['codex', 'exec', 'resume', '{session}', '--json'] + _CODEX_SAFE,
               'login_check': ['codex', 'login', 'status']},
     'claude': {'start': _BWRAP + ['claude', '-p'] + _CLAUDE_TAIL,
                'resume': _BWRAP + ['claude', '-p', '--resume', '{session}'] + _CLAUDE_TAIL,
@@ -370,50 +399,54 @@ CLAUDE_FORBIDDEN = {'--dangerously-skip-permissions', '--allow-dangerously-skip-
                     '--add-dir', '--permission-prompt-tool', '--settings', '--mcp-config', '--plugin-dir'}
 
 
+BWRAP_ARITY = {'--ro-bind': 2, '--bind': 2, '--dev-bind': 2, '--ro-bind-try': 2, '--bind-try': 2, '--dev-bind-try': 2,
+               '--symlink': 2, '--setenv': 2, '--unsetenv': 1, '--tmpfs': 1, '--dev': 1, '--proc': 1, '--chdir': 1,
+               '--dir': 1, '--remount-ro': 1, '--perms': 1, '--size': 1, '--file': 2, '--bind-data': 2,
+               '--ro-bind-data': 2, '--chmod': 2, '--uid': 1, '--gid': 1, '--hostname': 1, '--args': 1, '--userns': 1,
+               '--userns2': 1, '--pidns': 1, '--seccomp': 1, '--add-seccomp-fd': 1, '--exec-label': 1, '--file-label': 1,
+               '--lock-file': 1, '--sync-fd': 1, '--block-fd': 1, '--userns-block-fd': 1, '--info-fd': 1,
+               '--json-status-fd': 1, '--cap-add': 1, '--cap-drop': 1, '--argv0': 1, '--overlay-src': 1,
+               '--overlay': 3, '--tmp-overlay': 1, '--ro-overlay': 1}
+
+
+def split_bwrap(argv):
+    """(bwrap's own arguments, the command it runs), by each option's arity: the command is the first word that is
+    not an option or an option's argument (a path such as ~/.local/share/claude is never taken for the CLI)."""
+    i = 1
+    while i < len(argv):
+        a = argv[i]
+        if a == '--':
+            return argv[1:i], argv[i + 1:]
+        if not a.startswith('--'):
+            return argv[1:i], argv[i:]
+        i += 1 + BWRAP_ARITY.get(a, 0)
+    return argv[1:], []
+
+
 def command_problems(vendor, argv, wt, p):
-    """Why a filled session command line is refused (checkpoint 0, decisions C5 and C6; follow-ups 6 and 8), or [].
-    A second line behind template_problems, on what will actually run.
-    codex: `codex exec` with sandbox_mode="workspace-write" and approval_policy="never", each set once,
+    """Why a filled session command line is refused (checkpoint 0, decisions C5 and C6; follow-ups 6 and 8;
+    checkpoint 1, Q2 and Q4), or []. A second line behind template_problems, on what will actually run.
+    Both vendors: bubblewrap first, with / read-only; hidden behind a tmpfs: /tmp, /run/user (desktop services), /mnt,
+    all of $HOME, the worktree root (../<repo>-wt: state/ and every other worktree) and the primary checkout (its .git
+    read-only); $HOME remounted read-only after the binds into it; DBUS_SESSION_BUS_ADDRESS and XDG_RUNTIME_DIR unset;
+    the worktree the last mount at its path, writable. Nothing else is bound back but, for claude: its install
+    (~/.local/share/claude, ~/.local/bin/claude) read-only, /dev/null over ~/.claude.json, ~/.codex, ~/.claude,
+    ~/.config/gh, ~/.aws and ~/.docker behind their own tmpfs, and CLAUDE_CONFIG_DIR, the session's own directory under
+    state/claude-config/, writable; for codex: ~/.nvm (node and codex) read-only, ~/.codex writable, with its skills,
+    rules and memories behind an empty read-only tmpfs.
+    Then, codex: `codex exec` with sandbox_mode="workspace-write" and approval_policy="never", each set once,
     sandbox_workspace_write.exclude_slash_tmp=true (no shared /tmp; the session's TMPDIR is in its worktree) and no
-    other sandbox_workspace_write key, and none of the flags that loosen either.
-    claude: bubblewrap first, with / read-only; hidden behind a tmpfs: /tmp, /run/user (desktop services), ~/.codex,
-    ~/.claude, ~/.config/gh, ~/.aws, ~/.docker, the worktree root (../<repo>-wt: state/ and every other worktree) and
-    the primary checkout (its .git read-only); ~/.claude.json covered by /dev/null; DBUS_SESSION_BUS_ADDRESS and
-    XDG_RUNTIME_DIR unset; CLAUDE_CONFIG_DIR the session's own directory under state/claude-config/; writable only
-    that directory and the session's worktree; then `claude -p` in auto permission mode."""
+    other sandbox_workspace_write key, and none of the flags that loosen either; claude: `claude -p` in auto
+    permission mode."""
     home = os.path.expanduser('~')
     probs = []
-    if vendor == 'codex':
-        if os.path.basename(argv[0]) != 'codex' or len(argv) < 2 or argv[1] != 'exec':
-            probs.append('a codex session must start with `codex exec`')
-        sets = [argv[i + 1] for i, a in enumerate(argv[:-1]) if a in ('-c', '--config')]
-        sb = [x for x in sets if x.split('=', 1)[0].strip() in ('sandbox_mode',)]
-        ap = [x for x in sets if x.split('=', 1)[0].strip() in ('approval_policy', 'ask_for_approval')]
-        if sb != ['sandbox_mode="workspace-write"']:
-            probs.append('codex must set sandbox_mode="workspace-write" exactly once (found %s)' % sb)
-        if ap != ['approval_policy="never"']:
-            probs.append('codex must set approval_policy="never" exactly once (found %s)' % ap)
-        ws = [x for x in sets if x.split('=', 1)[0].strip().startswith('sandbox_workspace_write')]
-        if ws != ['sandbox_workspace_write.exclude_slash_tmp=true']:
-            probs.append('codex must set sandbox_workspace_write.exclude_slash_tmp=true once and no other '
-                         'sandbox_workspace_write key (found %s)' % ws)
-        loose = [x for x in sets if x.split('=', 1)[0].strip().startswith(('sandbox_permissions', 'permissions',
-                                                                          'default_permissions', 'shell_environment_policy'))]
-        if loose:
-            probs.append('codex settings that loosen the sandbox: %s' % loose)
-        bad = [a for a in argv if a in CODEX_FORBIDDEN or a.startswith('--sandbox=') or a.startswith('--profile=')]
-        if bad:
-            probs.append('codex flags not allowed: %s' % bad)
-        return probs
-    if vendor != 'claude':
+    if vendor not in ('codex', 'claude'):
         return ['unknown vendor %s' % vendor]
     if not argv or os.path.basename(argv[0]) != 'bwrap':
-        return ['a claude session must start with bwrap']
-    try:
-        ci = [os.path.basename(a) for a in argv].index('claude')
-    except ValueError:
-        return ['no claude command after bwrap']
-    bw, cl = argv[1:ci], argv[ci:]
+        return ['a %s session must start with bwrap' % vendor]
+    bw, cl = split_bwrap(argv)
+    if not cl or os.path.basename(cl[0]) != vendor:
+        return ['no %s command after bwrap (found %s)' % (vendor, cl[:1])]
     mounts, setenv, unsetenv, i = [], [], [], 0
     while i < len(bw):
         a = bw[i]
@@ -435,62 +468,130 @@ def command_problems(vendor, argv, wt, p):
     real = lambda x: os.path.realpath(x)  # noqa: E731
     if not mounts or mounts[0] != ('--ro-bind', '/', '/'):
         probs.append('bwrap must begin with --ro-bind / /')
-    cfg = [v for k, v in setenv if k == 'CLAUDE_CONFIG_DIR']
-    if len(cfg) != 1 or [k for k, _ in setenv] != ['CLAUDE_CONFIG_DIR']:
-        probs.append('bwrap must set CLAUDE_CONFIG_DIR, once, and no other variable (found %s)' % setenv)
-    cfgdir = real(cfg[0]) if len(cfg) == 1 else None
-    if cfgdir and os.path.dirname(cfgdir) != real(os.path.join(p.state, 'claude-config')):
-        probs.append('CLAUDE_CONFIG_DIR %s is not a session directory under state/claude-config/' % cfg[0])
+    cfgdir = None
+    if vendor == 'claude':
+        cfg = [v for k, v in setenv if k == 'CLAUDE_CONFIG_DIR']
+        if len(cfg) != 1 or [k for k, _ in setenv] != ['CLAUDE_CONFIG_DIR']:
+            probs.append('bwrap must set CLAUDE_CONFIG_DIR, once, and no other variable (found %s)' % setenv)
+        cfgdir = real(cfg[0]) if len(cfg) == 1 else None
+        if cfgdir and os.path.dirname(cfgdir) != real(os.path.join(p.state, 'claude-config')):
+            probs.append('CLAUDE_CONFIG_DIR %s is not a session directory under state/claude-config/' % cfg[0])
+    elif setenv:
+        probs.append('bwrap sets no variable for codex (found %s)' % setenv)
     for var in ('DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'):
         if var not in unsetenv:
             probs.append('bwrap must unset %s' % var)
-    allowed_rw = {real(wt)} | ({cfgdir} if cfgdir else set())
+    codex_home = real(os.path.join(home, '.codex'))
+    codex_hidden = [real(x.replace('{home}', home)) for x in CODEX_HIDDEN]
+    if vendor == 'claude':
+        allowed_rw = {real(wt)} | ({cfgdir} if cfgdir else set())
+        allowed_ro = {real(os.path.join(home, '.local', 'share', 'claude')), real(os.path.join(home, '.local', 'bin', 'claude'))}
+        allowed_remount = {real(home), '/mnt'}
+    else:
+        allowed_rw = {real(wt), codex_home}
+        allowed_ro = {real(os.path.join(home, '.nvm'))}
+        allowed_remount = {real(home), '/mnt'} | set(codex_hidden)
+    allowed_ro.add(real(os.path.join(p.primary, '.git')))
+    allowed_ro.add(real(WSL_RESOLV))
     claude_json = real(os.path.join(home, '.claude.json'))
     for kind, src, dst in mounts:
         if kind in ('--bind', '--dev-bind', '--bind-try', '--dev-bind-try') and (real(dst) not in allowed_rw or real(src) != real(dst)):
-            probs.append('bwrap binds %s writable; only the worktree and the session\'s own CLAUDE_CONFIG_DIR may be' % dst)
+            probs.append('bwrap binds %s writable; only %s may be' % (dst, ', '.join(sorted(allowed_rw))))
         if kind in ('--ro-bind', '--ro-bind-try') and (src, dst) != ('/', '/') and \
-                (real(src), real(dst)) != (real(os.path.join(p.primary, '.git')),) * 2 and \
-                (src, real(dst)) != ('/dev/null', claude_json):
-            probs.append('bwrap read-only binds %s; only /, the primary checkout\'s .git and /dev/null over '
-                         '~/.claude.json are' % dst)
-        if kind in ('--symlink', '--remount-ro', '--perms', '--size', '--dir') or kind not in (
+                not (real(src) == real(dst) and real(dst) in allowed_ro) and \
+                not (vendor == 'claude' and (src, real(dst)) == ('/dev/null', claude_json)):
+            probs.append('bwrap read-only binds %s; only / and %s are bound back read-only' % (dst, ', '.join(sorted(allowed_ro))))
+        if kind == '--remount-ro' and real(dst) not in allowed_remount:
+            probs.append('bwrap remounts %s read-only; only %s may be' % (dst, ', '.join(sorted(allowed_remount))))
+        if kind in ('--symlink', '--perms', '--size', '--dir') or kind not in (
                 '--ro-bind', '--bind', '--dev-bind', '--ro-bind-try', '--bind-try', '--dev-bind-try', '--tmpfs', '--dev',
-                '--proc', '--chdir', '--die-with-parent', '--new-session', '--unshare-pid', '--unshare-ipc'):
+                '--proc', '--chdir', '--remount-ro', '--die-with-parent', '--new-session', '--unshare-pid', '--unshare-ipc'):
             probs.append('bwrap option %s not allowed' % kind)
     order = [(k, real(d) if d else d) for k, s_, d in mounts]
 
     def last_mount_at(path):
-        """The last mount whose destination is path or one of its parents, as bwrap applies them in order."""
+        """The last mount whose destination is path or one of its parents, as bwrap applies them in order
+        (a --remount-ro changes flags, not what is mounted, so it is skipped)."""
         rp = real(path)
         hit = None
         for k, d in order:
-            if d and k != '--chdir' and (rp == d or rp.startswith(d.rstrip('/') + '/')):
+            if d and k not in ('--chdir', '--remount-ro') and (rp == d or rp.startswith(d.rstrip('/') + '/')):
                 hit = (k, d)
         return hit
-    must_hide = ['/tmp', '/run/user/%d' % os.getuid(), os.path.join(home, '.codex'), os.path.join(home, '.claude'),
-                 p.wt, p.primary, os.path.join(p.wt, 'state'), os.path.join(p.wt, 'main'), os.path.join(p.wt, 'merge')]
-    must_hide += [x for x in (os.path.join(home, '.config', 'gh'), os.path.join(home, '.aws'), os.path.join(home, '.docker'))
-                  if os.path.exists(x)]
+
+    def remounted_ro_after(path):
+        """--remount-ro path comes after every mount at or under path."""
+        rp = real(path)
+        last_under = max([n for n, (k, d) in enumerate(order) if d and k not in ('--chdir', '--remount-ro')
+                          and (d == rp or d.startswith(rp.rstrip('/') + '/'))] or [-1])
+        return any(k == '--remount-ro' and d == rp and n > last_under for n, (k, d) in enumerate(order))
+    must_hide = ['/tmp', '/run/user/%d' % os.getuid(), '/mnt', home, p.wt, p.primary, os.path.join(p.wt, 'state'),
+                 os.path.join(p.wt, 'main'), os.path.join(p.wt, 'merge'), os.path.join(home, '.claude'),
+                 os.path.join(home, '.ssh'), os.path.join(home, '.gitconfig'), os.path.join(home, '.bashrc')]
+    if vendor == 'claude':
+        must_hide += [os.path.join(home, '.codex')]
+        must_hide += [x for x in (os.path.join(home, '.config', 'gh'), os.path.join(home, '.aws'), os.path.join(home, '.docker'))
+                      if os.path.exists(x)]
+    else:
+        must_hide += codex_hidden
     for hidden in must_hide:
         if real(hidden) in (real(wt),):
             continue
         hit = last_mount_at(hidden)
         if not hit or hit[0] != '--tmpfs':
             probs.append('bwrap must hide %s behind a --tmpfs (last mount there: %s)' % (hidden, hit))
-    if os.path.exists(claude_json) and last_mount_at(claude_json) != ('--ro-bind', claude_json):
+    for own in [home, '/mnt'] + (codex_hidden if vendor == 'codex' else []):
+        if last_mount_at(own) != ('--tmpfs', real(own)):
+            probs.append('bwrap must hide %s behind a tmpfs of its own (found %s)' % (own, last_mount_at(own)))
+    for ro in ['/mnt', home] + (codex_hidden if vendor == 'codex' else []):
+        if not remounted_ro_after(ro):
+            probs.append('bwrap must remount %s read-only after every mount into it' % ro)
+    if vendor == 'claude':
+        for own in (os.path.join(home, '.claude'), os.path.join(home, '.codex')):
+            if last_mount_at(own) != ('--tmpfs', real(own)):
+                probs.append('bwrap must keep %s behind its own --tmpfs (checkpoint 0; Q4 keeps it), found %s' % (own, last_mount_at(own)))
+    if vendor == 'claude' and os.path.exists(claude_json) and last_mount_at(claude_json) != ('--ro-bind', claude_json):
         probs.append('bwrap must cover ~/.claude.json with /dev/null (last mount there: %s)' % (last_mount_at(claude_json),))
     hit = last_mount_at(wt)
     if not hit or hit != ('--bind', real(wt)):
         probs.append('the worktree %s must be the last mount at its path, writable (found %s)' % (wt, hit))
     if cfgdir and last_mount_at(cfgdir) != ('--bind', cfgdir):
         probs.append('CLAUDE_CONFIG_DIR %s must be the last mount at its path, writable (found %s)' % (cfgdir, last_mount_at(cfgdir)))
+    if vendor == 'codex':
+        there = [x.replace('{home}', home) for x in CODEX_REFUSE if os.path.lexists(x.replace('{home}', home))]
+        if there:
+            probs.append('codex would load %s (global instructions, hooks, agents or system config); remove it, or hide it '
+                         'in campaign.py\'s bwrap, before starting a builder' % ', '.join(there))
+        if len(cl) < 2 or cl[1] != 'exec':
+            probs.append('a codex session must run `codex exec` inside bwrap')
+        sets = [cl[i + 1] for i, a in enumerate(cl[:-1]) if a in ('-c', '--config')]
+        sb = [x for x in sets if x.split('=', 1)[0].strip() in ('sandbox_mode',)]
+        ap = [x for x in sets if x.split('=', 1)[0].strip() in ('approval_policy', 'ask_for_approval')]
+        if sb != ['sandbox_mode="workspace-write"']:
+            probs.append('codex must set sandbox_mode="workspace-write" exactly once (found %s)' % sb)
+        if ap != ['approval_policy="never"']:
+            probs.append('codex must set approval_policy="never" exactly once (found %s)' % ap)
+        ws = [x for x in sets if x.split('=', 1)[0].strip().startswith('sandbox_workspace_write')]
+        if ws != ['sandbox_workspace_write.exclude_slash_tmp=true']:
+            probs.append('codex must set sandbox_workspace_write.exclude_slash_tmp=true once and no other '
+                         'sandbox_workspace_write key (found %s)' % ws)
+        loose = [x for x in sets if x.split('=', 1)[0].strip().startswith(('sandbox_permissions', 'permissions',
+                                                                          'default_permissions', 'shell_environment_policy'))]
+        if loose:
+            probs.append('codex settings that loosen the sandbox: %s' % loose)
+        bad = [a for a in cl if a in CODEX_FORBIDDEN or a.startswith('--sandbox=') or a.startswith('--profile=')]
+        if bad:
+            probs.append('codex flags not allowed: %s' % bad)
+        return probs
     if len(cl) < 2 or cl[1] != '-p':
         probs.append('claude must run as `claude -p`')
     if 'bypassPermissions' in cl or any(a in CLAUDE_FORBIDDEN for a in cl):
         probs.append('claude flags not allowed: %s' % [a for a in cl if a in CLAUDE_FORBIDDEN or a == 'bypassPermissions'])
     if 'auto' not in [cl[i + 1] for i, a in enumerate(cl[:-1]) if a == '--permission-mode']:
         probs.append('claude must run with --permission-mode auto')
+    for flag in ('--disable-slash-commands', '--strict-mcp-config'):
+        if flag not in cl:
+            probs.append('claude must run with %s (checkpoint 1, Q2: no skills, no MCP servers)' % flag)
     return probs
 
 
@@ -511,10 +612,7 @@ def prepare_mounts(argv, home):
         return argv
     optional = {os.path.realpath(x.replace('{home}', home)) for x in OPTIONAL_HIDES}
     out, i = [], 0
-    try:
-        ci = [os.path.basename(a) for a in argv].index('claude')
-    except ValueError:
-        ci = len(argv)
+    ci = len(argv) - len(split_bwrap(argv)[1])
     while i < len(argv):
         a = argv[i]
         if i < ci and a == '--tmpfs' and i + 1 < len(argv):
@@ -528,7 +626,7 @@ def prepare_mounts(argv, home):
             out += [a, r]
             i += 2
             continue
-        if i < ci and a == '--ro-bind' and i + 2 < len(argv) and argv[i + 1] == '/dev/null':
+        if i < ci and a == '--ro-bind' and i + 2 < len(argv) and argv[i + 1] in ('/dev/null', WSL_RESOLV):
             if not os.path.exists(argv[i + 2]):
                 i += 3
                 continue
@@ -1043,12 +1141,13 @@ def prompt_builder(cid, rnd, reviews, notes, wt):
         'Work only in this directory (%s). /tmp is not writable: put scratch files in $TMPDIR, which is tmp/ here '
         '(git ignores it). Do not commit, branch or merge: campaign.py commits what you '
         'leave when you exit, and only the paths on your card\'s May change line.' % wt,
-        LONG_RUN_CODEX + ' proofs/HOWTO.md records how proofs are built here.',
+        LONG_RUN_CODEX + ' proofs/HOWTO.md records how proofs are built here: run them with tools/prove.py, never make '
+        'in a card directory.',
     ]
     return '\n\n'.join(lines) + '\n'
 
 
-def prompt_reviewer(cid, rnd, commit, builder_report, rereview=None):
+def prompt_reviewer(cid, rnd, commit, builder_report, rereview=None, repros=None):
     lines = [
         'You are a reviewer session in the proving-sqlite project. Your instructions are agents/reviewer/GOAL.md; '
         'read it first and follow it. The rules every role obeys are in AGENTS.md.',
@@ -1065,8 +1164,92 @@ def prompt_reviewer(cid, rnd, commit, builder_report, rereview=None):
         'If you change a tracked file your review is discarded.',
         'CBMC runs can take 10 minutes per configuration: run them in the background with output in a file, or '
         'with a timeout longer than the run, and trust only output that ends with its RESULT line.',
+        'Run proofs with tools/prove.py (proofs/HOWTO.md), never make in a card directory: make would run the '
+        'builder\'s Makefile.',
     ]
+    if repros:
+        lines.append('campaign.py built and ran the round\'s repro files with its fixed command, against unmodified '
+                     'upstream, under ASan and UBSan, in a sandbox with no network and no $HOME. Their output is in '
+                     '.campaign/repro/ in your worktree: %s. Judge from that output; do not build or run them yourself.'
+                     % '; '.join('%s (%s)' % (k, v) for k, v in sorted(repros.items())))
     return '\n\n'.join(lines) + '\n'
+
+
+# Checkpoint 1, fix 2: builder-written repro files are built and run by campaign.py, never by a session, with one
+# fixed command, against main's unmodified upstream/sqlite3.c, under ASan and UBSan, in a sandbox with no network
+# (--unshare-all), no $HOME, /mnt hidden, an empty environment, and nothing writable but its own output directory.
+REPRO_RX = re.compile(r'^tests/repro/F-draft-(C-[0-9]{2})-([1-3])\.c$')
+REPRO_CC = ['cc', '-std=gnu11', '-g', '-O1', '-fno-omit-frame-pointer', '-fsanitize=address,undefined',
+            '-fno-sanitize-recover=undefined', '-I', '/tmp/repro/upstream', '-o', '/tmp/repro/out/repro',
+            '/tmp/repro/src/repro.c', '-lm', '-lpthread', '-ldl']
+REPRO_RUN = ['/tmp/repro/out/repro']
+REPRO_TIMEOUTS = (1800, 300)      # seconds: compiling sqlite3.c with sanitizers, then the run
+
+
+def repro_sandbox(home, upstream_dir, src, out):
+    return ['bwrap', '--ro-bind', '/', '/', '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp', '--tmpfs', '/run/user',
+            '--tmpfs', '/mnt', '--remount-ro', '/mnt', '--tmpfs', home, '--remount-ro', home,
+            '--ro-bind', upstream_dir, '/tmp/repro/upstream', '--ro-bind', src, '/tmp/repro/src/repro.c',
+            '--bind', out, '/tmp/repro/out', '--unshare-all', '--die-with-parent', '--new-session', '--clearenv',
+            '--setenv', 'PATH', '/usr/bin:/bin', '--setenv', 'HOME', '/nonexistent',
+            '--setenv', 'ASAN_OPTIONS', 'detect_leaks=0:abort_on_error=0',
+            '--setenv', 'UBSAN_OPTIONS', 'print_stacktrace=1:halt_on_error=1', '--chdir', '/tmp/repro/out']
+
+
+def run_repros(wt, cid, upstream_dir, outroot):
+    """Build and run each tests/repro/F-draft-<cid>-<k>.c in wt; write <outroot>/F-draft-<cid>-<k>.txt with the fixed
+    commands, exit codes and output. Returns {relpath: summary}. A symlink or non-regular file is not built."""
+    res = {}
+    d = os.path.join(wt, 'tests', 'repro')
+    names = sorted(n for n in (os.listdir(d) if os.path.isdir(d) else []) if REPRO_RX.match('tests/repro/' + n)
+                   and REPRO_RX.match('tests/repro/' + n).group(1) == cid)
+    home = os.path.expanduser('~')
+    for n in names:
+        rel = 'tests/repro/' + n
+        src = os.path.join(d, n)
+        txt = os.path.join(outroot, n[:-2] + '.txt')
+        os.makedirs(outroot, exist_ok=True)
+        st_ = os.lstat(src)
+        if not stat.S_ISREG(st_.st_mode):
+            open(txt, 'w').write('not built: %s is not a regular file\n' % rel)
+            res[rel] = 'not a regular file'
+            continue
+        if not os.path.isfile(os.path.join(upstream_dir, 'sqlite3.c')):
+            open(txt, 'w').write('not built: %s/sqlite3.c is missing\n' % upstream_dir)
+            res[rel] = 'not built: no upstream'
+            continue
+        out = os.path.join(outroot, n[:-2] + '.build')
+        shutil.rmtree(out, ignore_errors=True)
+        os.makedirs(out)
+        lines = ['campaign.py built and ran %s (checkpoint 1, fix 2): against main\'s upstream/sqlite3.c (%s), in a '
+                 'sandbox with no network, no $HOME and an empty environment.' % (rel, sha256_file(os.path.join(upstream_dir, 'sqlite3.c')))]
+        summary = []
+        for step, cmd, tmo in (('build', REPRO_CC, REPRO_TIMEOUTS[0]), ('run', REPRO_RUN, REPRO_TIMEOUTS[1])):
+            lines.append('$ ' + ' '.join(cmd))
+            try:
+                pr = subprocess.run(['nice', '-n', '10'] + repro_sandbox(home, upstream_dir, src, out) + cmd,
+                                    capture_output=True, timeout=tmo)
+                body = (pr.stdout + pr.stderr).decode('utf-8', 'replace')
+                rc = pr.returncode
+            except subprocess.TimeoutExpired as e:
+                body = ((e.stdout or b'') + (e.stderr or b'')).decode('utf-8', 'replace') + '\n(timed out after %d s)' % tmo
+                rc = 'timeout'
+            lines.append(body[-60000:])
+            lines.append('exit: %s' % rc)
+            summary.append('%s exit %s' % (step, rc))
+            if step == 'build' and rc != 0:
+                break
+        if any(x in '\n'.join(lines) for x in ('ERROR: AddressSanitizer', 'runtime error:')):
+            summary.append('sanitizer report')
+        open(txt, 'w').write('\n'.join(lines) + '\n')
+        shutil.rmtree(out, ignore_errors=True)
+        res[rel] = ', '.join(summary)
+    return res
+
+
+def sha256_file(path):
+    with open(path, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 def prompt_resume(kind):
@@ -1260,6 +1443,16 @@ class Campaign:
 
     def _start_builder_round(self, st, c, card, sess, resume_job=None):
         cid = c['id']
+        if resume_job is None:
+            nxt = c['round'] + 1
+            report = 'reports/%s-b%d.md' % (cid, nxt)
+            if nxt > MAX_BUILDER_ROUNDS or not card.allows(report):
+                # checkpoint 1, D4: never start a round whose report the May change line doesn't list
+                c['job'] = None
+                self.set_state(st, c, 'triage', 'builder round %d not started: the limit is %d rounds, and %s is %s on '
+                               'the May change line (decision D4); Zach decides whether to extend the card' % (
+                                   nxt, MAX_BUILDER_ROUNDS, report, 'listed' if card.allows(report) else 'not'))
+                return
         vendor, model, effort, vcfg = role_config(sess, 'builder', card.tier)
         wt = self.ensure_card_wt(cid)
         if resume_job is None:
@@ -1318,12 +1511,23 @@ class Campaign:
                 shutil.rmtree(wt, ignore_errors=True)
             git(['worktree', 'add', '--detach', wt, commit], cwd=self.p.main_dir())
         self.write_usage_before(wt, c['tokens_reviewer'], card.cap_reviewer)
+        repros = None
+        if resume_job is None and rereview is None and c.get('builder_verdict') == 'FINDING':
+            # checkpoint 1, fix 2: campaign.py, not the reviewer, builds and runs the repro files
+            outroot = os.path.join(self.p.state, 'repro', '%s-r%d' % (cid, c['round']))
+            repros = run_repros(wt, cid, os.path.join(self.p.main_dir(), 'upstream'), outroot)
+            dest = os.path.join(wt, '.campaign', 'repro')
+            os.makedirs(dest, exist_ok=True)
+            for n in os.listdir(outroot) if os.path.isdir(outroot) else []:
+                if n.endswith('.txt'):
+                    shutil.copy(os.path.join(outroot, n), os.path.join(dest, n))
+            st.journal('repro', card=cid, round=c['round'], results=repros)
         job = new_job(st, 'reviewer', card=cid, role='reviewer', round=c['round'], tier=card.tier, commit=commit,
                       rereview=rereview)
         if resume_job and resume_job.get('cli_session'):
             prompt = prompt_resume('reviewer')
         else:
-            prompt = prompt_reviewer(cid, c['round'], commit, 'reports/%s-b%d.md' % (cid, c['round']), rereview)
+            prompt = prompt_reviewer(cid, c['round'], commit, 'reports/%s-b%d.md' % (cid, c['round']), rereview, repros)
         self.start_session(st, job, vendor, model, effort, vcfg, wt, prompt, resume_of=resume_job)
         c['job'] = job['id']
         if c['state'] != 'reviewing':
@@ -1903,7 +2107,9 @@ def do_land(p, job, logf):
     res = {'ok': True, 'detail': 'landed %s (%d paths)' % (what, len(paths))}
     if frozen:
         glog = os.path.join(job['dir'], 'gate.log')
-        ok, last, failing = run_gate(p, mw, [], glog)
+        # mid-campaign: mutants of cards with no proofs on main are pending (checkpoint 1, D1); the full gate after the
+        # last merge, below in do_land's sha-None branch, allows none
+        ok, last, failing = run_gate(p, mw, ['ALLOW_PENDING=1'], glog)
         res['full_gate'] = {'ok': ok, 'result': last, 'at': iso(), 'main': main_before}
         res['failing_cards'] = failing
         res['detail'] += '; full gate %s' % last
@@ -2526,7 +2732,8 @@ class SelfTest:
 
     def env(self):
         e = dict(os.environ)
-        e['PATH'] = os.path.join(self.home, 'bin') + ':' + e.get('PATH', '')
+        e['PATH'] = ':'.join([os.path.join(self.home, 'bin'), os.path.join(self.home, '.local', 'bin'),
+                              os.path.join(self.home, '.nvm', 'bin'), e.get('PATH', '')])
         e['HOME'] = self.home
         e['FAKECLI_CONTROL'] = self.ctl
         e['FAKECLI_SOCKET'] = self.sock
@@ -2541,7 +2748,15 @@ class SelfTest:
             '/run/user/<uid>': '/run/user/%d' % os.getuid(),
             '~/.config/gh': os.path.join(self.home, '.config', 'gh', 'hosts.yml'),
             '~/.aws': os.path.join(self.home, '.aws', 'credentials'),
-            '~/.docker': os.path.join(self.home, '.docker', 'config.json')})
+            '~/.docker': os.path.join(self.home, '.docker', 'config.json'),
+            # checkpoint 1, Q2 and Q4
+            '$HOME (~/.gitconfig)': os.path.join(self.home, '.gitconfig'), '~/.ssh': os.path.join(self.home, '.ssh', 'id_fake'),
+            '~/.codex/rules (approval allow-list)': os.path.join(self.home, '.codex', 'rules', 'default.rules'),
+            '~/.codex/skills': os.path.join(self.home, '.codex', 'skills', 'fake', 'SKILL.md'),
+            '~/.codex/memories': os.path.join(self.home, '.codex', 'memories', 'm.md'),
+            '/mnt (on WSL, /mnt/wslg/distro shows all of /)': next(
+                (os.path.join('/mnt', x) for x in sorted(os.listdir('/mnt')) if x != 'wsl') if os.path.isdir('/mnt') else iter(()),
+                '/mnt/none')})
         # present in campaign.py's environment, as on a desktop session: a reviewer's sandbox must unset them
         e['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=/run/user/%d/bus' % os.getuid()
         e['XDG_RUNTIME_DIR'] = '/run/user/%d' % os.getuid()
@@ -2590,8 +2805,23 @@ class SelfTest:
             os.makedirs(os.path.dirname(os.path.join(self.home, rel)), exist_ok=True)
             open(os.path.join(self.home, rel), 'w').write(text)
         open(self.outside, 'w').write('outside the worktree\n')
-        # the fake CLIs live outside the repo, as the real ones do: a reviewer's sandbox hides the primary checkout
+        # the fake CLIs live outside the repo, as the real ones do: a reviewer's sandbox hides the primary checkout.
+        # Inside a session's sandbox, $HOME is hidden but for each CLI's install (checkpoint 1, Q2 and Q4), so the fakes
+        # sit where the real ones do, ~/.local/bin/claude and ~/.nvm, and run fake.py from outside $HOME
         shutil.copytree(os.path.join(TOOLS, 'fakecli'), os.path.join(self.home, 'bin'), ignore=shutil.ignore_patterns('__pycache__'))
+        fsrc = os.path.join(self.base, 'fakecli-src')
+        shutil.copytree(os.path.join(TOOLS, 'fakecli'), fsrc, ignore=shutil.ignore_patterns('__pycache__'))
+        for rel, v in (('.local/bin/claude', 'claude'), ('.nvm/bin/codex', 'codex')):
+            w = os.path.join(self.home, rel)
+            os.makedirs(os.path.dirname(w), exist_ok=True)
+            open(w, 'w').write('#!/bin/sh\nexec python3 %s %s "$@"\n' % (shlex.quote(os.path.join(fsrc, 'fake.py')), v))
+            os.chmod(w, 0o755)
+        os.makedirs(os.path.join(self.home, '.local', 'share', 'claude'))
+        for rel, text in (('.codex/rules/default.rules', 'prefix_rule(pattern=["git", "push"], decision="allow")\n'),
+                          ('.codex/skills/fake/SKILL.md', '---\nname: fake\n---\n'), ('.codex/memories/m.md', 'x\n'),
+                          ('.ssh/id_fake', 'not a key\n')):
+            os.makedirs(os.path.dirname(os.path.join(self.home, rel)), exist_ok=True)
+            open(os.path.join(self.home, rel), 'w').write(text)
         open(self.marker, 'w').write('host /tmp marker\n')
         open(os.path.join(self.home, '.gitconfig'), 'w').write('[user]\n\tname = selftest\n\temail = selftest@example.invalid\n')
         os.makedirs(self.primary)
@@ -2617,7 +2847,7 @@ class SelfTest:
         s = open(sp).read()
         s = re.sub(r'(\[roles\.reviewer\.high\]\nvendor = )"claude"', r'\1"codex"', s)
         open(sp, 'w').write(s)
-        ctl = {'limit_reset_seconds': 6, 'C-01/reviewer/1': ['probe']}
+        ctl = {'limit_reset_seconds': 6, 'C-01/reviewer/1': ['probe'], 'C-01/builder/1': ['probe']}
         for spec in list(self.PHASE_A.values()) + list(self.PHASE_B.values()):
             ctl.update(spec[1])
         json.dump(ctl, open(self.ctl, 'w'))
@@ -2685,7 +2915,27 @@ class SelfTest:
         cases = [
             ('codex without the workspace-write sandbox', 'codex', drop(('-c', 'sandbox_mode="workspace-write"')), 'sandbox_mode'),
             ('codex with approvals on', 'codex', lambda a: [x.replace('"never"', '"on-request"') for x in a], 'approval_policy'),
-            ('codex with the sandbox bypassed', 'codex', lambda a: a[:2] + ['--dangerously-bypass-approvals-and-sandbox'] + a[2:], 'not allowed'),
+            ('codex with the sandbox bypassed', 'codex', lambda a: a[:a.index('exec') + 1] + ['--dangerously-bypass-approvals-and-sandbox'] + a[a.index('exec') + 1:], 'not allowed'),
+            # checkpoint 1, Q2 and Q4: both vendors in bubblewrap, $HOME and /mnt hidden and read-only
+            ('codex without bwrap', 'codex', lambda a: a[a.index('codex'):], 'bwrap'),
+            ('codex bwrap that leaves $HOME visible', 'codex', drop(('--tmpfs', home)), 'hide %s ' % home),
+            ('codex bwrap that leaves /mnt visible (/mnt/wslg/distro is a second view of /)', 'codex', drop(('--tmpfs', '/mnt')), 'hide /mnt'),
+            ('codex bwrap that leaves $HOME writable', 'codex', drop(('--remount-ro', home)), 'remount %s read-only' % home),
+            ('codex bwrap that shows ~/.codex/rules (Zach\'s allow-list: git push, ...)', 'codex',
+             drop(('--tmpfs', os.path.join(home, '.codex', 'rules'))), '.codex/rules'),
+            ('codex bwrap that lets codex install skills into ~/.codex/skills', 'codex',
+             drop(('--remount-ro', os.path.join(home, '.codex', 'skills'))), '.codex/skills'),
+            ('codex bwrap that binds ~/.ssh back', 'codex', lambda a: a[:a.index('--chdir')] + [
+                '--ro-bind', os.path.join(home, '.ssh'), os.path.join(home, '.ssh')] + a[a.index('--chdir'):], 'read-only binds'),
+            ('claude with skills and commands (the account\'s synced skills)', 'claude',
+             lambda a: [x for x in a if x != '--disable-slash-commands'], '--disable-slash-commands'),
+            ('claude with MCP servers from anywhere but --mcp-config (claude.ai connectors)', 'claude',
+             lambda a: [x for x in a if x != '--strict-mcp-config'], '--strict-mcp-config'),
+            ('claude bwrap that leaves $HOME visible', 'claude', drop(('--tmpfs', home)), 'hide %s ' % home),
+            ('claude bwrap that leaves /mnt visible', 'claude', drop(('--tmpfs', '/mnt')), 'hide /mnt'),
+            ('claude bwrap that leaves $HOME writable', 'claude', drop(('--remount-ro', home)), 'remount %s read-only' % home),
+            ('claude bwrap that binds all of ~/.local back', 'claude', lambda a: a[:a.index('--chdir')] + [
+                '--ro-bind', os.path.join(home, '.local'), os.path.join(home, '.local')] + a[a.index('--chdir'):], 'read-only binds'),
             ('codex with a second sandbox_mode', 'codex', lambda a: a[:-1] + ['-c', 'sandbox_mode="danger-full-access"', '-'], 'exactly once'),
             ('claude without bwrap', 'claude', lambda a: a[a.index('claude'):], 'bwrap'),
             ('claude with bypassPermissions', 'claude', lambda a: [x if x != 'auto' else 'bypassPermissions' for x in a], 'not allowed'),
@@ -2711,9 +2961,6 @@ class SelfTest:
                 a[i:i + 3] == ['--ro-bind', '/dev/null', os.path.join(home, '.claude.json')] or
                 a[max(0, i - 1):i + 2] == ['--ro-bind', '/dev/null', os.path.join(home, '.claude.json')] or
                 a[max(0, i - 2):i + 1] == ['--ro-bind', '/dev/null', os.path.join(home, '.claude.json')])], '.claude.json'),
-            ('bwrap that leaves ~/.config/gh visible', 'claude', drop(('--tmpfs', os.path.join(home, '.config', 'gh'))), '.config/gh'),
-            ('bwrap that leaves ~/.aws visible', 'claude', drop(('--tmpfs', os.path.join(home, '.aws'))), '.aws'),
-            ('bwrap that leaves ~/.docker visible', 'claude', drop(('--tmpfs', os.path.join(home, '.docker'))), '.docker'),
             ('bwrap with CLAUDE_CONFIG_DIR set to ~/.claude', 'claude', lambda a: a[:a.index('CLAUDE_CONFIG_DIR') + 1] + [
                 os.path.join(home, '.claude')] + a[a.index('CLAUDE_CONFIG_DIR') + 2:], 'CLAUDE_CONFIG_DIR'),
         ]
@@ -2723,6 +2970,13 @@ class SelfTest:
             except ValueError as ex:      # the command line lacks what the case edits
                 pr = ['case not applicable: %s' % ex]
             self.ok('session guard refuses %s' % name, pr and any(needle in x for x in pr), pr)
+        # checkpoint 1, Q2: a ~/.codex/AGENTS.md (global instructions codex would load through the ~/.codex it needs)
+        gi = os.path.join(home, '.codex', 'AGENTS.md')
+        os.makedirs(os.path.dirname(gi), exist_ok=True)
+        open(gi, 'w').write('global instructions\n')
+        pr = probs('codex')
+        os.remove(gi)
+        self.ok('session guard refuses a codex session while ~/.codex/AGENTS.md exists', any('AGENTS.md' in x for x in pr), pr)
         bad_sess = json.loads(json.dumps(sess))
         bad_sess['roles']['builder']['standard']['vendor'] = 'claude'
         try:
@@ -2841,6 +3095,61 @@ class SelfTest:
                     sessions_problems(sess))
         except Exception as ex:   # an older campaign.py lacks these functions
             self.ok('follow-up 5/6/8 checks ran', False, '%s: %s' % (type(ex).__name__, ex))
+        finally:
+            g['spawn_runner'] = orig
+        # checkpoint 1, fix 2: campaign.py builds and runs repro files itself, sandboxed: no network, no $HOME
+        try:
+            rdir = os.path.join(self.base, 'unit-repro')
+            os.makedirs(os.path.join(rdir, 'upstream'), exist_ok=True)
+            os.makedirs(os.path.join(rdir, 'wt', 'tests', 'repro'), exist_ok=True)
+            open(os.path.join(rdir, 'upstream', 'sqlite3.c'), 'w').write(
+                '#include <stdio.h>\n#include <stdlib.h>\nstatic int toyRead(const unsigned char *p, int i){ return p[i]; }\n')
+            open(os.path.join(rdir, 'wt', 'tests', 'repro', 'F-draft-C-01-1.c'), 'w').write(
+                '#include "sqlite3.c"\n#include <sys/socket.h>\n#include <netinet/in.h>\n#include <arpa/inet.h>\n'
+                'int main(void){\n  printf("home readable: %%s\\n", fopen("%s", "r") ? "yes" : "no");\n'
+                '  int s = socket(AF_INET, SOCK_STREAM, 0); struct sockaddr_in a = {0}; a.sin_family = AF_INET;\n'
+                '  a.sin_port = htons(443); inet_pton(AF_INET, "1.1.1.1", &a.sin_addr);\n'
+                '  printf("network: %%s\\n", (s >= 0 && connect(s, (struct sockaddr*)&a, sizeof a) == 0) ? "yes" : "no");\n'
+                '  fflush(stdout);\n  unsigned char *p = malloc(2); return toyRead(p, 2);\n}\n' % os.path.join(self.home, '.gitconfig'))
+            os.symlink('/etc/hostname', os.path.join(rdir, 'wt', 'tests', 'repro', 'F-draft-C-01-2.c'))
+            rr = run_repros(os.path.join(rdir, 'wt'), 'C-01', os.path.join(rdir, 'upstream'), os.path.join(rdir, 'out'))
+            t1 = open(os.path.join(rdir, 'out', 'F-draft-C-01-1.txt')).read()
+            self.ok('fix 2: campaign.py builds and runs a repro with its fixed command under ASan and UBSan, in a sandbox where '
+                    '$HOME is unreadable and the network unreachable; a symlinked repro is not built',
+                    'build exit 0' in rr.get('tests/repro/F-draft-C-01-1.c', '') and 'sanitizer report' in rr['tests/repro/F-draft-C-01-1.c']
+                    and ('ERROR: AddressSanitizer' in t1 or 'runtime error:' in t1)
+                    and 'home readable: no' in t1 and 'network: no' in t1
+                    and rr.get('tests/repro/F-draft-C-01-2.c') == 'not a regular file', (rr, t1[-1500:]))
+            pr = prompt_reviewer('C-01', 2, 'abc', 'reports/C-01-b2.md', None, rr)
+            self.ok('fix 2: the reviewer of a FINDING round is handed the output, told not to build or run repros, and '
+                    'told never to run make in a card directory',
+                    '.campaign/repro/' in pr and 'do not build or run them yourself' in pr and 'never make in a card directory' in pr, pr)
+        except Exception as ex:
+            self.ok('fix 2 checks ran', False, '%s: %s' % (type(ex).__name__, ex))
+        # checkpoint 1, D4: a seventh builder round is never started; the card goes to triage instead
+        try:
+            spawned7 = []
+            g['spawn_runner'] = lambda p_, job, argv, cwd, text: spawned7.append(job['id'])
+            text = fixture_card('C-01').replace(', reports/C-01-b*.md', ''.join(', reports/C-01-b%d.md' % k for k in range(1, 7)))
+            card6 = cardlib.Card('C-01', text)
+            for rnd, want_triage in ((6, True), (2, None)):
+                st = FakeSt()
+                st.entries = []
+                c = {'id': 'C-01', 'state': 'ready', 'round': rnd, 'epoch_rounds': 0, 'interruptions': 0, 'history': [],
+                     'tokens_builder': 0, 'job': None, 'notes': []}
+                if want_triage:
+                    Campaign(p).start_builder_round(st, c, card6, sess)
+                    self.ok('D4: a builder round past 6 is never started; the card goes to triage for Zach',
+                            c['state'] == 'triage' and 'round 7 not started' in (c.get('reason') or '')
+                            and 'D4' in c['reason'] and not spawned7, (c.get('reason'), spawned7))
+                else:
+                    short = cardlib.Card('C-01', text.replace(', reports/C-01-b3.md', ''))
+                    Campaign(p).start_builder_round(st, c, short, sess)
+                    self.ok('D4: nor is a round whose report the May change line does not list (b3 here)',
+                            c['state'] == 'triage' and 'round 3 not started' in (c.get('reason') or '') and not spawned7,
+                            (c.get('reason'), spawned7))
+        except Exception as ex:
+            self.ok('D4 checks ran', False, '%s: %s' % (type(ex).__name__, ex))
         finally:
             g['spawn_runner'] = orig
         # follow-up 7: the usage file and verdict files, directly
@@ -2999,16 +3308,27 @@ class SelfTest:
                 and open(self.outside).read() == 'outside the worktree\n', R('C-25') + ' | ' + cb('C-25'))
         self.ok('C-26 %s: triage, nothing committed, and the daemon did not block on it' % self.PHASE_A['C-26'][0],
                 S('C-26') == 'triage' and 'FIFO' in R('C-26') and 'builder round' not in cb('C-26'), R('C-26') + ' | ' + cb('C-26'))
-        pr_ = [x for x in self.fakelog() if x.get('probe') is not None]
+        pr_ = [x for x in self.fakelog() if x.get('probe') is not None and x.get('vendor') == 'claude']
         seen = pr_[0]['probe'] if pr_ else {}
         positive = ('own worktree writable', 'own CLAUDE_CONFIG_DIR writable, with the login', 'wrote ~/.claude/.probe-write')
         self.ok('a reviewer\'s sandbox hides the host /tmp, state/, main\'s checkout, other worktrees, ~/.codex, the '
                 'primary checkout, ~/.claude, ~/.claude.json, /run/user/<uid>, ~/.config/gh, ~/.aws and ~/.docker, unsets '
                 'DBUS_SESSION_BUS_ADDRESS and XDG_RUNTIME_DIR; its own worktree and its own seeded CLAUDE_CONFIG_DIR are '
-                'writable, and what it writes to ~/.claude never reaches the real one',
-                pr_ and all(seen.get(k) for k in positive[:2]) and len(seen) >= 17
+                'writable, and what it writes to ~/.claude never reaches the real one; and (checkpoint 1, Q4) the rest '
+                'of $HOME (~/.gitconfig, ~/.ssh) and /mnt are hidden and $HOME is read-only',
+                pr_ and all(seen.get(k) for k in positive[:2]) and len(seen) >= 24
                 and not any(v for k, v in seen.items() if k not in positive)
-                and not os.path.exists(os.path.join(self.home, '.claude', '.probe-write')), seen)
+                and not os.path.exists(os.path.join(self.home, '.claude', '.probe-write'))
+                and not os.path.exists(os.path.join(self.home, '.probe-write')), seen)
+        bp = [x for x in self.fakelog() if x.get('probe') is not None and x.get('vendor') == 'codex']
+        bseen = bp[0]['probe'] if bp else {}
+        bpos = ('own worktree writable', '~/.codex')
+        self.ok('checkpoint 1, Q2: a builder\'s sandbox hides $HOME but ~/.codex (its login and session logs) and nvm, '
+                'hides /mnt, ~/.ssh, ~/.gitconfig, ~/.claude, state/, other worktrees and the primary checkout, and inside '
+                '~/.codex the approval rules, skills and memories; $HOME is read-only and its worktree writable',
+                bp and all(bseen.get(k) for k in bpos) and len(bseen) >= 24
+                and not any(v for k, v in bseen.items() if k not in bpos)
+                and not os.path.exists(os.path.join(self.home, '.probe-write')), bseen)
         cfgs = [j.get('config') for j in st['jobs'].values() if j.get('vendor') == 'claude' and j['kind'] != 'oneoff']
         fresh = [j.get('config') for j in st['jobs'].values() if j.get('vendor') == 'claude' and not j.get('resumed_from')]
         left = glob.glob(os.path.join(self.wt, 'state', 'claude-config', '*', '.credentials.json'))

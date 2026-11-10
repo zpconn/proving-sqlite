@@ -7,10 +7,19 @@ through this module, so the line formats live in one place:
   - In-scope callees, with approved contracts: ...
   - Boundary callees, with ledger entries: ...
   - In-scope callers, whose call sites must satisfy the requires: ...
-  - Depends on: C-NN, C-NN | none
+  - Unreached callees, bodies removed: <name> (upstream/sqlite3.c:<line>), ... | none    (optional; see below)
+  - Depends on: C-NN, C-NN (not a callee: <reason>), ... | none
   - May change: <path>, <path>, ...
   - Cap: builder <N>M; reviewer half that. Tier: high | standard
   - Notes: ...
+
+A Depends on item whose card proves none of this card's callees (in-scope or boundary) gives its reason in
+parentheses (checkpoint 1, fix 5); depends_problems() checks it, and scan.py reports what it finds.
+
+"Unreached callees, bodies removed" names callees the card's requires exclude. tools/prove.py removes their bodies
+(goto-instrument --remove-function-body) before drop-unused-functions in each of the card's proofs, so DFCC never
+loads what they reach (checkpoint 1 fix 1: os_unix's syscall table aborts DFCC). A call to one that a proof does
+reach fails it: under DFCC as "undefined function should be unreachable", otherwise as a function without a body.
 """
 import os
 import re
@@ -35,6 +44,53 @@ def parse_cap(s):
     return int(n * mult)
 
 
+def parse_depends(cid, dep):
+    """'C-04, C-14 (not a callee: why)' -> (['C-04', 'C-14'], {'C-14': 'not a callee: why'})."""
+    if dep.strip().lower() in ('', 'none', '-'):
+        return [], {}
+    items, depth, cur = [], 0, ''
+    for ch in dep:
+        if ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth < 0:
+                raise CardFormatError('%s: unbalanced ")" in Depends on' % cid)
+        if ch == ',' and depth == 0:
+            items.append(cur)
+            cur = ''
+        else:
+            cur += ch
+    if depth != 0:
+        raise CardFormatError('%s: unbalanced "(" in Depends on' % cid)
+    items.append(cur)
+    out, reasons = [], {}
+    for it in items:
+        m = re.match(r'^\s*(C-[0-9]{2})\s*(?:\((.*)\))?\s*\.?\s*$', it, re.S)
+        if not m:
+            raise CardFormatError('%s: Depends on item %r is not C-NN or C-NN (reason)' % (cid, it.strip()))
+        out.append(m.group(1))
+        if m.group(2) is not None:
+            if not m.group(2).strip():
+                raise CardFormatError('%s: Depends on %s has an empty reason' % (cid, m.group(1)))
+            reasons[m.group(1)] = m.group(2).strip()
+    return out, reasons
+
+
+def depends_problems(cards):
+    """Each Depends on item names a card, and one whose card proves none of this card's callees gives a reason."""
+    probs = []
+    for k, c in sorted(cards.items()):
+        callees = set(c.in_scope_callees) | set(c.boundary_callees)
+        for d in c.depends:
+            if d not in cards:
+                probs.append('%s: Depends on %s, which has no card' % (k, d))
+            elif not (set(cards[d].functions) & callees) and d not in c.depends_reason:
+                probs.append('%s: Depends on %s, whose functions (%s) are not its callees; give the reason in '
+                             'parentheses, or drop it (checkpoint 1, fix 5)' % (k, d, ', '.join(cards[d].functions)))
+    return probs
+
+
 class Card:
     def __init__(self, cid, text, path=None):
         self.id = cid
@@ -57,10 +113,7 @@ class Card:
         dep = fields.get('Depends on')
         if dep is None:
             raise CardFormatError('%s: missing "- Depends on:" line' % cid)
-        self.depends = [] if dep.strip().lower() in ('', 'none', '-') else _tokens(dep)
-        for d in self.depends:
-            if not CARD_RE.match(d):
-                raise CardFormatError('%s: Depends on item %r is not C-NN' % (cid, d))
+        self.depends, self.depends_reason = parse_depends(cid, dep)
         mc = fields.get('May change')
         if mc is None:
             raise CardFormatError('%s: missing "- May change:" line' % cid)
@@ -76,6 +129,13 @@ class Card:
         self.tier = m.group(2)
         self.in_scope_callees = re.findall(r'([A-Za-z_][A-Za-z0-9_]*)', fields.get('In-scope callees, with approved contracts', ''))
         self.boundary_callees = re.findall(r'([A-Za-z_][A-Za-z0-9_]*)\s*\(', fields.get('Boundary callees, with ledger entries', ''))
+        un = fields.get('Unreached callees, bodies removed', 'none')
+        self.unreached_callees = re.findall(r'([A-Za-z_][A-Za-z0-9_]*)\s*\(upstream/sqlite3\.c:\d+\)', un)
+        if un.strip().lower() not in ('', 'none') and not self.unreached_callees:
+            raise CardFormatError('%s: Unreached callees line must be "<name> (upstream/sqlite3.c:<line>), ..." or none' % cid)
+        both = sorted(set(self.unreached_callees) & set(self.functions))
+        if both:
+            raise CardFormatError('%s: %s is both a function of the card and an unreached callee' % (cid, ', '.join(both)))
 
     def allows(self, path):
         """True if repo-relative path is on the May change line. An entry ending in '/' covers the

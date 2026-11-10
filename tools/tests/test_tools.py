@@ -69,6 +69,120 @@ static int toyDead2(int x){
 '''
 
 
+# checkpoint 1 fix 1: os_unix keeps close, read and fcntl in a table of function pointers (aSyscall); DFCC aborts
+# (casting_replace_symbol.cpp invariant) on any goto program that keeps such a table
+SYSCALL_TOY = r'''/* toy sqlite3.c for tool tests: not SQLite */
+#include <unistd.h>
+typedef void (*syscall_ptr)(void);
+static struct { const char *zName; syscall_ptr pCurrent; } aSyscall[] = {
+  { "close", (syscall_ptr)close },
+  { "read",  (syscall_ptr)read },
+};
+static int toyClose(int fd){
+  return ((int(*)(int))aSyscall[0].pCurrent)(fd);
+}
+static int toyMaybeClose(int x){
+  if( x>100 ) return toyClose(x);
+  return 0;
+}
+static int toyOuter(int x){
+  if( x>100 ) x = 100;
+  return toyMaybeClose(x);
+}
+'''
+
+# checkpoint 1: tools/campaign.py's session guards (Q2, Q4), round limit (D4) and repro runner (fix 2), called from a
+# scratch root's copy of tools/; run by the 'campaign' tool tests
+CAMPAIGN_CHECK_NAMES = {
+    'codex-bwrap': 'a builder (codex) session starts inside bwrap, and a codex command without it is refused (Q2)',
+    'codex-home-hidden': 'a codex command that leaves $HOME or /mnt visible, or $HOME writable, is refused (Q2, Q4)',
+    'codex-rules-hidden': 'a codex command that shows ~/.codex/rules or lets codex write ~/.codex/skills is refused (Q2)',
+    'codex-agents-md': 'a codex session is refused while ~/.codex/AGENTS.md exists (Q2)',
+    'claude-home-hidden': 'a reviewer (claude) command that leaves $HOME or /mnt visible, or $HOME writable, is refused (Q4)',
+    'claude-no-skills-mcp': 'a claude command without --disable-slash-commands or --strict-mcp-config is refused (Q2)',
+    'claude-keeps-dot-claude': 'a claude command without its own tmpfs over ~/.claude is refused (Q4 keeps it)',
+    'd4-round-7': 'a seventh builder round is never started: the card goes to triage (D4)',
+    'repro-sandboxed': 'campaign.py builds and runs a repro itself, sandboxed: no $HOME, no network (fix 2)',
+}
+CAMPAIGN_CHECKS = r'''
+import os, sys
+os.makedirs('@HOME@/.codex/skills', exist_ok=True)
+os.environ['HOME'] = '@HOME@'
+sys.path.insert(0, '@ROOT@/tools')
+import campaign as C
+p = C.P('@ROOT@')
+home = os.path.expanduser('~')
+def res(name, ok, why=''):
+    print('%s %s: %s' % ('PASS' if ok else 'FAIL', name, why))
+def filled(vendor, key='start'):
+    return C.fill(C.SESSION_COMMANDS[vendor][key], dir=p.wt + '/C-01', model='m', effort='high', home=home, wtroot=p.wt,
+                  repo=p.primary, config=p.state + '/claude-config/J0001-x', session='S')
+def drop(a, k, v):
+    return [x for i, x in enumerate(a) if not (x == v and i and a[i - 1] == k) and not (x == k and i + 1 < len(a) and a[i + 1] == v)]
+def probs(vendor, a):
+    return C.command_problems(vendor, a, p.wt + '/C-01', p)
+try:
+    a = filled('codex')
+    res('codex-bwrap', a[0] == 'bwrap' and not probs('codex', a) and any('bwrap' in x for x in probs('codex', a[a.index('codex'):])),
+        str(probs('codex', a))[:300])
+    ok = all(probs('codex', b) for b in (drop(a, '--tmpfs', home), drop(a, '--tmpfs', '/mnt'), drop(a, '--remount-ro', home)))
+    res('codex-home-hidden', ok)
+    res('codex-rules-hidden', probs('codex', drop(a, '--tmpfs', home + '/.codex/rules')) and
+        probs('codex', drop(a, '--remount-ro', home + '/.codex/skills')))
+    open(home + '/.codex/AGENTS.md', 'w').write('x')
+    res('codex-agents-md', any('AGENTS.md' in x for x in probs('codex', a)))
+    os.remove(home + '/.codex/AGENTS.md')
+except Exception as e:
+    for n in ('codex-bwrap', 'codex-home-hidden', 'codex-rules-hidden', 'codex-agents-md'):
+        res(n, False, '%s: %s' % (type(e).__name__, e))
+try:
+    a = filled('claude')
+    ok = not probs('claude', a) and all(probs('claude', b) for b in (drop(a, '--tmpfs', home), drop(a, '--tmpfs', '/mnt'),
+                                                                     drop(a, '--remount-ro', home)))
+    res('claude-home-hidden', ok, str(probs('claude', a))[:300])
+    res('claude-no-skills-mcp', probs('claude', [x for x in a if x != '--disable-slash-commands']) and
+        probs('claude', [x for x in a if x != '--strict-mcp-config']))
+    res('claude-keeps-dot-claude', probs('claude', drop(a, '--tmpfs', home + '/.claude')))
+except Exception as e:
+    for n in ('claude-home-hidden', 'claude-no-skills-mcp', 'claude-keeps-dot-claude'):
+        res(n, False, '%s: %s' % (type(e).__name__, e))
+try:
+    class St:
+        d = {'triage_seq': 0, 'jobs': {}, 'job_seq': 0}
+        def journal(self, *a, **k):
+            pass
+    import cards as cardlib
+    text = ('# C-01: f\n- Property: P1\n- Functions: f (upstream/sqlite3.c:1)\n- In-scope callees, with approved contracts: none\n'
+            '- Boundary callees, with ledger entries: none\n- In-scope callers, whose call sites must satisfy the requires: none\n'
+            '- Depends on: none\n- May change: ' + ', '.join('reports/C-01-b%d.md' % k for k in range(1, 8)) +
+            '\n- Cap: builder 5M; reviewer half that. Tier: standard\n- Notes: x\n')
+    c = {'id': 'C-01', 'state': 'ready', 'round': 6, 'epoch_rounds': 0, 'interruptions': 0, 'history': [], 'tokens_builder': 0,
+         'job': None, 'notes': []}
+    started = []
+    C.spawn_runner = lambda *a, **k: started.append(a)
+    C.Campaign(p).start_builder_round(St(), c, cardlib.Card('C-01', text), C.load_sessions('@ROOT@'))
+    res('d4-round-7', c['state'] == 'triage' and 'round 7' in (c.get('reason') or '') and not started, str(c.get('reason')))
+except Exception as e:
+    res('d4-round-7', False, '%s: %s' % (type(e).__name__, e))
+try:
+    d = '@ROOT@/repro'
+    os.makedirs(d + '/up', exist_ok=True)
+    os.makedirs(d + '/wt/tests/repro', exist_ok=True)
+    open(d + '/up/sqlite3.c', 'w').write('#include <stdio.h>\n#include <stdlib.h>\n')
+    open(home + '/secret', 'w').write('s')
+    open(d + '/wt/tests/repro/F-draft-C-01-1.c', 'w').write(
+        '#include "sqlite3.c"\n#include <sys/socket.h>\n#include <netinet/in.h>\n#include <arpa/inet.h>\n'
+        'int main(void){ printf("home:%s\\n", fopen("' + home + '/secret", "r") ? "yes" : "no");\n'
+        ' int s = socket(AF_INET, SOCK_STREAM, 0); struct sockaddr_in a = {0}; a.sin_family = AF_INET; a.sin_port = htons(443);\n'
+        ' inet_pton(AF_INET, "1.1.1.1", &a.sin_addr);\n'
+        ' printf("net:%s\\n", (s >= 0 && connect(s, (struct sockaddr*)&a, sizeof a) == 0) ? "yes" : "no"); return 0; }\n')
+    rr = C.run_repros(d + '/wt', 'C-01', d + '/up', d + '/out')
+    txt = open(d + '/out/F-draft-C-01-1.txt').read()
+    res('repro-sandboxed', 'build exit 0' in rr.get('tests/repro/F-draft-C-01-1.c', '') and 'home:no' in txt and 'net:no' in txt, txt[-600:])
+except Exception as e:
+    res('repro-sandboxed', False, '%s: %s' % (type(e).__name__, e))
+'''
+
 def line_of(text, needle):
     for i, ln in enumerate(text.split('\n'), 1):
         if needle in ln:
@@ -76,8 +190,8 @@ def line_of(text, needle):
     raise KeyError(needle)
 
 
-def card_md(cid, fns, depends='none', extra_may=''):
-    fl = ', '.join('%s (upstream/sqlite3.c:%d)' % (f, line_of(TOY, ' %s(' % f)) for f in fns)
+def card_md(cid, fns, depends='none', extra_may='', src=None):
+    fl = ', '.join('%s (upstream/sqlite3.c:%d)' % (f, line_of(src or TOY, ' %s(' % f)) for f in fns)
     may = 'proofs/%s/harness.c, proofs/%s/Makefile, proofs/%s/NOTES.md, %sreports/%s-b*.md' % (
         cid, cid, cid, extra_may, cid)
     return ('# %s: %s\n- Property: P1\n- Functions: %s\n- In-scope callees, with approved contracts: none\n'
@@ -736,6 +850,29 @@ def main():
         t.write(r, 'LEDGER.md', '# Ledger\n## A-001 something\n')
         rc, out, res = t.run(r, [py, 'tools/scan.py'])
         t.expect('scan rejects: ledger entry named but absent from LEDGER.md', rc != 0 and 'A-007' in out, out)
+        # checkpoint 1, fix 5: a Depends on item that is not a callee gives its reason in parentheses
+        r5 = setup_get(t)
+        t.write(r5, 'cards/C-91.md', card_md('C-91', ['toySum'], depends='C-90'))
+        rc, out, res = t.run(r5, [py, 'tools/scan.py'])
+        t.expect('scan rejects: a Depends on item whose card proves none of the card\'s callees, with no reason',
+                 rc != 0 and 'Depends on C-90' in out and 'not its callees' in out, out)
+        t.write(r5, 'cards/C-91.md', card_md('C-91', ['toySum'], depends='C-90 (not a callee: its requires are what C-90 ensures)'))
+        rc, out, res = t.run(r5, [py, 'tools/scan.py'])
+        t.expect('scan: a Depends on item that is not a callee passes with its reason in parentheses', rc == 0, out)
+        # checkpoint 1, D2: a boundary header is its LEDGER.md clause word for word, and a clause has its header
+        t.write(r, 'LEDGER.md', '# Ledger\n## A-007 toyLog\n- Clause:\n  ~~~\n  int contract_toyLog(int x)\n'
+                '    __CPROVER_ensures(1);\n  ~~~\n- Status: draft\n')
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan: a boundary header equal to its ledger clause (spacing and comments aside) passes', rc == 0, out)
+        t.write(r, 'proofs/contracts/toyLog.h', '/* Ledger: A-007 */\nint contract_toyLog(int x) __CPROVER_ensures(x > 0);\n')
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan rejects: a boundary header that is not its ledger clause word for word',
+                 rc != 0 and 'word for word' in out and 'A-007' in out, out)
+        os.remove(os.path.join(r, 'proofs/contracts/toyLog.h'))
+        t.write(r, 'proofs/C-90/Makefile', MK_GET)
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('scan rejects: a ledger clause whose boundary header does not exist',
+                 rc != 0 and 'proofs/contracts/toyLog.h does not exist' in out, out)
         r = setup_get(t)
         t.write(r, 'cards/C-94.md', card_md('C-94', ['toyLen']))
         t.write(r, 'proofs/contracts/toyLen.h', 'int contract_toyLen(u64 v) __CPROVER_ensures(__CPROVER_return_value == 1);\n')
@@ -747,36 +884,65 @@ def main():
     if want('mutate'):
         r = setup_get(t)
         gl = line_of(TOY, 'return ((p[0]&0x7f)<<7) | p[1];')
-        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d 'p[1]' 'p[2]'\nM-002 toyGet %d '0x7f' '0x3f'\n" % (gl, gl))
+        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d 'p[1]' 'p[2]' card=C-90\nM-002 toyGet %d '0x7f' '0x3f' card=C-90\n" % (gl, gl))
         h0 = hashlib.sha256(open(os.path.join(r, 'overlay/sqlite3.c'), 'rb').read()).hexdigest()
         rc, out, res = t.run(r, [py, 'tools/mutate.py', '--card', 'C-90', '--config', 'lp64-le'])
         h1 = hashlib.sha256(open(os.path.join(r, 'overlay/sqlite3.c'), 'rb').read()).hexdigest()
         t.expect('mutate: out-of-bounds mutant killed, functional mutant survives -> FAIL, overlay untouched',
                  rc != 0 and 'M-001' in out and re.search(r'M-001 .* KILLED', out) and re.search(r'M-002 .* SURVIVED', out)
                  and 'FAIL 1/2 killed' in res and h0 == h1, out)
-        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d 'p[1]' 'p[2]'\nM-002 toyGet %d '0x7f' '0x3f' equivalent='UB-free either way' review=reviews/C-90-r1.md\n" % (gl, gl))
+        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d 'p[1]' 'p[2]' card=C-90\nM-002 toyGet %d '0x7f' '0x3f' card=C-90 equivalent='UB-free either way' review=reviews/C-90-r1.md\n" % (gl, gl))
         rc, out, res = t.run(r, [py, 'tools/mutate.py', '--card', 'C-90', '--config', 'lp64-le'])
         t.expect('mutate: survivor with a reviewed equivalence argument passes', rc == 0 and '1/2 killed 1 equivalent' in res, out)
-        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d 'p' 'q'\n" % gl)
+        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d 'p' 'q' card=C-90\n" % gl)
         rc, out, res = t.run(r, [py, 'tools/mutate.py', '--card', 'C-90', '--config', 'lp64-le'])
         t.expect('mutate: ambiguous mutant (token occurs several times) is an error', rc != 0 and 'occurs' in out, out)
         rc, out, res = t.run(r, [py, 'tools/mutate.py', '--card', 'C-90', '--config', 'lp64-le', '--adhoc', "toyGet %d '<<7' '<<70'" % gl])
         t.expect('mutate --adhoc: planted shift bug is killed', rc == 0 and 'KILLED' in out and 'shift' in out, out)
-        # checkpoint 1: a survivor whose card has no proofs yet is PENDING in --all, not a failure; one whose card has
-        # proofs still fails, and a pending card's mutant that some proof kills counts as killed
-        t.write(r, 'cards/C-95.md', card_md('C-95', ['toyGet']))
-        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d '0x7f' '0x3f' card=C-95\nM-002 toyGet %d 'p[1]' 'p[2]' card=C-95\n" % (gl, gl))
-        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--config', 'lp64-le'])
-        t.expect('mutate --all: a survivor whose card has no proofs is PENDING and passes; a killed one counts as killed',
-                 rc == 0 and re.search(r'M-001 .* PENDING .*C-95, the card that must kill it, has no proofs yet', out)
-                 and re.search(r'M-002 .* KILLED', out) and 'PASS 1/2 killed 0 equivalent 1 pending' in res, out)
-        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d '0x7f' '0x3f' card=C-90\n" % gl)
-        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--config', 'lp64-le'])
-        t.expect('mutate --all: a survivor whose card has proofs still fails', rc != 0 and re.search(r'M-001 .* SURVIVED', out)
-                 and 'FAIL 0/1 killed' in res and 'pending' not in res, out)
         t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d '0x7f' '0x3f'\n" % gl)
         rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--config', 'lp64-le'])
-        t.expect('mutate --all: a survivor with no card= still fails', rc != 0 and 'FAIL 0/1 killed' in res, out)
+        t.expect('mutate: a MUTANTS line with no card= is an error', rc != 0 and 'needs card=C-NN' in out, out)
+        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d '0x7f' '0x3f' card=C-95\n" % gl)
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--card', 'C-90', '--config', 'lp64-le'])
+        t.expect('mutate --card: a card with no mutant of its own fails (its gate would pass vacuously)',
+                 rc != 0 and 'no mutant with card=C-90' in out, out)
+        # checkpoint 1, D1 (amended by the auditor): only the mutant's own card's proofs kill it
+        t.write(r, 'cards/C-95.md', card_md('C-95', ['toySum']))
+        t.write(r, 'proofs/C-95/harness.c', '#include "sqlite3.c"\nvoid harness_toyLen(void) {\n  u64 v;\n  /* SETUP */\n'
+                '  /* END SETUP */\n  toyLen(v);\n}\n')
+        t.write(r, 'proofs/C-95/Makefile', 'CARD := C-95\nPROOFS := len\nlen_ENTRY := harness_toyLen\nlen_LOOPS := unwind\n'
+                'len_UNWINDSET := toyLen.0:12\nlen_COVER := toyLen\ninclude ../Makefile.common\n')
+        t.write(r, 'proofs/MUTANTS', "M-001 toyGet %d 'p[1]' 'p[2]' card=C-95\n" % gl)
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--card', 'C-95', '--with', 'C-90', '--config', 'lp64-le'])
+        t.expect('mutate --card C-95 --with C-90: a mutant only C-90\'s proofs kill SURVIVED (C-90\'s failure does not count)',
+                 rc != 0 and re.search(r'M-001 .* SURVIVED .*C-90/get lp64-le: .*does not count', out) and 'FAIL 0/1 killed' in res, out)
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--config', 'lp64-le'])
+        t.expect('mutate --all: the same mutant survives when its card has proofs, whoever else kills it',
+                 rc != 0 and re.search(r'M-001 .* SURVIVED', out) and 'FAIL 0/1 killed' in res, out)
+        # pending: only while the card has no proofs here or on main; --all fails on it unless --allow-pending
+        shutil.rmtree(os.path.join(r, 'proofs', 'C-95'))
+        subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', r, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'base'], check=True)
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--config', 'lp64-le'])
+        t.expect('mutate --all: a mutant of a card with no proofs is PENDING, not run, even if another card would kill it; '
+                 'and --all fails on it (the §5 gate)',
+                 rc != 0 and re.search(r'M-001 .* PENDING not run: C-95', out) and 'FAIL 0/1 killed 0 equivalent 1 pending' in res, out)
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--allow-pending', '--config', 'lp64-le'])
+        t.expect('mutate --all --allow-pending: the pending mutant passes', rc == 0 and 'PASS 0/1 killed 0 equivalent 1 pending' in res, out)
+        t.write(r, 'proofs/C-95/Makefile', 'CARD := C-95\n')
+        subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
+        subprocess.run(['git', '-C', r, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'c95'], check=True)
+        os.remove(os.path.join(r, 'proofs', 'C-95', 'Makefile'))
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--all', '--allow-pending', '--config', 'lp64-le'])
+        t.expect('mutate --all: a card with proofs on main but none here is not pending: the mutant fails',
+                 rc != 0 and 'C-95 has proofs on main but none here' in out and 'pending' not in res, out)
+        rc, out, res = t.run(r, [py, 'tools/gate.py', 'gate'])
+        t.expect('gate (full): any pending mutant fails it', rc != 0 and re.search(r'mutants all\s+FAIL', out), out)
+        subprocess.run(['git', '-C', r, 'rm', '-q', '-r', 'proofs/C-95'], check=True)
+        subprocess.run(['git', '-C', r, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'rm c95'], check=True)
+        rc, out, res = t.run(r, [py, 'tools/gate.py', 'gate', '--allow-pending'])
+        t.expect('gate --allow-pending (make gate ALLOW_PENDING=1): the pending mutant passes the mutants step',
+                 re.search(r'mutants all\s+PASS', out) and '--allow-pending' in out, out)
 
     # ---- lock
     if want('lock'):
@@ -798,6 +964,13 @@ def main():
         subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
         rc, out, res = t.run(r, [py, 'tools/lock.py', 'check'])
         t.expect('lock: a new file under a frozen path fails', rc != 0 and 'tools/extra.py is under a frozen path' in out, out)
+        # checkpoint 1, D2: proof.lock covers the boundary headers written from LEDGER.md
+        t.write(r, 'proofs/contracts/sqlite3CorruptError.h', '/* Ledger: A-004 */\nint contract_sqlite3CorruptError(int lineno);\n')
+        os.remove(os.path.join(r, 'tools/extra.py'))
+        subprocess.run(['git', '-C', r, 'add', '-A'], check=True)
+        rc, out, res = t.run(r, [py, 'tools/lock.py', 'check'])
+        t.expect('lock: a boundary header (proofs/contracts/sqlite3CorruptError.h) is frozen',
+                 rc != 0 and 'proofs/contracts/sqlite3CorruptError.h is under a frozen path' in out, out)
         r = setup_get(t)
         rc, out, res = t.run(r, [py, 'tools/lock.py', 'check'])
         t.expect('lock (C7): before the freeze, no proof.lock passes', rc == 0 and 'PASS 0 files (no proof.lock)' in res, out)
@@ -906,6 +1079,126 @@ def main():
                  rec and len(rec.get('mutants') or []) == 1 and rec['provenance']['mutants']['commit'] == 'aaaa'
                  and rec['provenance']['prove_summary'] == {'commit': 'bbbb', 'gate_log': 'evidence/gate/C-91-r1.log', 'gate': 'caller gate'}
                  and ',1,1,0,' in csvt and 'bbbb evidence/gate/C-91-r1.log' in csvt and 'aaaa evidence/gate/C-90-r1.log' in csvt, out + csvt)
+
+    # ---- checkpoint 1 Q2, Q4, D4 and fix 2, in tools/campaign.py itself (the selftest repeats these end to end)
+    if want('campaign'):
+        r = t.fresh()
+        shutil.copy(os.path.join(REPO, 'tools', 'sessions.toml'), os.path.join(r, 'tools', 'sessions.toml'))
+        code = CAMPAIGN_CHECKS.replace('@ROOT@', r).replace('@HOME@', r + '-home')   # a home outside the checkout, as on the host
+        rc, out, res = t.run(r, [py, '-c', code], timeout=900)
+        got = {}
+        for ln in out.split('\n'):
+            m = re.match(r'^(PASS|FAIL) ([a-z0-9-]+):', ln)
+            if m:
+                got.setdefault(m.group(2), []).append(m.group(1))
+        for name in ('codex-bwrap', 'codex-home-hidden', 'codex-rules-hidden', 'codex-agents-md', 'claude-home-hidden',
+                     'claude-no-skills-mcp', 'claude-keeps-dot-claude', 'd4-round-7', 'repro-sandboxed'):
+            t.expect('campaign.py: %s' % CAMPAIGN_CHECK_NAMES[name], got.get(name) == ['PASS'],
+                     '\n'.join(ln for ln in out.split('\n') if name in ln)[:1500] or out[-1500:])
+
+    # ---- checkpoint 1 fix 2: no session runs make in a card directory, and no reviewer builds a repro
+    if want('docs'):
+        found = []
+        for rel in ('agents/builder/GOAL.md', 'agents/reviewer/GOAL.md', 'agents/ledger/GOAL.md', 'proofs/HOWTO.md', 'tools/campaign.py'):
+            path = os.path.join(REPO, rel)
+            if not os.path.exists(path):
+                continue
+            for n, ln in enumerate(open(path), 1):
+                if re.search(r'make -C proofs/C-NN (prove|coverage)|`make prove`|CONFIG=lp64-le', ln) and 'Never' not in ln:
+                    found.append('%s:%d: %s' % (rel, n, ln.strip()[:120]))
+        t.expect('docs: builder, reviewer and HOWTO instructions run tools/prove.py, never make in a card directory',
+                 not found, '\n'.join(found))
+        rv = open(os.path.join(REPO, 'agents/reviewer/GOAL.md')).read()
+        t.expect('docs: reviewer rule 8 reads campaign.py\'s repro output instead of building builder-written repros',
+                 '.campaign/repro/' in rv and 'build `tests/repro` natively' not in rv, rv[-2000:])
+
+    # ---- checkpoint 1 fixes 3, 4, 6, 7, Q5 and D2: the repository's specs, ledger, cards and mutants say what the audit asked
+    if want('docs'):
+        rd = lambda rel: open(os.path.join(REPO, rel)).read() if os.path.exists(os.path.join(REPO, rel)) else ''  # noqa: E731
+        props, spec, ledger, ub = rd('PROPERTIES.md'), rd('proofs/spec/record_format.h'), rd('LEDGER.md'), rd('UB-CLASSES.md')
+        t.expect('fix 3: P3 states departure D4 (types 8 and 9, schema format 4), and record_format.h cites it at rows 8, 9',
+                 re.search(r'\*\*D4\.[^\n]*8 and 9[^\n]*schema-format', props) and 'schema format 4 and higher' in props
+                 and re.search(r'D4\. Rows 8, 9', spec) and re.search(r't==8 \|\| t==9 .*\(D4\)', spec), props[-1500:])
+        a3 = re.search(r'^## A-003 .*?(?=^## )', ledger, re.M | re.S)
+        t.expect('fix 4: A-003 says the clause leaves out the encoding-change path\'s allocation and db->mallocFailed, and why',
+                 a3 and '92324' in a3.group(0) and 'mallocFailed' in a3.group(0) and 'no milestone-1 caller reads them' in a3.group(0),
+                 a3.group(0)[:1500] if a3 else ledger[:500])
+        a1 = re.search(r'^## A-001 .*?(?=^## )', ledger, re.M | re.S)
+        c15 = rd('cards/C-15.md')
+        t.expect('Q5: A-001 and C-15 state the read extent max(nKey, 1) + 8, derived from the lines that bound it, and drop '
+                 '"not by nKey"',
+                 a1 and '(nKey > 0 ? nKey : 1) + 8' in a1.group(0) and '(nKey > 0 ? nKey : 1) + 8' in c15
+                 and 'max(nKey, 1) + 7' in c15 and 'idx is bounded by szHdr and by the field count, not by nKey' not in c15
+                 and 'idx is bounded only by szHdr and by the field count, not by nKey.' not in (a1.group(0) if a1 else ''),
+                 (a1.group(0)[:800] if a1 else '') + c15[:300])
+        t.expect('fix 7: UB-CLASSES argues integer-to-double conversion (6.3.1.4p2) at sqlite3IntFloatCompare',
+                 re.search(r'^\| An integer converted to a real floating type[^\n]*6\.3\.1\.4p2[^\n]*sqlite3IntFloatCompare', ub, re.M),
+                 ub[:300])
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import mutate as _m
+        muts = {m['id']: m for m in _m.read_mutants(os.path.join(REPO, 'proofs', 'MUTANTS'))}
+        want6 = [('sqlite3VdbeRecordUnpack', 92134, '(u32)nKey', '(u32)nKey+1', 'C-15'), ('sqlite3VdbeSerialGet', 92055, 'buf+2', 'buf+1', 'C-09'),
+                 ('sqlite3VdbeSerialGet', 92006, 'pMem->n = 0', 'pMem->n = 1', 'C-09')]
+        have6 = [m for m in muts.values() if (m['function'], m['line'], m['from'], m['to'], m['card']) in want6]
+        ovl = open(os.path.join(REPO, 'overlay', 'sqlite3.c'), 'rb').read()
+        applied = []
+        for m in have6:
+            try:
+                _m.apply(ovl, m)
+                applied.append(m['id'])
+            except _m.MutantError as e:
+                applied.append(str(e))
+        t.expect('fix 6: proofs/MUTANTS has the audit\'s three mutants, and each applies exactly once to the overlay',
+                 len(have6) == 3 and all(x.startswith('M-') for x in applied), str((have6, applied)))
+        c14, c17, bg = rd('cards/C-14.md'), rd('cards/C-17.md'), rd('agents/builder/GOAL.md')
+        may = lambda c: re.search(r'^- May change: (.*)$', c, re.M).group(1) if re.search(r'^- May change: (.*)$', c, re.M) else ''  # noqa: E731
+        t.expect('D2: the boundary headers are off C-14\'s and C-17\'s May change lines, and builder §1 no longer lets builders write them',
+                 'sqlite3DbMallocRaw.h' not in may(c14) and 'vdbeCompareMemString.h' not in may(c17)
+                 and 'sqlite3CorruptError.h' not in may(c17) and 'for a boundary callee whose header your card' not in bg
+                 and 'C-17 writes' not in rd('cards/C-19.md') and "written by C-14's builder" not in ledger, may(c14) + ' | ' + may(c17))
+
+    # ---- checkpoint 1 fix 1: DFCC aborts on os_unix's syscall table (close, read) unless prove.py removes the bodies
+    # of REPLACEd functions and of the card's unreached callees before drop-unused-functions
+    if want('dfcc'):
+        r = t.fresh()
+        t.write(r, 'upstream/sqlite3.c', SYSCALL_TOY)
+        t.write(r, 'overlay/sqlite3.c', SYSCALL_TOY)
+        card = card_md('C-96', ['toyMaybeClose'], extra_may='proofs/contracts/toyMaybeClose.h, ', src=SYSCALL_TOY).replace(
+            '- Depends on:', '- Unreached callees, bodies removed: toyClose (upstream/sqlite3.c:%d)\n- Depends on:' % line_of(SYSCALL_TOY, ' toyClose('))
+        t.write(r, 'cards/C-96.md', card)
+        t.write(r, 'proofs/contracts/toyMaybeClose.h', 'int contract_toyMaybeClose(int x)\n  __CPROVER_requires(x <= 100)\n'
+                '  __CPROVER_ensures(__CPROVER_return_value == 0);\n')
+        t.write(r, 'proofs/C-96/harness.c', '#include "sqlite3.c"\n#include "contracts/toyMaybeClose.h"\n'
+                'void harness_toyMaybeClose(void) {\n  int x;\n  /* SETUP */\n  /* END SETUP */\n  toyMaybeClose(x);\n}\n')
+        t.write(r, 'proofs/C-96/Makefile', 'CARD := C-96\nPROOFS := mc\nmc_ENTRY := harness_toyMaybeClose\n'
+                'mc_ENFORCE := toyMaybeClose/contract_toyMaybeClose\ninclude ../Makefile.common\n')
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-96', '--config', 'lp64-le',
+                                 '--overlay', 'overlay', '--build-dir', 'proofs/C-96/build'])
+        t.expect('prove: the card\'s unreached callee loses its body, so DFCC does not abort on the syscall table, and the proof passes',
+                 rc == 0 and 'RESULT prove C-96 lp64-le PASS' in res, out)
+        t.write(r, 'proofs/contracts/toyMaybeClose.h', 'int contract_toyMaybeClose(int x)\n  __CPROVER_ensures(1);\n')
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-96', '--config', 'lp64-le',
+                                 '--overlay', 'overlay', '--build-dir', 'proofs/C-96/build'])
+        t.expect('prove: an unreached callee the proof does reach fails it (undefined function should be unreachable)',
+                 rc != 0 and 'FAIL' in res and 'toyClose' in out and 'unreachable' in out, out)
+        # a REPLACEd callee's body goes too: toyOuter's proof replaces toyMaybeClose, whose body reaches the table
+        t.write(r, 'cards/C-96.md', card.replace('- Unreached callees, bodies removed: toyClose (upstream/sqlite3.c:%d)\n' % line_of(SYSCALL_TOY, ' toyClose('), ''))
+        t.write(r, 'proofs/contracts/toyMaybeClose.h', 'int contract_toyMaybeClose(int x)\n  __CPROVER_requires(x <= 100)\n'
+                '  __CPROVER_ensures(__CPROVER_return_value == 0);\n')
+        t.write(r, 'cards/C-97.md', card_md('C-97', ['toyOuter'], src=SYSCALL_TOY))
+        t.write(r, 'proofs/contracts/toyOuter.h', 'int contract_toyOuter(int x)\n  __CPROVER_ensures(__CPROVER_return_value == 0);\n')
+        t.write(r, 'proofs/C-97/harness.c', '#include "sqlite3.c"\n#include "contracts/toyMaybeClose.h"\n#include "contracts/toyOuter.h"\n'
+                'void harness_toyOuter(void) {\n  int x;\n  /* SETUP */\n  /* END SETUP */\n  toyOuter(x);\n}\n')
+        t.write(r, 'proofs/C-97/Makefile', 'CARD := C-97\nPROOFS := o\no_ENTRY := harness_toyOuter\n'
+                'o_ENFORCE := toyOuter/contract_toyOuter\no_REPLACE := toyMaybeClose/contract_toyMaybeClose\ninclude ../Makefile.common\n')
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-97', '--config', 'lp64-le',
+                                 '--overlay', 'overlay', '--build-dir', 'proofs/C-97/build'])
+        t.expect('prove: a REPLACEd callee loses its body before drop-unused, so DFCC does not abort, and the proof passes',
+                 rc == 0 and 'RESULT prove C-97 lp64-le PASS' in res, out)
+        t.write(r, 'cards/C-98.md', card_md('C-98', ['toyClose'], src=SYSCALL_TOY).replace(
+            '- Depends on:', '- Unreached callees, bodies removed: toyClose (upstream/sqlite3.c:%d)\n- Depends on:' % line_of(SYSCALL_TOY, ' toyClose(')))
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('cards: a card function listed as its own unreached callee is rejected', rc != 0 and 'both a function of the card' in out, out)
 
     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
     if want('probe'):

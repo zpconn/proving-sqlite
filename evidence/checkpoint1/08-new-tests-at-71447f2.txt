@@ -1,0 +1,40 @@
+# The new tool tests (tools/tests/test_tools.py) run against 71447f2's tools: 08-tool-tests-at-71447f2.txt
+# RESULT tool-tests FAIL 193/228. Tests not in 71447f2's run (evidence/bringup/13-tool-tests.txt there): 36.
+# Each fails at 71447f2 but one, a positive control (a header equal to its ledger clause passes). No older test fails there.
+
+FAIL at 71447f2  D2: the boundary headers are off C-14's and C-17's May change lines, and builder §1 no longer lets builders write them
+FAIL at 71447f2  Q5: A-001 and C-15 state the read extent max(nKey, 1) + 8, derived from the lines that bound it, and drop "not by nKey"
+FAIL at 71447f2  campaign.py: a builder (codex) session starts inside bwrap, and a codex command without it is refused (Q2)
+FAIL at 71447f2  campaign.py: a claude command without --disable-slash-commands or --strict-mcp-config is refused (Q2)
+FAIL at 71447f2  campaign.py: a claude command without its own tmpfs over ~/.claude is refused (Q4 keeps it)
+FAIL at 71447f2  campaign.py: a codex command that leaves $HOME or /mnt visible, or $HOME writable, is refused (Q2, Q4)
+FAIL at 71447f2  campaign.py: a codex command that shows ~/.codex/rules or lets codex write ~/.codex/skills is refused (Q2)
+FAIL at 71447f2  campaign.py: a codex session is refused while ~/.codex/AGENTS.md exists (Q2)
+FAIL at 71447f2  campaign.py: a reviewer (claude) command that leaves $HOME or /mnt visible, or $HOME writable, is refused (Q4)
+FAIL at 71447f2  campaign.py: a seventh builder round is never started: the card goes to triage (D4)
+FAIL at 71447f2  campaign.py: campaign.py builds and runs a repro itself, sandboxed: no $HOME, no network (fix 2)
+FAIL at 71447f2  cards: a card function listed as its own unreached callee is rejected
+FAIL at 71447f2  docs: builder, reviewer and HOWTO instructions run tools/prove.py, never make in a card directory
+FAIL at 71447f2  docs: reviewer rule 8 reads campaign.py's repro output instead of building builder-written repros
+FAIL at 71447f2  fix 3: P3 states departure D4 (types 8 and 9, schema format 4), and record_format.h cites it at rows 8, 9
+FAIL at 71447f2  fix 4: A-003 says the clause leaves out the encoding-change path's allocation and db->mallocFailed, and why
+FAIL at 71447f2  fix 6: proofs/MUTANTS has the audit's three mutants, and each applies exactly once to the overlay
+FAIL at 71447f2  fix 7: UB-CLASSES argues integer-to-double conversion (6.3.1.4p2) at sqlite3IntFloatCompare
+FAIL at 71447f2  gate (full): any pending mutant fails it
+FAIL at 71447f2  gate --allow-pending (make gate ALLOW_PENDING=1): the pending mutant passes the mutants step
+FAIL at 71447f2  lock: a boundary header (proofs/contracts/sqlite3CorruptError.h) is frozen
+FAIL at 71447f2  mutate --all --allow-pending: the pending mutant passes
+FAIL at 71447f2  mutate --all: a card with proofs on main but none here is not pending: the mutant fails
+FAIL at 71447f2  mutate --all: a mutant of a card with no proofs is PENDING, not run, even if another card would kill it; and --all fails on it (the §5 gate)
+FAIL at 71447f2  mutate --all: the same mutant survives when its card has proofs, whoever else kills it
+FAIL at 71447f2  mutate --card C-95 --with C-90: a mutant only C-90's proofs kill SURVIVED (C-90's failure does not count)
+FAIL at 71447f2  mutate --card: a card with no mutant of its own fails (its gate would pass vacuously)
+FAIL at 71447f2  mutate: a MUTANTS line with no card= is an error
+FAIL at 71447f2  prove: a REPLACEd callee loses its body before drop-unused, so DFCC does not abort, and the proof passes
+FAIL at 71447f2  prove: an unreached callee the proof does reach fails it (undefined function should be unreachable)
+FAIL at 71447f2  prove: the card's unreached callee loses its body, so DFCC does not abort on the syscall table, and the proof passes
+FAIL at 71447f2  scan rejects: a Depends on item whose card proves none of the card's callees, with no reason
+FAIL at 71447f2  scan rejects: a boundary header that is not its ledger clause word for word
+FAIL at 71447f2  scan rejects: a ledger clause whose boundary header does not exist
+FAIL at 71447f2  scan: a Depends on item that is not a callee passes with its reason in parentheses
+pass at 71447f2  scan: a boundary header equal to its ledger clause (spacing and comments aside) passes  (positive control)

@@ -9,10 +9,10 @@ If your prompt says this is a re-review after a contract change, your worktree i
 ## 1. Rules
 
 1. **Read only.** Don't modify tracked files or run git commands that write. Write only `reviews/C-NN-r<round>.md`, untracked, in your worktree; campaign.py commits it to the card branch. If you change a tracked file, your review is discarded, so make scratch copies, such as one with a requires deleted, under /tmp.
-2. **Rerun everything before believing it:** `make -C proofs/C-NN prove` on every configuration, coverage, `tools/mutate.py --card C-NN`, `tools/check_overlay.py` and `tools/scan.py`.
+2. **Rerun everything before believing it:** `tools/prove.py prove --card-dir proofs/C-NN` on every configuration, `tools/prove.py coverage --card-dir proofs/C-NN`, `tools/mutate.py --card C-NN`, `tools/check_overlay.py` and `tools/scan.py`. Never run make in a card directory: make evaluates the builder's Makefile, so a line in it could run a command in your session (proofs/HOWTO.md). The tools read it without running it.
 3. **Check the code, not the prose.** When NOTES.md says a caller guarantees something, open the caller at that line and check.
 4. **Approve only with no blocker or major issue open.**
-5. **Long runs.** A CBMC run can take 10 minutes, longer than your shell waits by default. Start each run in the background with its output in a file and read the file when the run ends, or give the command a timeout longer than the run. Trust only output that ends with its RESULT line. Your sandbox gives you a private /tmp and shows you only your own worktree.
+5. **Long runs.** A CBMC run can take 10 minutes, longer than your shell waits by default. Start each run in the background with its output in a file and read the file when the run ends, or give the command a timeout longer than the run. Trust only output that ends with its RESULT line. Your sandbox gives you a private /tmp and shows you only your own worktree: $HOME and /mnt are hidden, and $HOME is read-only.
 
 ## 2. Checklist, most serious first
 
@@ -30,7 +30,7 @@ If your prompt says this is a re-review after a contract change, your worktree i
 5. **Ensures and assigns.** They're what the code does, which the proof shows. They give the callers' cards what those need, and no more. Assigns lists every write.
 6. **Loops.** Every loop has assigns, an invariant and decreases, or is unwound with unwinding assertions and a justified bound.
 7. **Boundary contracts used.** For each callee replaced by a ledger contract, read its source: is the contract true of it? Is the ledger draft honest about who must make it true?
-8. **Findings.** For a FINDING, build `tests/repro` natively against unmodified upstream and run it under ASan or UBSan.
+8. **Findings.** For a FINDING, campaign.py has already built and run each `tests/repro` file with its fixed command, against unmodified upstream, under ASan and UBSan, in a sandbox with no network and no $HOME; the output is in `.campaign/repro/` in your worktree, and your prompt lists it. Don't build or run a repro yourself: it is builder-written code. Judge from that output and the source.
    - Does it fail as claimed?
    - Is it reachable from SQL or the public API, or only when a ledger entry is violated? In the second case it's a ledger matter, not a finding.
 9. **Words.** Proved, tested, assumed and trusted are used correctly. Nothing in NOTES.md or the report claims more than the proof shows.

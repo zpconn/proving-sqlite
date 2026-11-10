@@ -6,6 +6,7 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
 
 - **Its C semantics.** goto-cc's front end, run as `goto-cc <CONFIGS flags> -include proof.h -I overlay -I proofs/include -I proofs` (tools/prove.py), and CBMC's model of C11 on each configuration. That model covers integer widths, two's complement, IEEE 754 doubles, byte order and pointer size. It also covers the meaning of every check in proofs/CHECKS. The configurations were probed (evidence/bringup/05-configs.md, `make probe`), and each check was shown to fire on a toy (evidence/bringup/toys/04-checks/). Those probes are tested evidence, not proofs of the front end.
 - **Its transformations:**
+  - `--remove-function-body`, before drop-unused, on each REPLACE function and each callee on a card's "Unreached callees, bodies removed" line (checkpoint 1, fix 1): that a call reached to a removed body fails the proof (under DFCC, "undefined function should be unreachable"; without it, a function with no body, which prove.py fails) rather than being skipped;
   - `--drop-unused-functions` and its function-pointer removal;
   - `--dfcc` with `--enforce-contract`, `--replace-call-with-contract` and `--apply-loop-contracts`: replacing a callee by its contract is sound only if DFCC checks the contract's requires at each call and assumes no more than its ensures;
   - `--slice-global-inits`;

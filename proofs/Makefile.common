@@ -1,5 +1,7 @@
 # proofs/Makefile.common: included by every proofs/C-NN/Makefile. Frozen with the gate at checkpoint 1.
 # A card's Makefile only sets variables (see tools/prove.py's docstring); this file supplies the targets.
+# No session runs these (checkpoint 1, fix 2): make evaluates the card's Makefile, so builder text would run in
+# the caller's shell. Sessions and the gate call tools/prove.py, which parses the Makefile and never runs it.
 #   make -C proofs/C-NN prove [CONFIG=<name>]      every proof of the card, every configuration (or one)
 #   make -C proofs/C-NN coverage [CONFIG=<name>]   line coverage of the card's functions
 #   make -C proofs/C-NN clean

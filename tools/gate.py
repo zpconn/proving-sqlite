@@ -11,6 +11,10 @@ pulls in any file but the overlay's sqlite3.c, proofs/{include,contracts,spec}/*
 make gate (full) runs check_overlay; proof.lock; scan; probe; every proof dir's proofs and coverage on
 every configuration; every mutant in proofs/MUTANTS against every proof; and requires each function
 named by a card with proofs to have at least two mutants.
+Mutants (checkpoint 1, D1): a mutant counts as killed only by its own card='s proofs (tools/mutate.py), so
+make gate CARD=C-NN fails unless C-NN's own proofs kill each of its mutants; callers' proofs still run, and don't
+count. The full gate fails on any pending mutant (one whose card has no proofs here or on main): that is the §5
+gate. `make gate ALLOW_PENDING=1` (--allow-pending) lets pending mutants pass, for full gates during the campaign.
 Card Makefiles are read only by tools/prove.py's declarative parser (load_card), never evaluated by make
 (checkpoint 0 follow-up, item 1): each card's prove and coverage steps call tools/prove.py directly, with the
 same arguments proofs/Makefile.common would pass, and a card whose Makefile load_card rejects gets a failing
@@ -100,6 +104,7 @@ def main():
     ap.add_argument('--card')
     ap.add_argument('--base')
     ap.add_argument('--config', default='all')
+    ap.add_argument('--allow-pending', action='store_true')
     a = ap.parse_args()
     t0 = time.time()
     results = []
@@ -164,8 +169,9 @@ def main():
                 step('mutants %s' % a.card, [py, 'tools/mutate.py', '--card', a.card,
                                              '--with', ','.join(c for c in todo if c != a.card),
                                              '--json', os.path.join('proofs', a.card, 'build', 'mutants.json')], results)
-        elif have:
-            step('mutants all', [py, 'tools/mutate.py', '--all', '--json', os.path.join('proofs', 'build', 'mutants-all.json')], results)
+        else:
+            step('mutants all', [py, 'tools/mutate.py', '--all', '--json', os.path.join('proofs', 'build', 'mutants-all.json')]
+                 + (['--allow-pending'] if a.allow_pending else []), results)
     failed = [n for n, ok, _, _ in results if not ok]
     print('==== summary')
     for n, ok, last, secs in results:

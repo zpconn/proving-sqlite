@@ -10,6 +10,7 @@ configuration the pipeline is:
 
   goto-cc <CONFIGS flags> -include proof.h -I overlay -I proofs/include -I proofs -c harness.c
   goto-cc --function <entry>                     (link; one goto program per proof)
+  goto-instrument --remove-function-body f ...   (the proof's REPLACE functions and the card's unreached callees)
   goto-instrument --drop-unused-functions
   goto-instrument --show-goto-functions --json-ui (card-call argument types; see card_call_type_problems)
   goto-instrument --dfcc <entry> [--enforce-contract f/contract_f] [--replace-call-with-contract g/contract_g]...
@@ -17,6 +18,12 @@ configuration the pipeline is:
   goto-instrument --slice-global-inits
   cbmc <every option in proofs/CHECKS> [--unwindset ...] [solver] [--object-bits n]
   cbmc ... --conversion-check --property <id>... (the %float-to-int pass, when such properties exist)
+
+Bodies are removed before drop-unused-functions (checkpoint 1, fix 1): otherwise drop-unused keeps everything a
+replaced or unreached callee reaches, and for sqlite3VdbeMemSetNull's callers that includes os_unix's syscall table,
+on whose close/read/fcntl64 DFCC aborts with an invariant violation. A replaced function's calls become its contract;
+an unreached callee (cards/C-NN.md, "Unreached callees, bodies removed") that a proof does reach fails it, under DFCC
+as "undefined function should be unreachable", without DFCC as a function without a body.
 
 A proof also FAILS if CBMC reports a function without a body: calls to it would be unconstrained. It also FAILS
 if, in the entry function, a call to a card function passes an argument whose type, before any cast, is not the
@@ -378,6 +385,23 @@ def card_functions(card_dir, proof):
     return out
 
 
+def card_unreached(card_dir):
+    """The card's unreached callees (cards/C-NN.md); none for a tool-test fixture without cards/."""
+    path = os.path.join(ROOT, 'cards', os.path.basename(os.path.normpath(card_dir)) + '.md')
+    if not os.path.exists(path):
+        return []
+    return cardlib.load(ROOT, os.path.basename(os.path.normpath(card_dir))).unreached_callees
+
+
+def bodies_to_remove(card_dir, proof):
+    """Functions whose bodies build_proof removes before drop-unused: REPLACE functions and unreached callees."""
+    out = set(p.split('/')[0] for p in proof.replace) | set(card_unreached(card_dir))
+    clash = sorted(out & (set(proof.enforced) | set(proof.cover)))
+    if clash:
+        raise CardError('%s: %s would lose its body but is enforced or covered' % (proof.name, ', '.join(clash)))
+    return sorted(out)
+
+
 def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
     """Build the instrumented goto program for one proof and config. Returns (path, error)."""
     os.makedirs(bdir, exist_ok=True)
@@ -396,8 +420,20 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
             f.write(key)
     p0 = os.path.join(bdir, proof.name + '.0.goto')
     steps = [(['goto-cc', '--function', proof.entry, obj, '-o', p0], 'link')]
+    try:
+        nobody = bodies_to_remove(card_dir, proof)
+    except (CardError, cardlib.CardFormatError) as e:
+        return None, str(e)
+    if nobody:
+        p0b = os.path.join(bdir, proof.name + '.0b.goto')
+        cmd = ['goto-instrument']
+        for f in nobody:
+            cmd += ['--remove-function-body', f]
+        steps.append((cmd + [p0, p0b], 'remove-bodies'))
+    else:
+        p0b = p0
     p1 = os.path.join(bdir, proof.name + '.1.goto')
-    steps.append((['goto-instrument', '--drop-unused-functions', p0, p1], 'drop-unused'))
+    steps.append((['goto-instrument', '--drop-unused-functions', p0b, p1], 'drop-unused'))
     for cmd, tag in steps:
         rc, _ = run(cmd, log + '.' + tag, timeout=900)
         if rc != 0:
@@ -439,7 +475,7 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
         rc, _ = run(cmd, log + '.' + tag, timeout=900)
         if rc != 0:
             return None, '%s failed (%s); see %s' % (tag, rc, log + '.' + tag)
-    for f in (p0, p1, os.path.join(bdir, proof.name + '.2.goto')):
+    for f in (p0, p0b, p1, os.path.join(bdir, proof.name + '.2.goto')):
         if os.path.exists(f):
             os.remove(f)
     return p3, None

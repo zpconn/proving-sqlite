@@ -8,7 +8,8 @@
                          that touched proof.lock, or HANDOFF.md exists (it is written after proof.lock).
 Frozen: pin.txt, upstream/, GOAL.md, AGENTS.md, CLAUDE.md, agents/, PROPERTIES.md, TRUSTED.md, UB-CLASSES.md,
 proofs/spec/, proofs/CHECKS, proofs/CONFIGS, proofs/MUTANTS, tools/ (except tools/sessions.toml), and the gate's
-targets: Makefile, proofs/Makefile.common, proofs/include/proof.h.
+targets: Makefile, proofs/Makefile.common, proofs/include/proof.h; and the boundary headers proofs/contracts/
+{sqlite3DbMallocRaw,vdbeCompareMemString,sqlite3CorruptError}.h (checkpoint 1, D2).
 Ends with: RESULT lock PASS|FAIL <n> files
 """
 import hashlib
@@ -19,7 +20,10 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FROZEN = ['pin.txt', 'upstream/', 'GOAL.md', 'AGENTS.md', 'CLAUDE.md', 'agents/', 'PROPERTIES.md', 'TRUSTED.md',
           'UB-CLASSES.md', 'proofs/spec/', 'proofs/CHECKS', 'proofs/CONFIGS', 'proofs/MUTANTS', 'tools/',
-          'Makefile', 'proofs/Makefile.common', 'proofs/include/proof.h']
+          'Makefile', 'proofs/Makefile.common', 'proofs/include/proof.h',
+          # checkpoint 1, D2: the boundary headers, LEDGER.md A-002 to A-004 word for word
+          'proofs/contracts/sqlite3DbMallocRaw.h', 'proofs/contracts/vdbeCompareMemString.h',
+          'proofs/contracts/sqlite3CorruptError.h']
 EXEMPT = {'tools/sessions.toml'}
 
 

@@ -11,7 +11,9 @@ Rejects:
      so nothing is #defined before SQLite is compiled;
   4. unwinding without unwinding assertions (CHECKS must hold --unwinding-assertions);
   5. a boundary contract (for a function no card proves) that doesn't name its ledger entry
-     (`Ledger: A-NNN`, which must exist in LEDGER.md once LEDGER.md exists);
+     (`Ledger: A-NNN`, which must exist in LEDGER.md once LEDGER.md exists), or, when that entry gives its
+     clause as a ~~~ block, isn't that clause word for word (comments and spacing aside); and a ~~~ clause
+     in LEDGER.md for a function no card proves with no proofs/contracts/<fn>.h (checkpoint 1, D2);
   6. a harness, predicate or contract file that defines a function SQLite's code names, or any
      function named __CPROVER_*;
   7. PROOF spans anywhere but between a loop's header and body (for/while: after the condition's ')';
@@ -1031,15 +1033,33 @@ def check_card_makefile(s, card_dir):
     return card, proofs
 
 
+def ledger_clauses(text):
+    """{(A-NNN, fn): clause}: each ~~~ block in a LEDGER.md entry that declares contract_<fn>."""
+    out = {}
+    for m in re.finditer(r'^## (A-[0-9]{3})\b.*?(?=^## |\Z)', text, re.M | re.S):
+        for b in re.finditer(r'^[ \t]*~~~[ \t]*\n(.*?)^[ \t]*~~~', m.group(0), re.M | re.S):
+            f = re.search(r'\bcontract_([A-Za-z_][A-Za-z0-9_]*)\s*\(', b.group(1))
+            if f:
+                out[(m.group(1), f.group(1))] = b.group(1)
+    return out
+
+
 def check_contract_files(s, sqlite_ids, all_cards, enforced):
     d = os.path.join(s.root, 'proofs', 'contracts')
     proved = set()
     for c in all_cards.values():
         proved.update(c.functions)
     ledger_ids = None
+    clauses = {}
     lp = os.path.join(s.root, 'LEDGER.md')
     if os.path.exists(lp):
-        ledger_ids = set(re.findall(r'^## (A-[0-9]{3})\b', open(lp).read(), re.M))
+        ltext = open(lp).read()
+        ledger_ids = set(re.findall(r'^## (A-[0-9]{3})\b', ltext, re.M))
+        clauses = ledger_clauses(ltext)
+    # checkpoint 1, D2: every boundary clause LEDGER.md gives as a ~~~ block exists as proofs/contracts/<fn>.h
+    for (aid, fn), _ in sorted(clauses.items()):
+        if fn not in proved and not os.path.exists(os.path.join(d, fn + '.h')):
+            s.bad('LEDGER.md', '%s gives contract_%s, but proofs/contracts/%s.h does not exist' % (aid, fn, fn))
     if not os.path.isdir(d):
         return
     for n in sorted(os.listdir(d)):
@@ -1071,6 +1091,13 @@ def check_contract_files(s, sqlite_ids, all_cards, enforced):
                 s.bad(where, 'boundary contract (no card proves %s) must name its ledger entry: "Ledger: A-NNN"' % fn)
             elif ledger_ids is not None and lm.group(1) not in ledger_ids:
                 s.bad(where, 'names %s, which LEDGER.md does not have' % lm.group(1))
+            elif ledger_ids is not None:
+                clause = clauses.get((lm.group(1), fn))
+                if clause is None:
+                    s.bad(where, 'LEDGER.md %s gives no ~~~ clause declaring contract_%s' % (lm.group(1), fn))
+                elif ' '.join(code.split()) != ' '.join(clause.split()):
+                    s.bad(where, 'is not LEDGER.md %s\'s clause word for word (comments aside); a boundary header is '
+                                 'exactly its ledger clause (checkpoint 1, D2)' % lm.group(1))
 
 
 def check_preds(s, sqlite_ids):
@@ -1283,6 +1310,8 @@ def main():
     except cardlib.CardFormatError as e:
         s.bad('cards/', str(e))
         all_cards = {}
+    for prob in cardlib.depends_problems(all_cards):
+        s.bad('cards/', prob)
     check_checks(s)
     check_configs(s)
     check_pragmas(s, 'overlay/sqlite3.c', '\n'.join(otext[st:en] for st, en in ov.find_spans(otext.encode('latin-1'))))

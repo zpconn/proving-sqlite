@@ -1,34 +1,37 @@
 # PROGRESS
 
-## Status (2026-11-09, setup session, checkpoint 1: waiting for Zach's review)
+## Status (2026-11-10, setup session, checkpoint 1 fixes: waiting for the auditor)
 
-**Done:** §0, §1 (bring-up, pilot: C-01 and C-02 merged), checkpoint 0 and all its follow-ups (evidence/bringup/13-checkpoint0.md), and GOAL.md §2. **Next:** Zach reviews checkpoint 1. Then proof.lock, HANDOFF.md, and the campaign session (§3). proof.lock is not written and §3 is not started.
+**Done:** §0, §1, checkpoint 0 and its follow-ups, GOAL.md §2, and the checkpoint 1 fixes (Zach's answers, amended by the auditor; the auditor's REVIEW-LOG.md, 2026-11-10). **Next:** the auditor rechecks. Then proof.lock, HANDOFF.md and the campaign session (§3). proof.lock is not written and §3 is not started.
 
-| §2 item | File | State |
-|---|---|---|
-| Properties P1–P3 | PROPERTIES.md | P3: departures D1–D3, including types 10/11 read 0 bytes (the table says "variable"); every change from GOAL.md listed |
-| 1. Appendix A confirmed | evidence/checkpoint1/01-scope.md, callgraph.txt | lines, loops and callees against the pin; adds memcpy and vdbeMemClearExternAndSetNull; card order |
-| 2. P3 reference | proofs/spec/record_format.h | 57 lines, each case citing its row; Codex review APPROVE (reviews/spec-r1.md); native test 2M checks, 0 mismatches (evidence/spec/) |
-| 3. Ledger drafts | LEDGER.md | A-001 slack (S fixed by C-15), A-002–A-004 boundary contracts (clauses checked in CBMC), A-005 nine-byte varint output |
-| 4. Mutants | proofs/MUTANTS | 62, at least 2 per function; none expected equivalent; 4 kills need a contract the card asks for |
-| 5. Cards | cards/C-01.md … C-20.md | Depends on and May change lines; every May change line names exact files |
-| 6. Trust and UB | TRUSTED.md, UB-CLASSES.md | UB-CLASSES adds 6.5p2 (unsequenced) and more 6.5p7 sites |
-| Caps | evidence/checkpoint1/02-caps.md | waiting cost makes no cap too tight; C-18 worth watching |
+The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
-Checks at checkpoint 1: tool tests 195/195, selftest 86/86, scan PASS, check_overlay PASS; full gate: `RESULT gate all PASS 6865s 0 failed`; mutants 22/62 killed, 0 equivalent, 40 pending (cards with no proofs yet). C-02's roundtrip already kills M-017 to M-022 (C-03, C-04, C-05) (evidence/checkpoint1/03-full-gate.log).
+- **D1** mutant kills count only from the mutant's own card; pending only while its card has no proofs here or on main; `make gate CARD=C-NN` needs C-NN's own kills; plain `make gate` (§5) fails on any pending mutant, and `ALLOW_PENDING=1` is for mid-campaign full gates.
+- **D2** the three boundary headers are written, checked against LEDGER.md by scan.py, and frozen in proof.lock.
+- **D4** campaign.py never starts builder round 7; the card goes to triage.
+- **Q2/Q4** both CLIs now run in bubblewrap with $HOME and /mnt hidden and read-only. What each loaded before, and what they load now, is in evidence/checkpoint1/07-cli-startup/README.md. Two findings beyond the question:
+  - builders loaded Zach's codex approval allow-list (94 rules, `git push` among them);
+  - reviewers had the claude.ai "Claude Docs" connector and 32 skills.
+  Resume works in real sessions of both.
+- **Q5** A-001 is now exact: sqlite3VdbeRecordUnpack reads at most max(nKey, 1) + 8 bytes, whatever nField is.
+- **Fixes 1–7:**
+  1. DFCC body removal: all 22 functions run on 3 configurations; 71447f2 aborts on 7.
+  2. No make in card directories; campaign.py builds and runs repro files, sandboxed.
+  3. D4 departure (types 8 and 9).
+  4. A-003's omissions stated.
+  5. Depends on reasons, checked by scan.py.
+  6. Three mutants.
+  7. The 6.3.1.4p2 row.
 
-**Decisions in this checkpoint for Zach** (made in tools or agents/ before the freeze; each can be undone):
-1. `mutate.py --all` reports a survivor whose card has no proofs yet as PENDING instead of failing, so the full gate passes during the campaign; at the end nothing is pending. GOAL.md §3.4 still says "every mutant … killed".
-2. Builders write boundary-callee headers word for word from LEDGER.md (builder §1); C-14 writes sqlite3DbMallocRaw.h, C-17 writes vdbeCompareMemString.h and sqlite3CorruptError.h.
-3. The file format document at the pin is evidence/spec/fileformat2.html, from sqlite-doc-3530400.zip, downloaded from sqlite.org (hashes in evidence/spec/README.md).
-4. May change lines list reports b1–b6 and repro files 1–3; a card retried past round 6 needs its line extended.
+**Checks** (evidence/checkpoint1/): tool tests 228/228 (08-tool-tests.txt); the same test file against 71447f2's tools 193/228, with all 35 failures among the 36 new tests and the 36th a positive control (08-new-tests-at-71447f2.txt); selftest 102/102 (09-selftest.txt); `make gate ALLOW_PENDING=1`: `RESULT gate all PASS 639s 0 failed`, mutants 16/65 killed by their own cards, 0 equivalent, 49 pending and not run (10-full-gate.log); plain `make gate`, the §5 form: `RESULT gate all FAIL 518s failed: mutants all` on those 49 (11-full-gate-strict.log).
 
-**Open questions for Zach:**
-1. SQLite 3.54.1 is out; the pin stays 3.53.4 per §1.1.
-2. Codex's ChatGPT connectors, web search and subagents are disabled for builders; anything else to turn off?
-3. Claude's login expires 2026-12-07 22:27 UTC; an expired login pauses the vendor with a triage item.
-4. A reviewer can still read the rest of / and reach host sockets with network on. Hide $HOME and /mnt wholesale? (13-checkpoint0.md, follow-up 6)
-5. A-001: sqlite3VdbeRecordUnpack's header index is bounded by szHdr and the field count, not by nKey, so the slack may grow with nField (C-15's card asks the builder to report it).
+**Decisions for Zach, made at these fixes** (each can be undone):
+1. Codex builders now also run inside bubblewrap, not only Claude reviewers. Q2 asked to hide what sessions don't need, and for codex that is only possible from outside: ~/.codex must stay visible for its login and resume. Codex's own workspace-write sandbox runs nested inside, and works (real session).
+2. Pending mutants are not run. No result from another card could count, so running them only cost time (the 71447f2 gate spent most of its 6865 s on them).
+3. A codex start is refused while ~/.codex/AGENTS.md, AGENTS.override.md, hooks.json, agents/ or /etc/codex exists. None does today.
+4. record_format.h changed after its Codex review, in two comments only (D4). Re-review it, or accept the comment change?
+
+**Open questions:** none from these fixes. Q1 (keep 3.53.4) and Q3 (nothing) are settled.
 
 ## What bring-up showed GOAL.md or the plan got wrong
 
@@ -39,10 +42,13 @@ Checks at checkpoint 1: tool tests 195/195, selftest 86/86, scan PASS, check_ove
 5. **Configurations** (§1.5): goto-cc's `-m64` silently resets the architecture to x86_64 little-endian, so lp64-be must not pass it. ilp32-le needs gcc-multilib, which Appendix 6 doesn't list (Zach installed it today). Without `--slice-global-inits`, lp64-be runs out of CBMC object IDs.
 6. **RESULT last** (§1.9): `make -C` prints "Leaving directory" after it unless `GNUMAKEFLAGS=--no-print-directory` is set; campaign.py sets it for every session and gate.
 7. **Claude sessions** (§0.10, §1.10): they run in `--permission-mode auto` inside bubblewrap. This session's auto-mode classifier refused a test launch with bypassPermissions.
-8. **Mutants:** each line carries `card=` (the card whose proofs must kill it), so a P1 card's gate never depends on a P2/P3 card that merges later. The full gate still runs every mutant against every proof.
+8. **Mutants:** each line carries `card=` (the card whose proofs must kill it), so a P1 card's gate never depends on a P2/P3 card that merges later. Since the checkpoint 1 fixes (D1), only that card's proofs count.
 9. **P3, types 10 and 11** (§2): GOAL.md takes k from the file format table for t ≤ 11, but the table gives "variable" for 10 and 11. The code reads 0 bytes; PROPERTIES.md states this as departure D2.
 10. **Appendix A's callees** (§2.1): the call graph adds memcpy (serialGet, serialGet7, sqlite3IsNaN) and vdbeMemClearExternAndSetNull (sqlite3VdbeMemSetNull's dynamic branch, excluded by its requires).
 11. **UB-CLASSES' 6.5p7 sites:** bring-up listed only serialGet; vdbeRecordDecodeInt (92569, 92579) and vdbeRecordCompareInt (92877, 92889) make the same accesses.
+12. **DFCC and os_unix** (audit, fix 1): drop-unused-functions runs before DFCC, so a replaced callee's body stays and can reach os_unix's syscall table, on which DFCC aborts. prove.py now removes REPLACE bodies and cards' unreached callees first.
+13. **A-001's bound** (audit, Q5): checkpoint 1's draft said idx is bounded only by szHdr and the field count. Inside the loop idx < szHdr ≤ d ≤ nKey, so the extent is max(nKey, 1) + 8.
+14. **WSL** (Q4): /etc/resolv.conf links into /mnt/wsl, and Claude Code reads Windows policy through /mnt/c (reg.exe, C:\Program Files\ClaudeCode).
 
 ## Notes for §3
 
@@ -76,3 +82,4 @@ Checks at checkpoint 1: tool tests 195/195, selftest 86/86, scan PASS, check_ove
 - 2026-11-09: prove.py fails a proof whose entry function passes a card function an argument with a type other than the parameter's (before any cast; k in p + k size_t), checked on the linked goto program. Four tests that fail on f49022f; tool tests 190/190. Full gate at fc90cc0: RESULT gate all PASS 921s 0 failed.
 - 2026-11-09 night: the argument-type check fails a proof whose entry makes no direct call to its ENFORCE function (or, without ENFORCE, to any card function). A COVER-only proof with no card call passed before; tool tests 192/192. Full gate not rerun.
 - 2026-11-09: Zach approved the checkpoint 0 fixes; GOAL.md §2 carried out. PROPERTIES.md; proofs/spec/record_format.h (Codex spec review J0011, 140,902 tokens: APPROVE); LEDGER.md drafts A-001 to A-005; proofs/MUTANTS to 62; cards C-03 to C-20; TRUSTED.md; UB-CLASSES.md for 6.5p2; Appendix A confirmed (evidence/checkpoint1/). mutate.py --all reports PENDING for cards without proofs. Waiting cost makes no cap too tight.
+- 2026-11-10 Checkpoint 1 fixes (auditor's REVIEW-LOG.md 2026-11-10): D1, D2, D4, Q2, Q4 (real sessions, resume of both), Q5, fixes 1–7, each with a test that fails on 71447f2; evidence/checkpoint1/05–10.

@@ -13,3 +13,10 @@
 - Result (`spec_test.txt`): 2,000,000 checks, 0 mismatches, under ASan and UBSan.
   - The test can fail: with row 5's size changed from 6 to 5 in a copy of the spec, it gave 8,659 mismatches.
   - Build: `gcc -O1 -fsanitize=address,undefined -fno-sanitize-recover=undefined -I upstream -I proofs -o spec_test evidence/spec/spec_test.c -lm -lpthread -ldl`.
+- Checkpoint 1 fix 6: the audit's two C-09 mutants, each applied to a copy of upstream/sqlite3.c and built with the command
+  above, are killed by this test (tested, not proved; C-09's proof must kill them):
+  - M-064, sqlite3VdbeSerialGet 92055 `buf+2` → `buf+1` (type 5's low four bytes): 2,000,000 checks, 8,659 mismatches (the ten it prints are all t = 5);
+  - M-065, sqlite3VdbeSerialGet 92006 `pMem->n = 0` → `pMem->n = 1` (type 10, D2): 2,000,000 checks, 9,524 mismatches (the ten it prints are all t = 10).
+- Checkpoint 1 fix 3: departure D4 (types 8 and 9 decode as 0 and 1 with no schema-format check) changed two comments in
+  record_format.h, after the Codex review J0011, and no code; the native comparison is unchanged (types 8 and 9 were
+  already compared as 0 and 1).

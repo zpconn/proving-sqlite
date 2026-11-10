@@ -7,16 +7,24 @@ if it ever differs.
 proofs/MUTANTS, one mutant per line ('#' comments):
   M-NNN <function> <upstream line> '<from>' '<to>' card=C-NN [equivalent='<argument>' review=<reviews/file>]
 card= names the card whose proofs must kill it (a P1 card for UB-relevant mutants, the P2/P3 card for functional
-ones), so a card's gate never depends on a card that merges later. The full gate runs every mutant against every proof.
-A mutant that survives every proof while its card= has no proofs yet (no proofs/<card>/Makefile) is PENDING: it does
-not fail the run, and the RESULT line counts it. Once every card has proofs, nothing is pending (checkpoint 1).
+ones), so a card's gate never depends on a card that merges later. card= is required in proofs/MUTANTS.
+Kills (checkpoint 1, D1, as amended by the auditor):
+  - A mutant is KILLED only when a proof of its own card= fails. Its card's proofs run first. If they all pass, the
+    other cards' proofs (--with, or every card with proofs under --all) still run, and a failure there is reported
+    but does not count: the mutant SURVIVED, and the run fails unless the mutant is argued equivalent.
+  - A mutant is PENDING only while its card has no proofs: no proofs/<card>/Makefile here, and none on main
+    (git: main:proofs/<card>/Makefile). It is not run, since no result could count. If the card has proofs on main
+    but not here, or git cannot say, the mutant fails.
+  - --all fails on any pending mutant unless --allow-pending is given: the §5 gate (plain `make gate`) allows none.
+    During the campaign, `make gate ALLOW_PENDING=1` passes it.
+  - --card C-NN runs only that card's mutants, and its proofs must exist; nothing is pending there.
 `from` must occur exactly once on that line (outside PROOF spans); it is replaced by `to`.
 
 Usage:
   tools/mutate.py --card C-NN                     the card's mutants (its functions), against its proofs
   tools/mutate.py --card C-NN --with C-AA,C-BB    ... against those cards' proofs too
   tools/mutate.py --card C-NN --adhoc "<function> <line> '<from>' '<to>'"   one planted bug
-  tools/mutate.py --all [--with ...]              every mutant, against every card that has proofs
+  tools/mutate.py --all [--allow-pending]         every mutant, against every card that has proofs
 Ends with: RESULT mutate <card|all> PASS|FAIL <k>/<n> killed <e> equivalent [<p> pending]
 """
 import argparse
@@ -48,8 +56,25 @@ def read_mutants(path):
         s = line.strip()
         if not s or s.startswith('#'):
             continue
-        out.append(parse_mutant(s, 'MUTANTS:%d' % n))
+        m = parse_mutant(s, 'MUTANTS:%d' % n)
+        if not m['card'] or not re.match(r'^C-[0-9]{2}$', m['card']):
+            raise MutantError('MUTANTS:%d: %s needs card=C-NN, the card whose proofs must kill it' % (n, m['id']))
+        out.append(m)
     return out
+
+
+def has_proofs(root, cid):
+    return os.path.exists(os.path.join(root, 'proofs', cid, 'Makefile'))
+
+
+def proofs_on_main(root, cid):
+    """True or False: does main have proofs/<cid>/Makefile? None if git cannot say."""
+    import subprocess
+    q = subprocess.run(['git', '-C', root, 'rev-parse', '--verify', '-q', 'main^{commit}'], capture_output=True, text=True)
+    if q.returncode != 0:
+        return None
+    p = subprocess.run(['git', '-C', root, 'cat-file', '-e', 'main:proofs/%s/Makefile' % cid], capture_output=True)
+    return p.returncode == 0
 
 
 def parse_mutant(s, where='adhoc'):
@@ -107,8 +132,25 @@ def check_function(upstream, mut):
         raise MutantError('%s: line %d is not in %s %s' % (mut['id'], mut['line'], mut['function'], r))
 
 
-def run_mutant(mut, proof_cards, orig_path, scratch, configs, timeout):
-    """Returns (verdict, detail): KILLED, SURVIVED, or ERROR."""
+def run_proofs(mut, cards_, mdir, configs, timeout):
+    """Run cards_'s proofs on the mutated overlay in mdir until one fails. Returns (failure detail or None, errors)."""
+    errors = []
+    for cname, cflags in configs:
+        for cid, card_dir in cards_:
+            card, proofs = prove.load_card(card_dir)
+            for p in proofs:
+                r = prove.prove_one(card, card_dir, p, cname, cflags, mdir,
+                                    os.path.join(mdir, 'build', cid), timeout, False)
+                if r['failed'] > 0:
+                    fl = '; '.join('[%s] %s' % (f['id'], f['desc']) for f in r['failures'])
+                    return '%s/%s %s: %d failed: %s' % (cid, p.name, cname, r['failed'], fl), errors
+                if r['error']:
+                    errors.append('%s/%s %s: %s' % (cid, p.name, cname, r['error']))
+    return None, errors
+
+
+def run_mutant(mut, own, others, orig_path, scratch, configs, timeout):
+    """Returns (verdict, detail): KILLED (by a proof of own, the mutant's card), SURVIVED, or ERROR."""
     orig = open(orig_path, 'rb').read()
     h0 = hashlib.sha256(orig).hexdigest()
     mdir = os.path.join(scratch, mut['id'])
@@ -119,21 +161,19 @@ def run_mutant(mut, proof_cards, orig_path, scratch, configs, timeout):
         mutated = apply(orig, mut)
         with open(os.path.join(mdir, 'sqlite3.c'), 'wb') as f:
             f.write(mutated)
-        errors = []
-        for cname, cflags in configs:
-            for cid, card_dir in proof_cards:
-                card, proofs = prove.load_card(card_dir)
-                for p in proofs:
-                    r = prove.prove_one(card, card_dir, p, cname, cflags, mdir,
-                                        os.path.join(mdir, 'build', cid), timeout, False)
-                    if r['failed'] > 0:
-                        fl = '; '.join('[%s] %s' % (f['id'], f['desc']) for f in r['failures'])
-                        return 'KILLED', 'by %s/%s %s: %d failed: %s' % (cid, p.name, cname, r['failed'], fl)
-                    if r['error']:
-                        errors.append('%s/%s %s: %s' % (cid, p.name, cname, r['error']))
+        hit, errors = run_proofs(mut, [own], mdir, configs, timeout)
+        if hit:
+            return 'KILLED', 'by ' + hit
         if errors:
-            return 'ERROR', 'no property failed, and: ' + '; '.join(errors[:3])
-        return 'SURVIVED', 'every proof passed on %s' % ','.join(c for c, _ in configs)
+            return 'ERROR', 'no property of %s failed, and: %s' % (own[0], '; '.join(errors[:3]))
+        detail = 'every proof of %s, its card, passed on %s' % (own[0], ','.join(c for c, _ in configs))
+        if others:
+            hit, _ = run_proofs(mut, others, mdir, configs, timeout)
+            if hit:
+                detail += '; %s failed, which does not count: only %s\'s proofs kill its mutants' % (hit, own[0])
+            else:
+                detail += '; so did %s' % ', '.join(c for c, _ in others)
+        return 'SURVIVED', detail
     finally:
         now = open(orig_path, 'rb').read()
         if hashlib.sha256(now).hexdigest() != h0:
@@ -148,6 +188,7 @@ def main():
     ap.add_argument('--card')
     ap.add_argument('--all', action='store_true')
     ap.add_argument('--with', dest='with_', default='')
+    ap.add_argument('--allow-pending', action='store_true')
     ap.add_argument('--adhoc')
     ap.add_argument('--config', default='all')
     ap.add_argument('--overlay', default=os.path.join(ROOT, 'overlay', 'sqlite3.c'))
@@ -160,14 +201,20 @@ def main():
         all_cards = cardlib.load_all(ROOT)
         upstream = open(os.path.join(ROOT, 'upstream', 'sqlite3.c'), 'rb').read()
         if a.adhoc:
+            if not a.card:
+                raise MutantError('--adhoc needs --card, the card whose proofs must kill it')
             muts = [parse_mutant(a.adhoc)]
+            muts[0]['card'] = a.card
         else:
             muts = read_mutants(os.path.join(ROOT, 'proofs', 'MUTANTS'))
         if a.card and not a.adhoc:
             if a.card not in all_cards:
                 raise MutantError('no cards/%s.md' % a.card)
-            fns = set(all_cards[a.card].functions)
-            muts = [m for m in muts if m['card'] == a.card or (m['card'] is None and m['function'] in fns)]
+            muts = [m for m in muts if m['card'] == a.card]
+            if not muts:
+                raise MutantError('proofs/MUTANTS has no mutant with card=%s, so its gate would pass vacuously' % a.card)
+            if not has_proofs(ROOT, a.card):
+                raise MutantError('proofs/%s/Makefile missing: --card runs the card\'s mutants against its own proofs' % a.card)
         for m in muts:
             check_function(upstream, m)
         cids = []
@@ -182,7 +229,7 @@ def main():
             if c not in seen and os.path.exists(os.path.join(ROOT, 'proofs', c, 'Makefile')):
                 seen.append(c)
         proof_cards = [(c, os.path.join(ROOT, 'proofs', c)) for c in seen]
-        if not proof_cards:
+        if not proof_cards and not a.all:
             raise MutantError('no card proofs to run mutants against')
         configs = prove.select_configs(a.config)
         # lp64-le first: cheapest place to see a kill
@@ -191,18 +238,37 @@ def main():
         print('mutate: %s' % e)
         print('RESULT mutate %s FAIL 0/0 killed 0 equivalent' % label)
         return 1
-    scratch = a.scratch or os.path.join(proof_cards[0][1], 'build', 'mutants')
+    scratch = a.scratch or (os.path.join(proof_cards[0][1], 'build', 'mutants') if proof_cards
+                            else os.path.join(ROOT, 'proofs', 'build', 'mutants'))
     os.makedirs(scratch, exist_ok=True)
     killed = equiv = pending = 0
     ok = True
     results = []
     for m in muts:
         desc = "%s %s:%d '%s'->'%s'" % (m['id'], m['function'], m['line'], m['from'], m['to'])
-        try:
-            v, detail = run_mutant(m, proof_cards, a.overlay, scratch, configs, a.timeout)
-        except (MutantError, prove.CardError) as e:
-            v, detail = 'ERROR', str(e)
-        if v == 'KILLED':
+        own = [pc for pc in proof_cards if pc[0] == m['card']]
+        others = [pc for pc in proof_cards if pc[0] != m['card']]
+        if not own:
+            main_has = proofs_on_main(ROOT, m['card'])
+            if has_proofs(ROOT, m['card']):
+                v, detail = 'ERROR', 'proofs/%s/Makefile exists but was not run' % m['card']
+            elif main_has is False:
+                v, detail = 'PENDING', 'not run: %s, the card that must kill it, has no proofs here or on main' % m['card']
+            elif main_has:
+                v, detail = 'ERROR', '%s has proofs on main but none here' % m['card']
+            else:
+                v, detail = 'ERROR', 'git cannot say whether %s has proofs on main, so the mutant cannot be pending' % m['card']
+        else:
+            try:
+                v, detail = run_mutant(m, own[0], others, a.overlay, scratch, configs, a.timeout)
+            except (MutantError, prove.CardError) as e:
+                v, detail = 'ERROR', str(e)
+        if v == 'PENDING':
+            pending += 1
+            if not a.allow_pending:
+                ok = False
+                detail += '; FAIL: no mutant may be pending without --allow-pending (the §5 gate)'
+        elif v == 'KILLED':
             killed += 1
         elif v == 'SURVIVED' and m['equivalent']:
             v = 'EQUIVALENT'
@@ -211,10 +277,6 @@ def main():
             if not m['review']:
                 ok = False
                 detail += ' -- NO REVIEW NAMED'
-        elif v == 'SURVIVED' and m['card'] and not os.path.exists(os.path.join(ROOT, 'proofs', m['card'], 'Makefile')):
-            v = 'PENDING'
-            pending += 1
-            detail += '; %s, the card that must kill it, has no proofs yet' % m['card']
         else:
             ok = False
         results.append({'mutant': m, 'verdict': v, 'detail': detail})

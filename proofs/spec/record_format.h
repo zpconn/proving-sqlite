@@ -5,7 +5,8 @@
 **   D1. A row 7 value whose bits are a NaN decodes as NULL.
 **   D2. Rows 10,11 give "variable" Content Size; the code reads 0 bytes. 10 is NULL with MEM_Zero, n = 0 and
 **       u.nZero = 0; 11 is NULL.
-**   D3. For N >= 12 nothing is read: z points at the bytes (MEM_Ephem, not copied) and n is the length. */
+**   D3. For N >= 12 nothing is read: z points at the bytes (MEM_Ephem, not copied) and n is the length.
+**   D4. Rows 8, 9 say "Only available for schema format 4 and higher"; the code checks no schema format. */
 #ifndef RECORD_FORMAT_H
 #define RECORD_FORMAT_H
 
@@ -45,7 +46,7 @@ static int ref_serial_get(const unsigned char *b, u32 t, const Mem *m){
     memcpy(&got, &m->u.r, sizeof(got));
     return m->flags==MEM_Real && got==bits;
   }
-  if( t==8 || t==9 ) return m->flags==MEM_Int && m->u.i==(i64)(t - 8);  /* rows 8, 9: the integers 0, 1 */
+  if( t==8 || t==9 ) return m->flags==MEM_Int && m->u.i==(i64)(t - 8);  /* rows 8, 9: the integers 0, 1 (D4) */
   if( t==10 ) return m->flags==(MEM_Null|MEM_Zero) && m->n==0 && m->u.nZero==0;  /* rows 10,11: D2 */
   if( t==11 ) return m->flags==MEM_Null;                                 /* rows 10,11: D2 */
   if( t%2==0 )                                    /* row N >= 12 and even: a BLOB of (N-12)/2 bytes (D3) */
