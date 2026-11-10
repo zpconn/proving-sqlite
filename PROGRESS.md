@@ -1,8 +1,8 @@
 # PROGRESS
 
-## Status (2026-11-10, setup session ended: handoff written)
+## Status (2026-11-10, campaign session: §3 running)
 
-**Done:** §0, §1, checkpoint 0 and its follow-ups, GOAL.md §2, the checkpoint 1 fixes, and the freeze. Zach approved checkpoint 1 at 8fbb0c8 on 2026-11-10, with decisions 1–4 below; proof.lock is commit 4b851e7; HANDOFF.md is written. **Next:** a fresh campaign session starts from HANDOFF.md, runs its checks, then `tools/campaign.py start` with all 20 cards named (HANDOFF.md, known issue 1). §3 is not started.
+**In progress:** §3. The campaign started 2026-11-10 15:26 with all 20 cards named (HANDOFF.md, known issue 1). HANDOFF.md's checks passed first: `make gate CARD=C-02` PASS 427s, lock included; selftest 102/102; status as HANDOFF.md says. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** triage as it comes; §4 (ledger agent) when the boundary contracts and A-001 settle; then §5. Tcl's development files (tcl8.6-dev) are already installed for §4.
 
 The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
@@ -84,3 +84,4 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-09: Zach approved the checkpoint 0 fixes; GOAL.md §2 carried out. PROPERTIES.md; proofs/spec/record_format.h (Codex spec review J0011, 140,902 tokens: APPROVE); LEDGER.md drafts A-001 to A-005; proofs/MUTANTS to 62; cards C-03 to C-20; TRUSTED.md; UB-CLASSES.md for 6.5p2; Appendix A confirmed (evidence/checkpoint1/). mutate.py --all reports PENDING for cards without proofs. Waiting cost makes no cap too tight.
 - 2026-11-10 Checkpoint 1 fixes (auditor's REVIEW-LOG.md 2026-11-10): D1, D2, D4, Q2, Q4 (real sessions, resume of both), Q5, fixes 1–7, each with a test that fails on 71447f2; evidence/checkpoint1/05–10.
 - 2026-11-10 Zach approved checkpoint 1 at 8fbb0c8 (decisions 1–4). proof.lock committed (4b851e7, 38 files). HANDOFF.md written. `make gate CARD=C-02`: RESULT gate C-02 PASS 402s 0 failed; selftest 102/102 (evidence/checkpoint1/12-handoff-*). Found: campaign state keeps the pilot's scope, so `start` needs every card in `--cards` (HANDOFF.md, known issue 1). Setup session ends.
+- 2026-11-10 15:26 Campaign session (Zach's /goal, in the setup session's conversation): HANDOFF.md checks passed (gate C-02 PASS 427s, selftest 102/102, status matched). `tools/campaign.py start --cards C-01,…,C-20`: status lists all 20; builders J0012–J0015 on C-03, C-05, C-06, C-07.
