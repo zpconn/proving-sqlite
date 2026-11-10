@@ -11,3 +11,9 @@ C-02,P2,roundtrip,sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint
 C-05,P1,len,sqlite3VarintLen,lp64-le,PASS,0,16,0,4,4,,2,2,0,APPROVE (C-05-r1.md),,10cf282389d3 evidence/gate/C-05-r1.log,10cf282389d3 evidence/gate/C-05-r1.log,10cf282389d3 evidence/gate/C-05-r1.log
 C-05,P1,len,sqlite3VarintLen,ilp32-le,PASS,0,16,0,4,4,,2,2,0,APPROVE (C-05-r1.md),,10cf282389d3 evidence/gate/C-05-r1.log,10cf282389d3 evidence/gate/C-05-r1.log,10cf282389d3 evidence/gate/C-05-r1.log
 C-05,P1,len,sqlite3VarintLen,lp64-be,PASS,0,16,0,4,4,,2,2,0,APPROVE (C-05-r1.md),,10cf282389d3 evidence/gate/C-05-r1.log,10cf282389d3 evidence/gate/C-05-r1.log,10cf282389d3 evidence/gate/C-05-r1.log
+C-06,P1,serial,sqlite3VdbeSerialTypeLen,lp64-le,PASS,0,15,0,4,4,,4,4,0,APPROVE (C-06-r1.md),,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log
+C-06,P1,onebyte,sqlite3VdbeOneByteSerialTypeLen,lp64-le,PASS,0,15,0,2,2,,4,4,0,APPROVE (C-06-r1.md),,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log
+C-06,P1,serial,sqlite3VdbeSerialTypeLen,ilp32-le,PASS,0,15,0,4,4,,4,4,0,APPROVE (C-06-r1.md),,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log
+C-06,P1,onebyte,sqlite3VdbeOneByteSerialTypeLen,ilp32-le,PASS,0,15,0,2,2,,4,4,0,APPROVE (C-06-r1.md),,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log
+C-06,P1,serial,sqlite3VdbeSerialTypeLen,lp64-be,PASS,0,15,0,4,4,,4,4,0,APPROVE (C-06-r1.md),,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log
+C-06,P1,onebyte,sqlite3VdbeOneByteSerialTypeLen,lp64-be,PASS,0,15,0,2,2,,4,4,0,APPROVE (C-06-r1.md),,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log,611459274de8 evidence/gate/C-06-r1.log
