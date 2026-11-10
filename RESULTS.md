@@ -5,17 +5,21 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 
 | Card | Prop | Proof | Functions | Config | Status | CBMC s | Properties | Failed | Coverage | Mutants killed | Review | Ledger |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| C-01 | P1 | put64 | putVarint64 | lp64-le | PASS | 0 | 110 | 0 | 18/18 | 5/5 | APPROVE (C-01-r2.md) |  |
+| C-01 | P1 | put64 | putVarint64 | lp64-le | PASS | 1 | 110 | 0 | 18/18 | 5/5 | APPROVE (C-01-r2.md) |  |
 | C-01 | P1 | put | sqlite3PutVarint | lp64-le | PASS | 0 | 115 | 0 | 9/9 | 5/5 | APPROVE (C-01-r2.md) |  |
 | C-01 | P1 | put64 | putVarint64 | ilp32-le | PASS | 0 | 110 | 0 | 18/18 | 5/5 | APPROVE (C-01-r2.md) |  |
 | C-01 | P1 | put | sqlite3PutVarint | ilp32-le | PASS | 0 | 115 | 0 | 9/9 | 5/5 | APPROVE (C-01-r2.md) |  |
-| C-01 | P1 | put64 | putVarint64 | lp64-be | PASS | 0 | 110 | 0 | 18/18 | 5/5 | APPROVE (C-01-r2.md) |  |
+| C-01 | P1 | put64 | putVarint64 | lp64-be | PASS | 1 | 110 | 0 | 18/18 | 5/5 | APPROVE (C-01-r2.md) |  |
 | C-01 | P1 | put | sqlite3PutVarint | lp64-be | PASS | 0 | 115 | 0 | 9/9 | 5/5 | APPROVE (C-01-r2.md) |  |
 | C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-le | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
-| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | ilp32-le | PASS | 0 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
-| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-be | PASS | 0 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
+| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | ilp32-le | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
+| C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-be | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
+| C-05 | P1 | len | sqlite3VarintLen | lp64-le | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
+| C-05 | P1 | len | sqlite3VarintLen | ilp32-le | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
+| C-05 | P1 | len | sqlite3VarintLen | lp64-be | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
 
 Where each card's numbers come from (the commit whose gate produced them, and its log):
 
-- C-01: proofs 5219e5648758 evidence/gate/C-01-r2.log; coverage 5219e5648758 evidence/gate/C-01-r2.log; mutants 5219e5648758 evidence/gate/C-01-r2.log
-- C-02: proofs 5219e5648758 evidence/gate/C-01-r2.log; coverage 5219e5648758 evidence/gate/C-01-r2.log; mutants affc94a4a51c evidence/gate/C-02-r1.log
+- C-01: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants 5219e5648758 evidence/gate/C-01-r2.log
+- C-02: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants affc94a4a51c evidence/gate/C-02-r1.log
+- C-05: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants 10cf282389d3 evidence/gate/C-05-r1.log
