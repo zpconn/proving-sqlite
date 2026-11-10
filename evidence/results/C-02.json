@@ -29,7 +29,8 @@
       37989,
       37990
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3GetVarint": {
      "blocks": 46,
@@ -123,7 +124,8 @@
       38168,
       38169
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3GetVarint32": {
      "blocks": 16,
@@ -145,7 +147,8 @@
       38208,
       38209
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3PutVarint": {
      "blocks": 10,
@@ -161,7 +164,8 @@
       38001,
       38002
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3VarintLen": {
      "blocks": 5,
@@ -172,7 +176,8 @@
       38218,
       38219
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     }
    },
    "proof": "roundtrip",
@@ -206,7 +211,8 @@
       37989,
       37990
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3GetVarint": {
      "blocks": 46,
@@ -300,7 +306,8 @@
       38168,
       38169
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3GetVarint32": {
      "blocks": 16,
@@ -322,7 +329,8 @@
       38208,
       38209
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3PutVarint": {
      "blocks": 10,
@@ -338,7 +346,8 @@
       38001,
       38002
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3VarintLen": {
      "blocks": 5,
@@ -349,7 +358,8 @@
       38218,
       38219
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     }
    },
    "proof": "roundtrip",
@@ -383,7 +393,8 @@
       37989,
       37990
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3GetVarint": {
      "blocks": 46,
@@ -477,7 +488,8 @@
       38168,
       38169
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3GetVarint32": {
      "blocks": 16,
@@ -499,7 +511,8 @@
       38208,
       38209
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3PutVarint": {
      "blocks": 10,
@@ -515,7 +528,8 @@
       38001,
       38002
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     },
     "sqlite3VarintLen": {
      "blocks": 5,
@@ -526,7 +540,8 @@
       38218,
       38219
      ],
-     "uncovered": []
+     "uncovered": [],
+     "uncovered_blocks": []
     }
    },
    "proof": "roundtrip",
@@ -700,12 +715,12 @@
    "float_to_int_properties": 0,
    "proof": "roundtrip",
    "properties": 450,
-   "seconds": 10,
+   "seconds": 12,
    "status": "PASS"
   },
   {
    "card": "C-02",
-   "cbmc_seconds": 0,
+   "cbmc_seconds": 1,
    "config": "ilp32-le",
    "error": null,
    "failed": 0,
@@ -713,12 +728,12 @@
    "float_to_int_properties": 0,
    "proof": "roundtrip",
    "properties": 450,
-   "seconds": 9,
+   "seconds": 11,
    "status": "PASS"
   },
   {
    "card": "C-02",
-   "cbmc_seconds": 0,
+   "cbmc_seconds": 1,
    "config": "lp64-be",
    "error": null,
    "failed": 0,
@@ -726,16 +741,15 @@
    "float_to_int_properties": 0,
    "proof": "roundtrip",
    "properties": 450,
-   "seconds": 9,
+   "seconds": 12,
    "status": "PASS"
   }
  ],
  "provenance": {
   "coverage_summary": {
-   "commit": "5219e5648758280810ba7104856c48c9519fd66f",
-   "gate": "make gate CARD=C-01 (merge of C-01 r2)",
-   "gate_log": "evidence/gate/C-01-r2.log",
-   "note": "backfilled at checkpoint 0 from git history: the commit that last wrote the field and its gate log"
+   "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
+   "gate": "make gate CARD=C-03 (merge of C-03 r1)",
+   "gate_log": "evidence/gate/C-03-r1.log"
   },
   "mutants": {
    "commit": "affc94a4a51cc9701733c2891d790d21696722d5",
@@ -744,10 +758,9 @@
    "note": "backfilled at checkpoint 0 from git history: the commit that last wrote the field and its gate log"
   },
   "prove_summary": {
-   "commit": "5219e5648758280810ba7104856c48c9519fd66f",
-   "gate": "make gate CARD=C-01 (merge of C-01 r2)",
-   "gate_log": "evidence/gate/C-01-r2.log",
-   "note": "backfilled at checkpoint 0 from git history: the commit that last wrote the field and its gate log"
+   "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
+   "gate": "make gate CARD=C-03 (merge of C-03 r1)",
+   "gate_log": "evidence/gate/C-03-r1.log"
   }
  }
 }

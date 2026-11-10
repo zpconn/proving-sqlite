@@ -1,0 +1,156 @@
+{
+ "card": "C-05",
+ "coverage_summary": [
+  {
+   "card": "C-05",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3VarintLen": {
+     "blocks": 5,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38216,
+      38217,
+      38218,
+      38219
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "len",
+   "seconds": 0
+  },
+  {
+   "card": "C-05",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3VarintLen": {
+     "blocks": 5,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38216,
+      38217,
+      38218,
+      38219
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "len",
+   "seconds": 0
+  },
+  {
+   "card": "C-05",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3VarintLen": {
+     "blocks": 5,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38216,
+      38217,
+      38218,
+      38219
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "len",
+   "seconds": 0
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-05/len lp64-le: 1 failed: [sqlite3VarintLen.unwind.0] unwinding assertion loop 0",
+   "mutant": {
+    "card": "C-05",
+    "equivalent": null,
+    "from": ">>= 7",
+    "function": "sqlite3VarintLen",
+    "id": "M-021",
+    "line": 38217,
+    "review": null,
+    "to": ">>= 0"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-05/len lp64-le: 1 failed: [sqlite3VarintLen.unwind.0] unwinding assertion loop 0",
+   "mutant": {
+    "card": "C-05",
+    "equivalent": null,
+    "from": "!=0",
+    "function": "sqlite3VarintLen",
+    "id": "M-022",
+    "line": 38217,
+    "review": null,
+    "to": "!=1"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-05",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "len",
+   "properties": 16,
+   "seconds": 34,
+   "status": "PASS"
+  },
+  {
+   "card": "C-05",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "len",
+   "properties": 16,
+   "seconds": 32,
+   "status": "PASS"
+  },
+  {
+   "card": "C-05",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "len",
+   "properties": 16,
+   "seconds": 31,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
+   "gate": "make gate CARD=C-03 (merge of C-03 r1)",
+   "gate_log": "evidence/gate/C-03-r1.log"
+  },
+  "mutants": {
+   "commit": "10cf282389d3f2219fe23aa7c5f8877944d24d99",
+   "gate": "make gate CARD=C-05 (merge of C-05 r1)",
+   "gate_log": "evidence/gate/C-05-r1.log"
+  },
+  "prove_summary": {
+   "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
+   "gate": "make gate CARD=C-03 (merge of C-03 r1)",
+   "gate_log": "evidence/gate/C-03-r1.log"
+  }
+ }
+}
