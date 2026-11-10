@@ -4,6 +4,10 @@
 
 **In progress:** §3. The campaign started 2026-11-10 15:26 with all 20 cards named (HANDOFF.md, known issue 1). HANDOFF.md's checks passed first: `make gate CARD=C-02` PASS 427s, lock included; selftest 102/102; status as HANDOFF.md says. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** triage as it comes; §4 (ledger agent) when the boundary contracts and A-001 settle; then §5. Tcl's development files (tcl8.6-dev) are already installed for §4.
 
+
+**Open questions (parked for Zach):**
+1. **C-11, CBMC's float-to-int check at r = −2^63** (evidence/approvals/C-11-f2i-exact-min/README.md, patch unapplied). CBMC 6.11 fails `(i64)r` at sqlite3IntFloatCompare 92434 for r = −2^63, which C11 defines (INT64_MIN); its bound −2^63−1 rounds to −2^63. Toys show it still flags every UB value. sqlite3IsNaN is proved. **Recommendation: option 1**, argue that one input: UB-CLASSES.md and TRUSTED.md rows, PROPERTIES.md change 7, and the harness may assume `r != -0x1p63`; M-042 and M-043 are still killed. C-17 to C-20 wait on C-11.
+
 The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
 - **D1** mutant kills count only from the mutant's own card; pending only while its card has no proofs here or on main; `make gate CARD=C-NN` needs C-NN's own kills; plain `make gate` (§5) fails on any pending mutant, and `ALLOW_PENDING=1` is for mid-campaign full gates.
@@ -85,3 +89,4 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-10 Checkpoint 1 fixes (auditor's REVIEW-LOG.md 2026-11-10): D1, D2, D4, Q2, Q4 (real sessions, resume of both), Q5, fixes 1–7, each with a test that fails on 71447f2; evidence/checkpoint1/05–10.
 - 2026-11-10 Zach approved checkpoint 1 at 8fbb0c8 (decisions 1–4). proof.lock committed (4b851e7, 38 files). HANDOFF.md written. `make gate CARD=C-02`: RESULT gate C-02 PASS 402s 0 failed; selftest 102/102 (evidence/checkpoint1/12-handoff-*). Found: campaign state keeps the pilot's scope, so `start` needs every card in `--cards` (HANDOFF.md, known issue 1). Setup session ends.
 - 2026-11-10 15:26 Campaign session (Zach's /goal, in the setup session's conversation): HANDOFF.md checks passed (gate C-02 PASS 427s, selftest 102/102, status matched). `tools/campaign.py start --cards C-01,…,C-20`: status lists all 20; builders J0012–J0015 on C-03, C-05, C-06, C-07.
+- 2026-11-10 16:15 Triage C-11 (NEEDS-DECISION): CBMC 6.11 false failure of the float-to-int check at r = −2^63 (92434), confirmed on toys and natively. Approval request with patch in evidence/approvals/C-11-f2i-exact-min/; C-11 parked.
