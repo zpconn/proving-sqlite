@@ -1,8 +1,8 @@
 # PROGRESS
 
-## Status (2026-11-10, setup session, checkpoint 1 fixes: waiting for the auditor)
+## Status (2026-11-10, setup session ended: handoff written)
 
-**Done:** §0, §1, checkpoint 0 and its follow-ups, GOAL.md §2, and the checkpoint 1 fixes (Zach's answers, amended by the auditor; the auditor's REVIEW-LOG.md, 2026-11-10). **Next:** the auditor rechecks. Then proof.lock, HANDOFF.md and the campaign session (§3). proof.lock is not written and §3 is not started.
+**Done:** §0, §1, checkpoint 0 and its follow-ups, GOAL.md §2, the checkpoint 1 fixes, and the freeze. Zach approved checkpoint 1 at 8fbb0c8 on 2026-11-10, with decisions 1–4 below; proof.lock is commit 4b851e7; HANDOFF.md is written. **Next:** a fresh campaign session starts from HANDOFF.md, runs its checks, then `tools/campaign.py start` with all 20 cards named (HANDOFF.md, known issue 1). §3 is not started.
 
 The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
@@ -25,11 +25,11 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 
 **Checks** (evidence/checkpoint1/): tool tests 228/228 (08-tool-tests.txt); the same test file against 71447f2's tools 193/228, with all 35 failures among the 36 new tests and the 36th a positive control (08-new-tests-at-71447f2.txt); selftest 102/102 (09-selftest.txt); `make gate ALLOW_PENDING=1`: `RESULT gate all PASS 639s 0 failed`, mutants 16/65 killed by their own cards, 0 equivalent, 49 pending and not run (10-full-gate.log); plain `make gate`, the §5 form: `RESULT gate all FAIL 518s failed: mutants all` on those 49 (11-full-gate-strict.log).
 
-**Decisions for Zach, made at these fixes** (each can be undone):
+**Decisions made at these fixes, approved by Zach on 2026-11-10 with checkpoint 1:**
 1. Codex builders now also run inside bubblewrap, not only Claude reviewers. Q2 asked to hide what sessions don't need, and for codex that is only possible from outside: ~/.codex must stay visible for its login and resume. Codex's own workspace-write sandbox runs nested inside, and works (real session).
 2. Pending mutants are not run. No result from another card could count, so running them only cost time (the 71447f2 gate spent most of its 6865 s on them).
 3. A codex start is refused while ~/.codex/AGENTS.md, AGENTS.override.md, hooks.json, agents/ or /etc/codex exists. None does today.
-4. record_format.h changed after its Codex review, in two comments only (D4). Re-review it, or accept the comment change?
+4. record_format.h changed after its Codex review, in two comments only (D4): accepted without re-review.
 
 **Open questions:** none from these fixes. Q1 (keep 3.53.4) and Q3 (nothing) are settled.
 
@@ -83,3 +83,4 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-09 night: the argument-type check fails a proof whose entry makes no direct call to its ENFORCE function (or, without ENFORCE, to any card function). A COVER-only proof with no card call passed before; tool tests 192/192. Full gate not rerun.
 - 2026-11-09: Zach approved the checkpoint 0 fixes; GOAL.md §2 carried out. PROPERTIES.md; proofs/spec/record_format.h (Codex spec review J0011, 140,902 tokens: APPROVE); LEDGER.md drafts A-001 to A-005; proofs/MUTANTS to 62; cards C-03 to C-20; TRUSTED.md; UB-CLASSES.md for 6.5p2; Appendix A confirmed (evidence/checkpoint1/). mutate.py --all reports PENDING for cards without proofs. Waiting cost makes no cap too tight.
 - 2026-11-10 Checkpoint 1 fixes (auditor's REVIEW-LOG.md 2026-11-10): D1, D2, D4, Q2, Q4 (real sessions, resume of both), Q5, fixes 1–7, each with a test that fails on 71447f2; evidence/checkpoint1/05–10.
+- 2026-11-10 Zach approved checkpoint 1 at 8fbb0c8 (decisions 1–4). proof.lock committed (4b851e7, 38 files). HANDOFF.md written. `make gate CARD=C-02`: RESULT gate C-02 PASS 402s 0 failed; selftest 102/102 (evidence/checkpoint1/12-handoff-*). Found: campaign state keeps the pilot's scope, so `start` needs every card in `--cards` (HANDOFF.md, known issue 1). Setup session ends.
