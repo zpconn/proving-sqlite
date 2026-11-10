@@ -5,8 +5,10 @@
 **In progress:** §3. The campaign started 2026-11-10 15:26 with all 20 cards named (HANDOFF.md, known issue 1). HANDOFF.md's checks passed first: `make gate CARD=C-02` PASS 427s, lock included; selftest 102/102; status as HANDOFF.md says. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** triage as it comes; §4 (ledger agent) when the boundary contracts and A-001 settle; then §5. Tcl's development files (tcl8.6-dev) are already installed for §4.
 
 
-**Open questions (parked for Zach):**
-1. **C-11, CBMC's float-to-int check at r = −2^63** (evidence/approvals/C-11-f2i-exact-min/README.md, patch unapplied). CBMC 6.11 fails `(i64)r` at sqlite3IntFloatCompare 92434 for r = −2^63, which C11 defines (INT64_MIN); its bound −2^63−1 rounds to −2^63. Toys show it still flags every UB value. sqlite3IsNaN is proved. **Recommendation: option 1**, argue that one input: UB-CLASSES.md and TRUSTED.md rows, PROPERTIES.md change 7, and the harness may assume `r != -0x1p63`; M-042 and M-043 are still killed. C-17 to C-20 wait on C-11.
+**Open questions for Zach:**
+1. **TRUSTED.md, CBMC's flexible-array bounds gap** (T-003; evidence/approvals/T-003-flexarray-bounds/README.md, patch unapplied, nothing waits on it). CBMC 6.11 checks an element of a flexible array member (`pKeyInfo->aColl[k]`) only where it starts, so a KeyInfo one byte short passes (C-16). `r_ok` checks the whole range, so whole-entry footprints are sound. C-16 and C-17's cards now require whole-entry footprints, with minus one entry in CBMC and minus one byte natively under ASan as the evidence. **Recommendation: approve the TRUSTED.md entry.**
+
+Answered: C-11 (option 1 with the contract addition, 2026-11-10; evidence/approvals/C-11-f2i-exact-min/APPROVED.md). Tool issues are logged in evidence/orchestrator/tool-issues.md.
 
 The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
@@ -90,3 +92,5 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-10 Zach approved checkpoint 1 at 8fbb0c8 (decisions 1–4). proof.lock committed (4b851e7, 38 files). HANDOFF.md written. `make gate CARD=C-02`: RESULT gate C-02 PASS 402s 0 failed; selftest 102/102 (evidence/checkpoint1/12-handoff-*). Found: campaign state keeps the pilot's scope, so `start` needs every card in `--cards` (HANDOFF.md, known issue 1). Setup session ends.
 - 2026-11-10 15:26 Campaign session (Zach's /goal, in the setup session's conversation): HANDOFF.md checks passed (gate C-02 PASS 427s, selftest 102/102, status matched). `tools/campaign.py start --cards C-01,…,C-20`: status lists all 20; builders J0012–J0015 on C-03, C-05, C-06, C-07.
 - 2026-11-10 16:15 Triage C-11 (NEEDS-DECISION): CBMC 6.11 false failure of the float-to-int check at r = −2^63 (92434), confirmed on toys and natively. Approval request with patch in evidence/approvals/C-11-f2i-exact-min/; C-11 parked.
+- 2026-11-10 Zach approved C-11 option 1 with the contract addition. Applied: UB-CLASSES.md, TRUSTED.md, PROPERTIES.md change 7, tools/results.py (Argued column; 4 tests fail on main's tools), cards/C-11.md, proof.lock; landed with APPROVED.md. Started evidence/orchestrator/tool-issues.md (T-001 CBMC float-to-int, T-002 LeakSanitizer under ptrace).
+- 2026-11-10 Triage C-16 (NEEDS-DECISION): CBMC 6.11 bounds-checks a flexible array element only at its start (T-003; toys and native ASan in evidence/orchestrator/tool-issues/T-003/). Decision in cards C-16 and C-17: whole-entry KeyInfo footprints, minus one entry in CBMC plus minus one byte under ASan, checked by the reviewer. TRUSTED.md entry requested (evidence/approvals/T-003-flexarray-bounds/). C-16 retried.
