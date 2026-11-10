@@ -14,6 +14,12 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 | C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-le | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
 | C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | ilp32-le | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
 | C-02 | P2 | roundtrip | sqlite3PutVarint putVarint64 sqlite3GetVarint sqlite3GetVarint32 sqlite3VarintLen | lp64-be | PASS | 1 | 450 | 0 | 133/133 | 11/11 | APPROVE (C-02-r1.md) |  |
+| C-03 | P1 | separate | sqlite3GetVarint | lp64-le | PASS | 1 | 331 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | shared | sqlite3GetVarint | lp64-le | PASS | 1 | 339 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | separate | sqlite3GetVarint | ilp32-le | PASS | 0 | 331 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | shared | sqlite3GetVarint | ilp32-le | PASS | 1 | 339 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | separate | sqlite3GetVarint | lp64-be | PASS | 1 | 331 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
+| C-03 | P1 | shared | sqlite3GetVarint | lp64-be | PASS | 1 | 339 | 0 | 87/87 | 2/2 | APPROVE (C-03-r1.md) |  |
 | C-05 | P1 | len | sqlite3VarintLen | lp64-le | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
 | C-05 | P1 | len | sqlite3VarintLen | ilp32-le | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
 | C-05 | P1 | len | sqlite3VarintLen | lp64-be | PASS | 0 | 16 | 0 | 4/4 | 2/2 | APPROVE (C-05-r1.md) |  |
@@ -26,7 +32,8 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 
 Where each card's numbers come from (the commit whose gate produced them, and its log):
 
-- C-01: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants 5219e5648758 evidence/gate/C-01-r2.log
-- C-02: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants affc94a4a51c evidence/gate/C-02-r1.log
-- C-05: proofs 10cf282389d3 evidence/gate/C-05-r1.log; coverage 10cf282389d3 evidence/gate/C-05-r1.log; mutants 10cf282389d3 evidence/gate/C-05-r1.log
+- C-01: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants 5219e5648758 evidence/gate/C-01-r2.log
+- C-02: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants affc94a4a51c evidence/gate/C-02-r1.log
+- C-03: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants 994880ea6ae3 evidence/gate/C-03-r1.log
+- C-05: proofs 994880ea6ae3 evidence/gate/C-03-r1.log; coverage 994880ea6ae3 evidence/gate/C-03-r1.log; mutants 10cf282389d3 evidence/gate/C-05-r1.log
 - C-06: proofs 611459274de8 evidence/gate/C-06-r1.log; coverage 611459274de8 evidence/gate/C-06-r1.log; mutants 611459274de8 evidence/gate/C-06-r1.log
