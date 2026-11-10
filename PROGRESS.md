@@ -6,9 +6,9 @@
 
 
 **Open questions for Zach:**
-1. **TRUSTED.md, CBMC's flexible-array bounds gap** (T-003; evidence/approvals/T-003-flexarray-bounds/README.md, patch unapplied, nothing waits on it). CBMC 6.11 checks an element of a flexible array member (`pKeyInfo->aColl[k]`) only where it starts, so a KeyInfo one byte short passes (C-16). `r_ok` checks the whole range, so whole-entry footprints are sound. C-16 and C-17's cards now require whole-entry footprints, with minus one entry in CBMC and minus one byte natively under ASan as the evidence. **Recommendation: approve the TRUSTED.md entry.**
+1. **T-004, campaign.py's finish kills any tmux session named campaign** (evidence/approvals/T-004-finish-tmux/; approved in principle, unapplied). It waits for the auditor's OK on patch.diff. Until then the selftest runs only under `env -u TMUX TMUX_TMPDIR=<scratch>`.
 
-Answered: C-11 (option 1 with the contract addition, 2026-11-10; evidence/approvals/C-11-f2i-exact-min/APPROVED.md). Tool issues are logged in evidence/orchestrator/tool-issues.md.
+Answered on 2026-11-10: C-11 (option 1 with the contract addition; the land including results.py's Argued column) and T-003 (the TRUSTED.md entry plus the exact-allocation condition). Tool issues are logged in evidence/orchestrator/tool-issues.md (T-001 to T-004).
 
 The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
@@ -94,3 +94,5 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-10 16:15 Triage C-11 (NEEDS-DECISION): CBMC 6.11 false failure of the float-to-int check at r = −2^63 (92434), confirmed on toys and natively. Approval request with patch in evidence/approvals/C-11-f2i-exact-min/; C-11 parked.
 - 2026-11-10 Zach approved C-11 option 1 with the contract addition. Applied: UB-CLASSES.md, TRUSTED.md, PROPERTIES.md change 7, tools/results.py (Argued column; 4 tests fail on main's tools), cards/C-11.md, proof.lock; landed with APPROVED.md. Started evidence/orchestrator/tool-issues.md (T-001 CBMC float-to-int, T-002 LeakSanitizer under ptrace).
 - 2026-11-10 Triage C-16 (NEEDS-DECISION): CBMC 6.11 bounds-checks a flexible array element only at its start (T-003; toys and native ASan in evidence/orchestrator/tool-issues/T-003/). Decision in cards C-16 and C-17: whole-entry KeyInfo footprints, minus one entry in CBMC plus minus one byte under ASan, checked by the reviewer. TRUSTED.md entry requested (evidence/approvals/T-003-flexarray-bounds/). C-16 retried.
+- 2026-11-10 16:35 The selftest's finish killed the live daemon (T-004); restarted 16:37, nothing lost. Fix written and tested (103/103; the control fails 102/103); approved in principle, waiting for the auditor's OK.
+- 2026-11-10 Zach approved the C-11 land as queued, and T-003 with the exact-allocation condition. TRUSTED.md and cards C-16 and C-17 updated, with proof.lock and APPROVED.md. C-11 and C-16 are retried once their lands reach main.

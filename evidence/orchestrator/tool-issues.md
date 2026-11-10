@@ -42,4 +42,16 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
   - KeyInfo footprints stay in whole entries;
   - minus one entry fails in CBMC (proved), and minus one byte overflows natively under ASan (tested);
   - the reviewer checks that every such footprint is whole entries.
-  - TRUSTED.md needs an entry; the approval request is evidence/approvals/T-003-flexarray-bounds/.
+  - the harness allocates the KeyInfo at exactly SZ_KEYINFO(n) bytes, never larger, so a read of aColl[n] starts out of bounds and CBMC catches it; NOTES.md shows that read fails (Zach's addition);
+  - TRUSTED.md records the gap and both conditions (evidence/approvals/T-003-flexarray-bounds/APPROVED.md).
+
+## T-004 tools/campaign.py (frozen at checkpoint 1): the selftest's `finish` kills the live campaign's daemon
+
+- **Tool:** tools/campaign.py at proof.lock 4b851e7, with tmux 3.4 (Ubuntu 24.04).
+- **What happened:** at 16:35 on 2026-11-10 I ran `tools/campaign.py selftest` to check an approved tool change (C-11). The selftest drives a scratch campaign started with `--no-tmux`, then runs its `finish`. `cmd_finish` always runs `tmux kill-session -t campaign` (campaign.py:2306), and that is also the live campaign's session name. It killed the live daemon. The detached jobs (J0039, J0040, J0041) carried on, and nothing was lost. `tools/campaign.py start` restarted the daemon at 16:37. The selftest's docstring says it "never touches a live campaign".
+- **Repro:** start a campaign in tmux, then run `tools/campaign.py selftest`; `tmux ls` afterwards shows no session.
+- **Effect:** the daemon was down for about 4 minutes and `wait` returned "campaign.py is not running". No session, merge or state was lost.
+- **Workaround, until the fix is approved:**
+  - run the selftest only as `env -u TMUX TMUX_TMPDIR=<scratch dir> tools/campaign.py selftest`, so its tmux calls reach another server;
+  - or don't run it while a campaign runs.
+- **Fix requested:** evidence/approvals/T-004-finish-tmux/. finish kills the session only if its own campaign was started in tmux, and the selftest uses its own tmux socket and checks that a session it didn't make survives.
