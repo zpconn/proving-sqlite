@@ -1,0 +1,69 @@
+diff --git a/PROPERTIES.md b/PROPERTIES.md
+index 5481bae..671973f 100644
+--- a/PROPERTIES.md
++++ b/PROPERTIES.md
+@@ -47,3 +47,4 @@ That reference is written from the serial type table of SQLite's file format doc
+ 4. **P1, loops**: unwinding with unwinding assertions is allowed for a loop bounded by construction at 16 iterations or fewer (builder §2.6, checkpoint 0 decision A), besides loop contracts.
+ 5. **P2, sqlite3VarintLen**: GOAL.md's statement matches what §1.8.1 measured, so it is unchanged; the measured values are cited.
+ 6. **P3, types 8 and 9** (auditor, checkpoint 1 fix 3): the table limits them to schema format 4 and higher; the code doesn't check, so P3 states that as departure D4.
++7. **P1 for sqlite3IntFloatCompare, r = −2^63** (Zach's decision on C-11, evidence/approvals/C-11-f2i-exact-min/): CBMC 6.11's float-to-int check rejects that one input, whose conversion at 92434 C11 defines (TRUSTED.md). P1 is proved for every other (i, r); at r = −2^63 it is argued (UB-CLASSES.md) and tested natively, not proved.
+diff --git a/TRUSTED.md b/TRUSTED.md
+index 78f5b1e..2b8cdd4 100644
+--- a/TRUSTED.md
++++ b/TRUSTED.md
+@@ -11,6 +11,7 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
+   - `--dfcc` with `--enforce-contract`, `--replace-call-with-contract` and `--apply-loop-contracts`: replacing a callee by its contract is sound only if DFCC checks the contract's requires at each call and assumes no more than its ensures;
+   - `--slice-global-inits`;
+   - unwinding with `--unwinding-assertions`.
++- **A known false failure in `--conversion-check`** (C-11, evidence/approvals/C-11-f2i-exact-min/): for a conversion from a floating type to a signed integer type of width w, CBMC 6.11 reports the exact minimum −2^(w−1) as overflowing whenever the floating type cannot represent −2^(w−1)−1: double to a 64-bit type, float to a 32-bit type. Its check reads `r > -9.223372e+18 && r < 9.223372e+18` for (i64)r. On toys, the next double below −2^63 and 2^63 itself are still flagged, and double to 32-bit is exact. So this rejects one defined input and misses none. In scope it applies only at sqlite3IntFloatCompare 92434, the one float-to-integer conversion in Appendix A; that input is argued in UB-CLASSES.md.
+   - Under DFCC, statics and globals start unconstrained (proofs/HOWTO.md), which over-approximates SQLite's initialized globals.
+ - **Its back ends:** the default SAT solver, MiniSat 2, unless a card's Makefile names another (`<name>_SOLVER`: CaDiCaL, Glucose, or Z3 4.8.12 through `--smt2`/`--z3`). No merged proof names one.
+ - **Coverage:** `cbmc --cover location`, which the gate uses to require that proofs reach every line of the functions under proof (tools/prove.py coverage).
+diff --git a/UB-CLASSES.md b/UB-CLASSES.md
+index 47ad0b0..ffcfad6 100644
+--- a/UB-CLASSES.md
++++ b/UB-CLASSES.md
+@@ -26,7 +26,7 @@ Line numbers are upstream/sqlite3.c's.
+ | Left shift of a signed value whose result is not representable (6.5.7p4) | `--signed-overflow-check` | SHL_OVERFLOW |
+ | Shift by a negative amount or by ≥ the width; left shift of a negative value (6.5.7p3–4) | `--undefined-shift-check` | UNDEFINED_SHIFT, NEG_SHIFT |
+ | Second operand of `/` or `%` is zero (6.5.5p5), integer and floating | `--div-by-zero-check`, `--float-div-by-zero-check` | DIV_BY_ZERO, FLOAT_DIV_BY_ZERO |
+-| Floating value converted to an integer type that cannot represent its integral part (6.3.1.4p1) | `%float-to-int` in CHECKS: a second CBMC pass with `--conversion-check`, restricted to "float to … integer type conversion" properties | FLOAT_TO_INT |
++| Floating value converted to an integer type that cannot represent its integral part (6.3.1.4p1) | `%float-to-int` in CHECKS: a second CBMC pass with `--conversion-check`, restricted to "float to … integer type conversion" properties. One input is argued instead (below): r = −2^63 at sqlite3IntFloatCompare 92434, where CBMC 6.11's check is wrong (TRUSTED.md) | FLOAT_TO_INT |
+ | Relational comparison or subtraction of pointers into different objects (6.5.8p5, 6.5.6p9) | `--pointer-check` ("same object violation") | PTR_RELATION, PTR_SUBTRACT |
+ | `memcpy` with overlapping objects (7.24.2.1p2) | CBMC's `memcpy` model, under `--pointer-check` | MEMCPY_OVERLAP |
+ | A library function given an array argument it cannot access in full (7.1.4p1) | CBMC's `memcpy`/`memcmp` models, under `--pointer-check` | MEMCPY_OOB |
+@@ -45,6 +45,7 @@ Line numbers are upstream/sqlite3.c's.
+ | An object's stored value accessed through an lvalue of a type the effective-type rules do not allow (6.5p7) | serialGet (91945) reads `u64 x` through `*(i64*)&x` at 91956, and so do vdbeRecordDecodeInt at 92579 and vdbeRecordCompareInt at 92889. i64 is the signed type corresponding to x's effective type, which 6.5p7 allows. vdbeRecordDecodeInt (92569) and vdbeRecordCompareInt (92877) read `u32 y` through `*(int*)&y`, allowed for the same reason. sqlite3GetVarint (38021) reads bytes as `((signed char*)p)[k]` at 38024 and 38028; character types may access any object. The double is filled with `memcpy` (serialGet 91976, serialGet7 91989), not a cast. Reading a union member other than the one last stored (Mem's `u`) is not UB in C11 (6.5.2.3 footnote 95). |
+ | Two side effects on one scalar, or a side effect and a read of it, unsequenced (6.5p2) | CBMC does not check this. `gcc -Wsequence-point` and `clang -Wunsequenced` report nothing in sqlite3.c (checkpoint 1); both are heuristic. A scan of the 22 functions for statements with two or more side effects, with the macros getVarint32, getVarint32NR and SQLITE_CORRUPT_BKPT counted as side effects, finds 26 (evidence/checkpoint1/01-scope.md). In each the effects are on different objects, or are ordered by `?:`, `,`, `&&`/`||` or the compound-assignment rule (6.5.16p3: the operands' value computations come before the store). For example: `idx += getVarint32(&aKey[idx], serial_type)` (92137) reads idx in the operand and assigns serial_type inside the macro's `?:` and `,`. `buf[n++] = ...` (putVarint64) modifies n and stores to buf[n]. `rc = vdbeCompareMemString(..., &pPKey2->errCode)` (92734): the callee writes errCode, not rc. `(pKeyInfo = pPKey2->pKeyInfo)->nAllField` (92725) is the right operand of `||`. Each card's reviewer re-checks its functions. |
+ | An integer converted to a real floating type whose range does not hold it (6.3.1.4p2) | Site: sqlite3IntFloatCompare (92425) converts the i64 `i` to double at 92440, `(((double)i)<r) ? -1 : (((double)i)>r)`. The three `testcase( ... (double)i ... )` lines at 92437–92439 compile to nothing without SQLITE_COVERAGE_TEST (15225). Every i64 lies in [−2^63, 2^63), well inside a double's range (about ±1.8·10^308), so the conversion is never undefined. For \|i\| > 2^53 it may not be exact, and which neighbour it rounds to is implementation-defined (6.3.1.4p2); the IEC 60559 configurations round to nearest, as CBMC models it (TRUSTED.md). No other integer-to-floating conversion is in Appendix A's functions: their other double operations compare doubles (92432–92433, 92698–92700) or copy bits (serialGet, serialGet7). |
++| A floating value converted to an integer type, at the one input CBMC 6.11 misjudges (6.3.1.4p1) | Site: sqlite3IntFloatCompare (92425) converts the double `r` to i64 at 92434, `y = (i64)r`. It gets there only if sqlite3IsNaN(r) is 0 (92426; C-11 proves sqlite3IsNaN nonzero exactly for NaN), `r<-9223372036854775808.0` is false (92432) and `r>=9223372036854775808.0` is false (92433): so r is in [−2^63, 2^63). C-11's proof covers every such r but −2^63, which its harness excludes in SETUP (Zach's decision, evidence/approvals/C-11-f2i-exact-min/). At r = −2^63 the integral part is −9223372036854775808, which i64 represents, so 6.3.1.4p1 defines the conversion: y is INT64_MIN. CBMC 6.11 reports it as a failure anyway (TRUSTED.md). The rest of the function at that input is `i<y` and `i>y` on i64 (no arithmetic), `(double)i` (the 6.3.1.4p2 row above) and comparisons of doubles, none of which can be undefined. Tested natively under ASan and UBSan with float-cast-overflow, for six values of i (evidence/approvals/C-11-f2i-exact-min/native.txt); tested, not proved. |
+ | A trap representation read through a non-character lvalue (6.2.6.1p5) | The configurations use IEC 60559 doubles, and every bit pattern of a 64-bit double is a value, so serialGet and serialGet7's memcpy into `pMem->u.r` cannot create one; a NaN becomes MEM_Null. The integer types have no trap representations on these configurations. |
+ | The value of an automatic object used while indeterminate (6.2.4p6, 6.3.2.1p2) | CBMC treats uninitialized objects as nondeterministic, so every value they could hold is explored, but it does not flag the read itself. Sites: putVarint64 (37967) reads `buf[0..n-1]` only after writing them (37981–37987). RecordUnpack's corrupt-record case (comment at 92150–92153) reads bytes past the record, which are heap bytes read as `unsigned char`; A-001 makes them readable, and `unsigned char` has no trap representations. Each card's reviewer checks that its function reads no automatic variable before writing it. `gcc -Wuninitialized` reports nothing in sqlite3.c. |
+ | A non-void function reaches its closing `}` and the caller uses the value (6.9.1p12) | CBMC does not check this (toy NO_RETURN passes). Every function in Appendix A returns on every path: `gcc -O0 -Wreturn-type -c upstream/sqlite3.c` reports nothing. Each card's reviewer confirms it for that card's functions. |
+diff --git a/cards/C-11.md b/cards/C-11.md
+index 3e7f07d..fbb51ed 100644
+--- a/cards/C-11.md
++++ b/cards/C-11.md
+@@ -7,4 +7,4 @@
+ - Depends on: none
+ - May change: proofs/C-11/harness.c, proofs/C-11/Makefile, proofs/C-11/NOTES.md, proofs/contracts/sqlite3IsNaN.h, proofs/contracts/sqlite3IntFloatCompare.h, proofs/include/preds.h, tests/repro/F-draft-C-11-1.c, tests/repro/F-draft-C-11-2.c, tests/repro/F-draft-C-11-3.c, reports/C-11-b1.md, reports/C-11-b2.md, reports/C-11-b3.md, reports/C-11-b4.md, reports/C-11-b5.md, reports/C-11-b6.md
+ - Cap: builder 10M; reviewer half that. Tier: standard
+-- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. Under the default options sqlite3IsNaN takes its memcpy branch (36448-36450), since neither SQLITE_HAVE_ISNAN nor HAVE_ISNAN is defined. Appendix A: sqlite3IntFloatCompare guards its `(i64)r` conversion (92434) with range checks; it is the one float-to-integer conversion in scope, checked by CHECKS' %float-to-int pass. Mutants: M-040 to M-043 (card=C-11).
++- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. Under the default options sqlite3IsNaN takes its memcpy branch (36448-36450), since neither SQLITE_HAVE_ISNAN nor HAVE_ISNAN is defined. Appendix A: sqlite3IntFloatCompare guards its `(i64)r` conversion (92434) with range checks; it is the one float-to-integer conversion in scope, checked by CHECKS' %float-to-int pass. Mutants: M-040 to M-043 (card=C-11). Decision (Zach, evidence/approvals/C-11-f2i-exact-min/): CBMC 6.11's float-to-int check wrongly fails r = −2^63 at 92434 (TRUSTED.md). sqlite3IntFloatCompare's harness may assume `r != -0x1p63` in SETUP, and nothing else about r or i; NOTES.md cites UB-CLASSES.md's row for that input. Every other check and property stays. Show that without the assume the proof fails only on the float-to-int property at 92434, with r = −2^63 in the trace, and that M-042 and M-043 are killed with it.
+diff --git a/proof.lock b/proof.lock
+index a006881..924af79 100644
+--- a/proof.lock
++++ b/proof.lock
+@@ -3,9 +3,9 @@ c449f12658c78e89e6b67c7d924e672229a542e409276c123d6d80fa46e7c734  AGENTS.md
+ ffa51ed87799d432f31f08b2df5ca05e2b6a9856b88cdb76eafe7fa685f06910  CLAUDE.md
+ 87b822b4a3da3e8c91adaab36fad6c189eda41942c8cbc2ddd07a3a7b4a19987  GOAL.md
+ fae960f9a882576ce2d9d9181c5a48a68edcf03d080fe30b1897a7091a4bbc5f  Makefile
+-1d538aedef1a185cee5dbb802e3dd4309f609b38380aa3d9cdfaa20f4f414fe0  PROPERTIES.md
+-f9234f43fe1a40a98cb1f9a155c26105726212e196e0d018af7e0178b04e5335  TRUSTED.md
+-ce0d6b89adbedb9d18b9ff19e2f9af3f99e0c72d1318790f5f9d855c0eac4396  UB-CLASSES.md
++e2acd160e8082e895a59b8483bfebdfea31dd2c67cb50633665a8197e09dc392  PROPERTIES.md
++38cbf25f941ad5a3286d128172ca6575d0de97d58466719dfda7eae6f1e71d5a  TRUSTED.md
++971f39af85bfa49d3e59acf9d5876dabd14f1cc95ed669f231aab3b9c8cf1dfe  UB-CLASSES.md
+ e0c275b9768ec45c7e0ad2c5661e74ff185b4fd0729a32d4d9296e06f3bfe3b3  agents/builder/GOAL.md
+ 0766329592d310d2d711c69ce2ce2e6c54511a521257150ad2f3dda8ddcae296  agents/ledger/GOAL.md
+ 1794aa874e09a29341f0345067963dbb0b337c68853292fa9593229a3507d7a8  agents/reviewer/GOAL.md
