@@ -50,6 +50,12 @@ Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that confi
 | C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-le | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |  |
 | C-10 | P1 | decode | vdbeRecordDecodeInt | ilp32-le | PASS | 0 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |  |
 | C-10 | P1 | decode | vdbeRecordDecodeInt | lp64-be | PASS | 1 | 359 | 0 | 21/21 | 2/2 | APPROVE (C-10-r1.md) |  |  |
+| C-11 | P1 | isnan | sqlite3IsNaN | lp64-le | PASS | 0 | 33 | 0 | 6/6 | 4/4 | APPROVE (C-11-r2.md) |  |  |
+| C-11 | P1 | compare | sqlite3IntFloatCompare | lp64-le | PASS | 1 | 29 | 0 | 10/10 | 4/4 | APPROVE (C-11-r2.md) |  | sqlite3IntFloatCompare: proved for every other (i, r); argued and tested at r = −2^63 (UB-CLASSES.md) |
+| C-11 | P1 | isnan | sqlite3IsNaN | ilp32-le | PASS | 0 | 33 | 0 | 6/6 | 4/4 | APPROVE (C-11-r2.md) |  |  |
+| C-11 | P1 | compare | sqlite3IntFloatCompare | ilp32-le | PASS | 1 | 29 | 0 | 10/10 | 4/4 | APPROVE (C-11-r2.md) |  | sqlite3IntFloatCompare: proved for every other (i, r); argued and tested at r = −2^63 (UB-CLASSES.md) |
+| C-11 | P1 | isnan | sqlite3IsNaN | lp64-be | PASS | 0 | 33 | 0 | 6/6 | 4/4 | APPROVE (C-11-r2.md) |  |  |
+| C-11 | P1 | compare | sqlite3IntFloatCompare | lp64-be | PASS | 1 | 29 | 0 | 10/10 | 4/4 | APPROVE (C-11-r2.md) |  | sqlite3IntFloatCompare: proved for every other (i, r); argued and tested at r = −2^63 (UB-CLASSES.md) |
 | C-12 | P1 | zero | isAllZero | lp64-le | PASS | 1 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |  |
 | C-12 | P1 | zero | isAllZero | ilp32-le | PASS | 0 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |  |
 | C-12 | P1 | zero | isAllZero | lp64-be | PASS | 0 | 79 | 0 | 4/5 | 2/2 | APPROVE (C-12-r1.md) |  |  |
@@ -72,6 +78,7 @@ Where each card's numbers come from (the commit whose gate produced them, and it
 - C-08: proofs 104fe8630a8a evidence/gate/C-08-r1.log; coverage 104fe8630a8a evidence/gate/C-08-r1.log; mutants 104fe8630a8a evidence/gate/C-08-r1.log
 - C-09: proofs 104fe8630a8a evidence/gate/C-08-r1.log; coverage 104fe8630a8a evidence/gate/C-08-r1.log; mutants fb1215b4b2b6 evidence/gate/C-09-r1.log
 - C-10: proofs 106da82e3f24 evidence/gate/C-10-r1.log; coverage 106da82e3f24 evidence/gate/C-10-r1.log; mutants 106da82e3f24 evidence/gate/C-10-r1.log
+- C-11: proofs 5ef772a997f6 evidence/gate/C-11-r2.log; coverage 5ef772a997f6 evidence/gate/C-11-r2.log; mutants 5ef772a997f6 evidence/gate/C-11-r2.log
 - C-12: proofs 3dbacd2bcc92 evidence/gate/C-12-r1.log; coverage 3dbacd2bcc92 evidence/gate/C-12-r1.log; mutants 3dbacd2bcc92 evidence/gate/C-12-r1.log
 - C-13: proofs 4fc99b4c992c evidence/gate/C-13-r1.log; coverage 4fc99b4c992c evidence/gate/C-13-r1.log; mutants 4fc99b4c992c evidence/gate/C-13-r1.log
 - C-14: proofs b708ed7b5881 evidence/gate/C-14-r1.log; coverage b708ed7b5881 evidence/gate/C-14-r1.log; mutants b708ed7b5881 evidence/gate/C-14-r1.log

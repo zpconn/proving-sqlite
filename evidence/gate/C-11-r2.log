@@ -1,0 +1,89 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 1 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 1 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 38 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-11 --base 53b3ac581c21a10f579fc058e921e69a41c8e273
+  scan: 14 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (19s)
+gate: cards to run: C-11
+==== includes C-11: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-11
+    includes C-11 lp64-le: 153 files, 0 not allowed
+    includes C-11 ilp32-le: 153 files, 0 not allowed
+    includes C-11 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-11 all PASS
+==== includes C-11 PASS (0s)
+==== prove C-11: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-11 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-11/build
+  RESULT prove C-11/isnan lp64-le PASS 19s 33 properties 0 failed
+  RESULT prove C-11/compare lp64-le PASS 18s 29 properties 0 failed
+  RESULT prove C-11 lp64-le PASS 37s 62 properties 0 failed
+  RESULT prove C-11/isnan ilp32-le PASS 19s 33 properties 0 failed
+  RESULT prove C-11/compare ilp32-le PASS 17s 29 properties 0 failed
+  RESULT prove C-11 ilp32-le PASS 36s 62 properties 0 failed
+  RESULT prove C-11/isnan lp64-be PASS 20s 33 properties 0 failed
+  RESULT prove C-11/compare lp64-be PASS 18s 29 properties 0 failed
+  RESULT prove C-11 lp64-be PASS 38s 62 properties 0 failed
+  RESULT prove C-11 all PASS 111s 186 properties 0 failed
+==== prove C-11 PASS (110s)
+==== coverage C-11: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-11 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-11/build
+    coverage isnan lp64-le sqlite3IsNaN: 6/6 lines; uncovered none
+    coverage compare lp64-le sqlite3IntFloatCompare: 10/10 lines; uncovered none
+    coverage isnan ilp32-le sqlite3IsNaN: 6/6 lines; uncovered none
+    coverage compare ilp32-le sqlite3IntFloatCompare: 10/10 lines; uncovered none
+    coverage isnan lp64-be sqlite3IsNaN: 6/6 lines; uncovered none
+    coverage compare lp64-be sqlite3IntFloatCompare: 10/10 lines; uncovered none
+  RESULT coverage C-11 all PASS 48/48 lines 0 uncovered 0 unexplained
+==== coverage C-11 PASS (100s)
+==== mutants C-11: /usr/bin/python3 tools/mutate.py --card C-11 --with  --json proofs/C-11/build/mutants.json
+  MUTANT M-040 sqlite3IsNaN:36449 '&x'->'&rc' KILLED by C-11/isnan lp64-le: 2 failed: [sqlite3IsNaN.precondition_instance.2] memcpy source region readable; [contract_sqlite3IsNaN.postcondition.1] Check ensures clause of contract contract::contract_sqlite3IsNaN for function sqlite3IsNaN
+  MUTANT M-041 sqlite3IsNaN:36449 'sizeof(y)'->'9' KILLED by C-11/isnan lp64-le: 2 failed: [sqlite3IsNaN.precondition_instance.2] memcpy source region readable; [sqlite3IsNaN.precondition_instance.3] memcpy destination region writeable
+  MUTANT M-042 sqlite3IntFloatCompare:92433 '>='->'>' KILLED by C-11/compare lp64-le: 1 failed: [sqlite3IntFloatCompare.overflow.1] arithmetic overflow on float to signed integer type conversion in (i64)r
+  MUTANT M-043 sqlite3IntFloatCompare:92432 '-9223372036854775808.0'->'-9223372036854777856.0' KILLED by C-11/compare lp64-le: 1 failed: [sqlite3IntFloatCompare.overflow.1] arithmetic overflow on float to signed integer type conversion in (i64)r
+  RESULT mutate C-11 PASS 4/4 killed 0 equivalent
+==== mutants C-11 PASS (126s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 1 spans
+  lock                     PASS    0s  RESULT lock PASS 38 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   20s  RESULT probe all PASS
+  includes C-11            PASS    0s  RESULT includes C-11 all PASS
+  prove C-11               PASS  110s  RESULT prove C-11 all PASS 111s 186 properties 0 failed
+  coverage C-11            PASS  100s  RESULT coverage C-11 all PASS 48/48 lines 0 uncovered 0 unexplained
+  mutants C-11             PASS  126s  RESULT mutate C-11 PASS 4/4 killed 0 equivalent
+RESULT gate C-11 PASS 359s 0 failed
