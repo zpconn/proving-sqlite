@@ -1,0 +1,30 @@
+counter	build	test_file
+LC_A001_ASAN_CHECKED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A001_REACHED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A001_VIOL	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A001_VIOL_SLACK	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A002_ASAN_CHECKED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A002_REACHED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003E_ASAN_CHECKED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003E_ASAN_CHECKED	run-fuzztest-asan/sessionfuzz	sessionfuzz-data1.db
+LC_A003E_REACHED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003E_REACHED	run-fuzztest-asan/sessionfuzz	sessionfuzz-data1.db
+LC_A003_ASAN_CHECKED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003_ASSIGNS_CHECKED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003_ENCCHANGE	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003_REACHED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A004_ASSIGNS_CHECKED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A004_REACHED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A005P_ASAN_CHECKED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A005P_REACHED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A005_ASAN_CHECKED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A005_ASAN_CHECKED	run-fuzztest-asan/sessionfuzz	sessionfuzz-data1.db
+LC_A005_REACHED	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A005_REACHED	run-fuzztest-asan/sessionfuzz	sessionfuzz-data1.db
+LC_CMP_INT	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_CMP_INT	run-fuzztest-asan/sessionfuzz	sessionfuzz-data1.db
+LC_CMP_STRING	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_CMP_STRING	run-fuzztest-asan/sessionfuzz	sessionfuzz-data1.db
+LC_CMP_WITHSKIP	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_CMP_WITHSKIP	run-fuzztest-asan/sessionfuzz	sessionfuzz-data1.db
+LC_LOGGED_A001	run-fuzztest-asan/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db

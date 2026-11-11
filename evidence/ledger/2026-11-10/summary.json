@@ -1,0 +1,4461 @@
+[
+ {
+  "builds": {
+   "/usr/bin/tclsh8.6": {
+    "flags": "none",
+    "processes": 1
+   },
+   "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+    "flags": "asan,debug",
+    "processes": 18
+   },
+   "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+    "flags": "debug",
+    "processes": 18
+   },
+   "all_debug_fuzzcheck/fuzzcheck": {
+    "flags": "debug",
+    "processes": 8
+   },
+   "all_debug_sessionfuzz/sessionfuzz": {
+    "flags": "debug",
+    "processes": 1
+   },
+   "all_debug_testfixture/sqlite3": {
+    "flags": "debug",
+    "processes": 221
+   },
+   "all_debug_testfixture/testfixture": {
+    "flags": "debug,test",
+    "processes": 1339
+   },
+   "all_o0_fuzzcheck/fuzzcheck": {
+    "flags": "none",
+    "processes": 8
+   },
+   "all_o0_sessionfuzz/sessionfuzz": {
+    "flags": "debug",
+    "processes": 1
+   },
+   "all_o0_testfixture/sqlite3": {
+    "flags": "none",
+    "processes": 221
+   },
+   "all_o0_testfixture/testfixture": {
+    "flags": "test",
+    "processes": 1337
+   }
+  },
+  "entries": {
+   "A-001": {
+    "asan_checked": 220032,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 614767,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 220032,
+      "flags": "asan,debug",
+      "reached": 220032,
+      "violations": {
+       "LC_A001_VIOL": 665
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 220032,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 220032,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 179,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 6432706,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_o0_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 221050,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 179,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "test",
+      "reached": 6409558,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A001_VIOL_NKEY_NEG": 0,
+     "LC_A001_VIOL_NULL": 0,
+     "LC_A001_VIOL_RECORD": 0,
+     "LC_A001_VIOL_SLACK": 665
+    },
+    "hist": {
+     "LH_A001": {
+      "min": 0,
+      "nonzero": {
+       "0": 41,
+       "1": 2,
+       "10": 1,
+       "100": 41,
+       "103": 4,
+       "105": 7,
+       "106": 1,
+       "107": 1,
+       "11": 2,
+       "110": 21,
+       "111": 1,
+       "112": 1,
+       "113": 4,
+       "114": 1,
+       "116": 1,
+       "117": 11,
+       "118": 1,
+       "119": 1,
+       "120": 1,
+       "121": 11,
+       "122": 9,
+       "123": 2,
+       "124": 42,
+       "126": 2,
+       "130": 1,
+       "131": 1,
+       "132": 5,
+       "134": 3,
+       "135": 5,
+       "136": 1,
+       "137": 5,
+       "14": 11,
+       "141": 9,
+       "142": 4,
+       "143": 1,
+       "144": 1,
+       "147": 1,
+       "148": 41,
+       "15": 4,
+       "151": 1,
+       "153": 12,
+       "154": 2,
+       "155": 2,
+       "157": 1,
+       "158": 6,
+       "159": 2,
+       "16": 1,
+       "160": 211369,
+       "17": 451,
+       "18": 3085,
+       "19": 384,
+       "2": 131,
+       "20": 242,
+       "21": 37,
+       "22": 3,
+       "23": 39,
+       "24": 3020,
+       "25": 2,
+       "26": 2,
+       "27": 1,
+       "28": 39,
+       "3": 178,
+       "30": 8,
+       "34": 2,
+       "35": 1,
+       "36": 2,
+       "39": 1,
+       "4": 37,
+       "40": 2,
+       "41": 3,
+       "42": 5,
+       "43": 1,
+       "45": 9,
+       "46": 11,
+       "47": 1,
+       "48": 2,
+       "49": 2,
+       "5": 187,
+       "50": 172,
+       "51": 2,
+       "52": 39,
+       "55": 2,
+       "57": 1,
+       "58": 1,
+       "59": 1,
+       "6": 66,
+       "62": 5,
+       "63": 1,
+       "64": 1,
+       "69": 9,
+       "7": 23,
+       "70": 2,
+       "71": 1,
+       "73": 8,
+       "75": 1,
+       "76": 41,
+       "78": 11,
+       "8": 3,
+       "82": 1,
+       "83": 1,
+       "87": 1,
+       "88": 1,
+       "89": 17,
+       "9": 2,
+       "90": 9,
+       "93": 9,
+       "94": 10,
+       "95": 1,
+       "96": 2,
+       "98": 1,
+       "99": 1
+      },
+      "total": 220032
+     },
+     "LH_A001_N0": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 14338535,
+    "site": "sqlite3VdbeRecordUnpack entry",
+    "test_files": 414,
+    "violations": {
+     "LC_A001_VIOL": 665
+    }
+   },
+   "A-002": {
+    "asan_checked": 55569,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 84,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 55569,
+      "flags": "asan,debug",
+      "reached": 55569,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 55569,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 55569,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 219,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 403550,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_o0_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 55697,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 219,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "test",
+      "reached": 403237,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A002_NULL": 0,
+     "LC_A002_VIOL_ALIGN": 0,
+     "LC_A002_VIOL_POISON": 0,
+     "LC_A002_VIOL_SIZE": 0
+    },
+    "hist": {},
+    "reached": 1029713,
+    "site": "sqlite3DbMallocRaw return, in sqlite3VdbeAllocUnpackedRecord",
+    "test_files": 633,
+    "violations": {
+     "LC_A002_VIOL": 0
+    }
+   },
+   "A-003 (C-17 call site)": {
+    "asan_checked": 155888,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 1719114,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 155888,
+      "flags": "asan,debug",
+      "reached": 155888,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 155888,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 155888,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 17781,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 201799,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_o0_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 157307,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_o0_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 9294,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_o0_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "test",
+      "reached": 201703,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003_ASSIGNS_CHECKED": 2774662,
+     "LC_A003_ENCCHANGE": 4630,
+     "LC_A003_PRCERR_WRITTEN": 0,
+     "LC_A003_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 2774662,
+    "site": "vdbeCompareMemString call in sqlite3VdbeRecordCompareWithSkip",
+    "test_files": 171,
+    "violations": {
+     "LC_A003_VIOL_ASSIGNS": 0,
+     "LC_A003_VIOL_REQ": 0
+    }
+   },
+   "A-003 requires (entry, all callers)": {
+    "asan_checked": 875272,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 2150576,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 875272,
+      "flags": "asan,debug",
+      "reached": 875272,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 875272,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 875272,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_sessionfuzz/sessionfuzz": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 37263,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 8774435,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_o0_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 815334,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_o0_sessionfuzz/sessionfuzz": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 11233,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "test",
+      "reached": 8714685,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003E_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 23129344,
+    "site": "vdbeCompareMemString entry",
+    "test_files": 1106,
+    "violations": {
+     "LC_A003E_VIOL": 0
+    }
+   },
+   "A-004": {
+    "asan_checked": null,
+    "builds": {
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": null,
+      "flags": "asan,debug",
+      "reached": 231,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 231,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 232,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": null,
+      "flags": "debug,test",
+      "reached": 10,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_o0_fuzzcheck/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "none",
+      "reached": 231,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_o0_testfixture/testfixture": {
+      "asan_checked": null,
+      "flags": "test",
+      "reached": 10,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A004_ASSIGNS_CHECKED": 945,
+     "LC_A004_XLOG_SET": 0
+    },
+    "hist": {},
+    "reached": 945,
+    "site": "SQLITE_CORRUPT_BKPT in sqlite3VdbeRecordCompareWithSkip and vdbeRecordCompareString",
+    "test_files": 6,
+    "violations": {
+     "LC_A004_VIOL_ASSIGNS": 0,
+     "LC_A004_VIOL_RC": 0
+    }
+   },
+   "A-005 (putVarint64)": {
+    "asan_checked": 21002,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 268,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 21002,
+      "flags": "asan,debug",
+      "reached": 21002,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 21022,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 21022,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 590847,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 11994486,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_o0_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 21485,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 590857,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "test",
+      "reached": 12043325,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     }
+    },
+    "detail": {},
+    "hist": {
+     "LH_A005P": {
+      "min": 10,
+      "nonzero": {
+       "10": 107,
+       "160": 20895
+      },
+      "total": 21002
+     }
+    },
+    "reached": 25304314,
+    "site": "putVarint64 entry",
+    "test_files": 253,
+    "violations": {
+     "LC_A005P_VIOL": 0
+    }
+   },
+   "A-005 (sqlite3PutVarint)": {
+    "asan_checked": 1350734,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 40251,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 1350734,
+      "flags": "asan,debug",
+      "reached": 1350734,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1350734,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1350499,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_sessionfuzz/sessionfuzz": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 27,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1492106,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 45583447,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_o0_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 1365171,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_o0_sessionfuzz/sessionfuzz": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 27,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 1492097,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_o0_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "test",
+      "reached": 46239943,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A005_REAL_OVERFLOW": 0,
+     "LC_A005_VIOL_NULL": 0
+    },
+    "hist": {
+     "LH_A005": {
+      "min": 10,
+      "nonzero": {
+       "10": 1808,
+       "101": 41,
+       "107": 146,
+       "115": 12,
+       "123": 2,
+       "131": 8,
+       "134": 1,
+       "139": 86,
+       "147": 15,
+       "150": 384,
+       "155": 14,
+       "157": 197,
+       "160": 1347760,
+       "83": 11,
+       "91": 58,
+       "99": 191
+      },
+      "total": 1350734
+     }
+    },
+    "reached": 100265036,
+    "site": "sqlite3PutVarint entry",
+    "test_files": 1108,
+    "violations": {
+     "LC_A005_VIOL": 0
+    }
+   },
+   "comparator slack (measurement only)": {
+    "asan_checked": null,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": null,
+      "flags": "none",
+      "reached": 1875689,
+      "violations": {}
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": null,
+      "flags": "asan,debug",
+      "reached": 1105318,
+      "violations": {}
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 1105320,
+      "violations": {}
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 1104911,
+      "violations": {}
+     },
+     "all_debug_sessionfuzz/sessionfuzz": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 17601,
+      "violations": {}
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 18971,
+      "violations": {}
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": null,
+      "flags": "debug,test",
+      "reached": 58393770,
+      "violations": {}
+     },
+     "all_o0_fuzzcheck/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "none",
+      "reached": 1112892,
+      "violations": {}
+     },
+     "all_o0_sessionfuzz/sessionfuzz": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 17601,
+      "violations": {}
+     },
+     "all_o0_testfixture/sqlite3": {
+      "asan_checked": null,
+      "flags": "none",
+      "reached": 10484,
+      "violations": {}
+     },
+     "all_o0_testfixture/testfixture": {
+      "asan_checked": null,
+      "flags": "test",
+      "reached": 38591950,
+      "violations": {}
+     }
+    },
+    "detail": {
+     "LC_CMP_INT": 100452884,
+     "LC_CMP_STRING": 17005955
+    },
+    "hist": {
+     "LH_INT": {
+      "min": 160,
+      "nonzero": {
+       "160": 434475
+      },
+      "total": 434475
+     },
+     "LH_STRING": {
+      "min": 160,
+      "nonzero": {
+       "160": 97177
+      },
+      "total": 97177
+     },
+     "LH_WITHSKIP": {
+      "min": 0,
+      "nonzero": {
+       "0": 83,
+       "1": 4,
+       "10": 2687,
+       "100": 23,
+       "103": 2,
+       "104": 7,
+       "105": 2,
+       "108": 1,
+       "11": 2446,
+       "110": 4,
+       "112": 2,
+       "113": 1,
+       "114": 4,
+       "115": 1,
+       "117": 11,
+       "12": 830,
+       "120": 2,
+       "123": 1,
+       "124": 39,
+       "126": 18,
+       "127": 3,
+       "13": 27,
+       "132": 10,
+       "133": 1,
+       "134": 3,
+       "136": 3,
+       "14": 82,
+       "140": 1,
+       "141": 18,
+       "143": 2,
+       "144": 1,
+       "147": 1,
+       "148": 46,
+       "15": 138,
+       "150": 3,
+       "154": 3,
+       "156": 1,
+       "157": 1,
+       "158": 6,
+       "159": 1,
+       "160": 1027821,
+       "17": 1,
+       "18": 19177,
+       "19": 34408,
+       "2": 129,
+       "20": 1503,
+       "21": 906,
+       "22": 4294,
+       "23": 4008,
+       "24": 1590,
+       "25": 225,
+       "26": 2,
+       "27": 3,
+       "28": 23,
+       "3": 437,
+       "30": 3,
+       "32": 1,
+       "33": 2,
+       "35": 1,
+       "36": 2,
+       "38": 1,
+       "4": 3,
+       "40": 1,
+       "42": 1,
+       "45": 9,
+       "47": 1,
+       "48": 1,
+       "5": 36,
+       "50": 19,
+       "51": 1,
+       "52": 23,
+       "54": 5,
+       "6": 211,
+       "60": 2,
+       "61": 2,
+       "62": 1,
+       "64": 1,
+       "66": 1,
+       "68": 2,
+       "69": 12,
+       "7": 31,
+       "73": 1,
+       "75": 7,
+       "76": 37,
+       "78": 1,
+       "8": 9,
+       "80": 1,
+       "81": 2,
+       "82": 2,
+       "85": 2,
+       "88": 2,
+       "89": 2,
+       "9": 3811,
+       "92": 1,
+       "93": 18,
+       "98": 1,
+       "99": 2
+      },
+      "total": 1105318
+     }
+    },
+    "reached": 103354507,
+    "site": "entries of sqlite3VdbeRecordCompareWithSkip, vdbeRecordCompareInt, vdbeRecordCompareString",
+    "test_files": 665,
+    "violations": {}
+   }
+  },
+  "name": "test",
+  "processes": 3173,
+  "raw": "build/raw/test",
+  "violation_groups": [
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=1992 pKey=0x51d000713e88 slack=0 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=039f1610f656e6d1fd55053e50c4875c9930a33f6d0263bd14dfd6ab8c70521c19338b2308b95cf8d0bb7d202d2102780ea3528f1cb48560f76b20f382b942500fceac26c02c80147c34a4282b3dee6a1886ad8f4364c1fca82134d318224ecc",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "sqlite3VdbeExec sqlite3.c:102662",
+     "sqlite3Step sqlite3.c:95198"
+    ],
+    "kind": "slack",
+    "n_logged": 56,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=13 pKey=0x5040000d1e68 slack=3 need=8 nField=1 nKeyField=1 bytes(record+slack,first 16)=03171774306530317430653031bebebe",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "vdbeSorterCompare sqlite3.c:107973",
+     "vdbeSorterMerge sqlite3.c:108555"
+    ],
+    "kind": "slack",
+    "n_logged": 37,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata2.db",
+     "fuzzdata7.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=410 pKey=0x514000004c48 slack=6 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=060186330000065827303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "btreeMoveto sqlite3.c:74464",
+     "btreeRestoreCursorPosition sqlite3.c:74497"
+    ],
+    "kind": "slack",
+    "n_logged": 20,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata8.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=11 pKey=0x51900006a87a slack=3 need=8 nField=1 nKeyField=1 bytes(record+slack,first 14)=031902332e35332e3400fb0b0319",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "vdbeSorterCompare sqlite3.c:107973",
+     "vdbeMergeEngineStep sqlite3.c:108848"
+    ],
+    "kind": "slack",
+    "n_logged": 4,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=1048574 pKey=0x7058c71f4808 slack=2 need=8 nField=18 nKeyField=18 bytes(record+slack,first 96)=1d02110011000032fa890a0c440c0e82aa320e82b84a818f5a832c080203e83030303000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "vdbeSorterCompare sqlite3.c:107973",
+     "vdbeMergeEngineCompare sqlite3.c:109269"
+    ],
+    "kind": "slack",
+    "n_logged": 2,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata2.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=7 pKey=0x5020000cb678 slack=1 need=8 nField=4 nKeyField=3 bytes(record+slack,first 8)=04091309303030be",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "btreeMoveto sqlite3.c:74464",
+     "sqlite3BtreeInsert sqlite3.c:83129"
+    ],
+    "kind": "slack",
+    "n_logged": 2,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db"
+    ]
+   }
+  ],
+  "violation_records": 121
+ },
+ {
+  "builds": {
+   "/usr/bin/tclsh8.6": {
+    "flags": "none",
+    "processes": 1
+   },
+   "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+    "flags": "asan,debug",
+    "processes": 18
+   },
+   "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+    "flags": "debug",
+    "processes": 18
+   },
+   "all_debug_fuzzcheck/fuzzcheck": {
+    "flags": "debug",
+    "processes": 8
+   },
+   "all_debug_sessionfuzz/sessionfuzz": {
+    "flags": "debug",
+    "processes": 1
+   },
+   "all_debug_testfixture/sqlite3": {
+    "flags": "debug",
+    "processes": 221
+   },
+   "all_debug_testfixture/testfixture": {
+    "flags": "debug,test",
+    "processes": 1339
+   },
+   "all_sanitize_fuzzcheck/fuzzcheck": {
+    "flags": "asan,omit-lookaside",
+    "processes": 8
+   },
+   "all_sanitize_sessionfuzz/sessionfuzz": {
+    "flags": "asan,debug,omit-lookaside",
+    "processes": 1
+   },
+   "all_sanitize_testfixture/sqlite3": {
+    "flags": "asan,omit-lookaside",
+    "processes": 221
+   },
+   "all_sanitize_testfixture/testfixture": {
+    "flags": "asan,omit-lookaside,test",
+    "processes": 1336
+   }
+  },
+  "entries": {
+   "A-001": {
+    "asan_checked": 6851388,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 704918,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 220032,
+      "flags": "asan,debug",
+      "reached": 220032,
+      "violations": {
+       "LC_A001_VIOL": 665
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 220032,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 220032,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 179,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 6417498,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     },
+     "all_sanitize_fuzzcheck/fuzzcheck": {
+      "asan_checked": 221046,
+      "flags": "asan,omit-lookaside",
+      "reached": 221046,
+      "violations": {
+       "LC_A001_VIOL": 19834
+      }
+     },
+     "all_sanitize_testfixture/sqlite3": {
+      "asan_checked": 179,
+      "flags": "asan,omit-lookaside",
+      "reached": 179,
+      "violations": {
+       "LC_A001_VIOL": 53
+      }
+     },
+     "all_sanitize_testfixture/testfixture": {
+      "asan_checked": 6410131,
+      "flags": "asan,omit-lookaside,test",
+      "reached": 6410131,
+      "violations": {
+       "LC_A001_VIOL": 130877
+      }
+     }
+    },
+    "detail": {
+     "LC_A001_VIOL_NKEY_NEG": 0,
+     "LC_A001_VIOL_NULL": 0,
+     "LC_A001_VIOL_RECORD": 0,
+     "LC_A001_VIOL_SLACK": 151429
+    },
+    "hist": {
+     "LH_A001": {
+      "min": 0,
+      "nonzero": {
+       "0": 4033,
+       "1": 4787,
+       "10": 1864,
+       "100": 1045,
+       "101": 1444,
+       "102": 2382,
+       "103": 1479,
+       "104": 1170,
+       "105": 1516,
+       "106": 1145,
+       "107": 1374,
+       "108": 1068,
+       "109": 1483,
+       "11": 2376,
+       "110": 902,
+       "111": 5430,
+       "112": 1088,
+       "113": 1501,
+       "114": 1040,
+       "115": 1430,
+       "116": 1086,
+       "117": 1549,
+       "118": 919,
+       "119": 1455,
+       "12": 1222,
+       "120": 962,
+       "121": 1518,
+       "122": 1117,
+       "123": 1449,
+       "124": 971,
+       "125": 1483,
+       "126": 903,
+       "127": 1470,
+       "128": 1071,
+       "129": 1447,
+       "13": 1544,
+       "130": 1230,
+       "131": 2876,
+       "132": 1101,
+       "133": 1730,
+       "134": 917,
+       "135": 1540,
+       "136": 2431,
+       "137": 1552,
+       "138": 1158,
+       "139": 1435,
+       "14": 1122,
+       "140": 1096,
+       "141": 1495,
+       "142": 1017,
+       "143": 1439,
+       "144": 2809,
+       "145": 1474,
+       "146": 1130,
+       "147": 1412,
+       "148": 1091,
+       "149": 1506,
+       "15": 1445,
+       "150": 1041,
+       "151": 1414,
+       "152": 1017,
+       "153": 1543,
+       "154": 1075,
+       "155": 1404,
+       "156": 834,
+       "157": 1562,
+       "158": 981,
+       "159": 1474,
+       "16": 1045,
+       "160": 6198806,
+       "17": 3398,
+       "18": 84728,
+       "19": 44757,
+       "2": 9780,
+       "20": 10751,
+       "21": 67360,
+       "22": 31860,
+       "23": 13607,
+       "24": 10911,
+       "25": 1555,
+       "26": 2579,
+       "27": 1517,
+       "28": 1217,
+       "29": 1935,
+       "3": 14514,
+       "30": 1097,
+       "31": 1478,
+       "32": 1116,
+       "33": 1504,
+       "34": 2842,
+       "35": 1366,
+       "36": 1212,
+       "37": 1484,
+       "38": 893,
+       "39": 1427,
+       "4": 10275,
+       "40": 1198,
+       "41": 1481,
+       "42": 8854,
+       "43": 1662,
+       "44": 872,
+       "45": 1545,
+       "46": 1063,
+       "47": 1467,
+       "48": 1136,
+       "49": 1486,
+       "5": 58498,
+       "50": 1421,
+       "51": 1461,
+       "52": 1075,
+       "53": 1521,
+       "54": 852,
+       "55": 1462,
+       "56": 1091,
+       "57": 1464,
+       "58": 1055,
+       "59": 1428,
+       "6": 43515,
+       "60": 2305,
+       "61": 1528,
+       "62": 991,
+       "63": 1426,
+       "64": 1150,
+       "65": 1529,
+       "66": 1119,
+       "67": 1531,
+       "68": 2584,
+       "69": 1593,
+       "7": 6027,
+       "70": 1072,
+       "71": 1489,
+       "72": 1059,
+       "73": 1552,
+       "74": 1149,
+       "75": 1433,
+       "76": 1094,
+       "77": 1545,
+       "78": 943,
+       "79": 1403,
+       "8": 20563,
+       "80": 992,
+       "81": 1519,
+       "82": 1185,
+       "83": 1410,
+       "84": 1041,
+       "85": 1457,
+       "86": 948,
+       "87": 1457,
+       "88": 1009,
+       "89": 1525,
+       "9": 6624,
+       "90": 1091,
+       "91": 1419,
+       "92": 986,
+       "93": 1563,
+       "94": 990,
+       "95": 1422,
+       "96": 1006,
+       "97": 1482,
+       "98": 1082,
+       "99": 1400
+      },
+      "total": 6851388
+     },
+     "LH_A001_N0": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 14414047,
+    "site": "sqlite3VdbeRecordUnpack entry",
+    "test_files": 414,
+    "violations": {
+     "LC_A001_VIOL": 151429
+    }
+   },
+   "A-002": {
+    "asan_checked": 514651,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 115,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 55569,
+      "flags": "asan,debug",
+      "reached": 55569,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 55569,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 55569,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 219,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 403448,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_sanitize_fuzzcheck/fuzzcheck": {
+      "asan_checked": 55695,
+      "flags": "asan,omit-lookaside",
+      "reached": 55695,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_sanitize_testfixture/sqlite3": {
+      "asan_checked": 219,
+      "flags": "asan,omit-lookaside",
+      "reached": 219,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     },
+     "all_sanitize_testfixture/testfixture": {
+      "asan_checked": 403168,
+      "flags": "asan,omit-lookaside,test",
+      "reached": 403168,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A002_NULL": 0,
+     "LC_A002_VIOL_ALIGN": 0,
+     "LC_A002_VIOL_POISON": 0,
+     "LC_A002_VIOL_SIZE": 0
+    },
+    "hist": {},
+    "reached": 1029571,
+    "site": "sqlite3DbMallocRaw return, in sqlite3VdbeAllocUnpackedRecord",
+    "test_files": 633,
+    "violations": {
+     "LC_A002_VIOL": 0
+    }
+   },
+   "A-003 (C-17 call site)": {
+    "asan_checked": 524192,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 2168079,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 155888,
+      "flags": "asan,debug",
+      "reached": 155888,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 155888,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 155888,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 17781,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 201799,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_sanitize_fuzzcheck/fuzzcheck": {
+      "asan_checked": 157307,
+      "flags": "asan,omit-lookaside",
+      "reached": 157307,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_sanitize_testfixture/sqlite3": {
+      "asan_checked": 9294,
+      "flags": "asan,omit-lookaside",
+      "reached": 9294,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     },
+     "all_sanitize_testfixture/testfixture": {
+      "asan_checked": 201703,
+      "flags": "asan,omit-lookaside,test",
+      "reached": 201703,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003_ASSIGNS_CHECKED": 3223627,
+     "LC_A003_ENCCHANGE": 4630,
+     "LC_A003_PRCERR_WRITTEN": 0,
+     "LC_A003_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 3223627,
+    "site": "vdbeCompareMemString call in sqlite3VdbeRecordCompareWithSkip",
+    "test_files": 171,
+    "violations": {
+     "LC_A003_VIOL_ASSIGNS": 0,
+     "LC_A003_VIOL_REQ": 0
+    }
+   },
+   "A-003 requires (entry, all callers)": {
+    "asan_checked": 10420246,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 2756897,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 875272,
+      "flags": "asan,debug",
+      "reached": 875272,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 875272,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 875272,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_sessionfuzz/sessionfuzz": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 37263,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 8774435,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_sanitize_fuzzcheck/fuzzcheck": {
+      "asan_checked": 816754,
+      "flags": "asan,omit-lookaside",
+      "reached": 816754,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_sanitize_sessionfuzz/sessionfuzz": {
+      "asan_checked": 1,
+      "flags": "asan,debug,omit-lookaside",
+      "reached": 1,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_sanitize_testfixture/sqlite3": {
+      "asan_checked": 11233,
+      "flags": "asan,omit-lookaside",
+      "reached": 11233,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "all_sanitize_testfixture/testfixture": {
+      "asan_checked": 8716986,
+      "flags": "asan,omit-lookaside,test",
+      "reached": 8716986,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003E_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 23739386,
+    "site": "vdbeCompareMemString entry",
+    "test_files": 1106,
+    "violations": {
+     "LC_A003E_VIOL": 0
+    }
+   },
+   "A-004": {
+    "asan_checked": null,
+    "builds": {
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": null,
+      "flags": "asan,debug",
+      "reached": 231,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 231,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 232,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": null,
+      "flags": "debug,test",
+      "reached": 10,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_sanitize_fuzzcheck/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "asan,omit-lookaside",
+      "reached": 231,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     },
+     "all_sanitize_testfixture/testfixture": {
+      "asan_checked": null,
+      "flags": "asan,omit-lookaside,test",
+      "reached": 10,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A004_ASSIGNS_CHECKED": 945,
+     "LC_A004_XLOG_SET": 0
+    },
+    "hist": {},
+    "reached": 945,
+    "site": "SQLITE_CORRUPT_BKPT in sqlite3VdbeRecordCompareWithSkip and vdbeRecordCompareString",
+    "test_files": 6,
+    "violations": {
+     "LC_A004_VIOL_ASSIGNS": 0,
+     "LC_A004_VIOL_RC": 0
+    }
+   },
+   "A-005 (putVarint64)": {
+    "asan_checked": 12675842,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 273,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 21002,
+      "flags": "asan,debug",
+      "reached": 21002,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 21002,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 21002,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 590846,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 11992506,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_sanitize_fuzzcheck/fuzzcheck": {
+      "asan_checked": 21481,
+      "flags": "asan,omit-lookaside",
+      "reached": 21481,
+      "violations": {
+       "LC_A005P_VIOL": 109
+      }
+     },
+     "all_sanitize_testfixture/sqlite3": {
+      "asan_checked": 590853,
+      "flags": "asan,omit-lookaside",
+      "reached": 590853,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     },
+     "all_sanitize_testfixture/testfixture": {
+      "asan_checked": 12042506,
+      "flags": "asan,omit-lookaside,test",
+      "reached": 12042506,
+      "violations": {
+       "LC_A005P_VIOL": 254
+      }
+     }
+    },
+    "detail": {},
+    "hist": {
+     "LH_A005P": {
+      "min": 5,
+      "nonzero": {
+       "10": 401,
+       "100": 744628,
+       "12": 5,
+       "13": 1,
+       "14": 50,
+       "15": 1,
+       "160": 11930366,
+       "20": 1,
+       "22": 22,
+       "40": 2,
+       "5": 11,
+       "56": 2,
+       "6": 257,
+       "7": 95
+      },
+      "total": 12675842
+     }
+    },
+    "reached": 25301471,
+    "site": "putVarint64 entry",
+    "test_files": 253,
+    "violations": {
+     "LC_A005P_VIOL": 363
+    }
+   },
+   "A-005 (sqlite3PutVarint)": {
+    "asan_checked": 35410787,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 40151,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": 1350734,
+      "flags": "asan,debug",
+      "reached": 1350734,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1350734,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1350499,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_sessionfuzz/sessionfuzz": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 27,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1492161,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": 0,
+      "flags": "debug,test",
+      "reached": 45576166,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_sanitize_fuzzcheck/fuzzcheck": {
+      "asan_checked": 1365741,
+      "flags": "asan,omit-lookaside",
+      "reached": 1365741,
+      "violations": {
+       "LC_A005_VIOL": 485
+      }
+     },
+     "all_sanitize_sessionfuzz/sessionfuzz": {
+      "asan_checked": 27,
+      "flags": "asan,debug,omit-lookaside",
+      "reached": 27,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_sanitize_testfixture/sqlite3": {
+      "asan_checked": 1492108,
+      "flags": "asan,omit-lookaside",
+      "reached": 1492108,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "all_sanitize_testfixture/testfixture": {
+      "asan_checked": 31202177,
+      "flags": "asan,omit-lookaside,test",
+      "reached": 31202177,
+      "violations": {
+       "LC_A005_VIOL": 6033
+      }
+     }
+    },
+    "detail": {
+     "LC_A005_REAL_OVERFLOW": 0,
+     "LC_A005_VIOL_NULL": 0
+    },
+    "hist": {
+     "LH_A005": {
+      "min": 4,
+      "nonzero": {
+       "10": 2480518,
+       "100": 800016,
+       "101": 167,
+       "102": 12070,
+       "103": 377930,
+       "106": 1547,
+       "107": 4839,
+       "108": 31,
+       "109": 14,
+       "110": 657343,
+       "111": 856382,
+       "114": 1406,
+       "115": 1858,
+       "116": 26,
+       "117": 1077,
+       "118": 7070,
+       "119": 2565,
+       "12": 5,
+       "122": 1336,
+       "123": 724,
+       "124": 155,
+       "125": 461,
+       "126": 12427,
+       "127": 3127,
+       "13": 1,
+       "130": 1428,
+       "131": 1825,
+       "132": 83,
+       "133": 98,
+       "134": 18918,
+       "135": 1831,
+       "138": 1235,
+       "139": 2846,
+       "14": 63,
+       "140": 23,
+       "141": 142,
+       "142": 19637,
+       "143": 226,
+       "146": 1256,
+       "147": 1865,
+       "148": 24723,
+       "149": 6227,
+       "15": 1,
+       "150": 84223,
+       "151": 540,
+       "154": 1145,
+       "155": 976,
+       "156": 274,
+       "157": 460,
+       "158": 4146,
+       "159": 797,
+       "160": 29737753,
+       "20": 2,
+       "21": 47,
+       "22": 29,
+       "4": 6,
+       "40": 2,
+       "5": 41,
+       "56": 2,
+       "6": 6088,
+       "62": 25234,
+       "63": 914,
+       "66": 186,
+       "67": 179,
+       "68": 229,
+       "69": 24,
+       "7": 383,
+       "70": 121686,
+       "71": 963,
+       "74": 2086,
+       "75": 3531,
+       "76": 236,
+       "77": 31,
+       "78": 50554,
+       "79": 125,
+       "82": 1736,
+       "83": 6758,
+       "84": 514,
+       "85": 79,
+       "86": 13406,
+       "87": 6979,
+       "90": 2324,
+       "91": 8217,
+       "92": 91,
+       "93": 101,
+       "94": 10861,
+       "95": 593,
+       "98": 1564,
+       "99": 9150
+      },
+      "total": 35410787
+     }
+    },
+    "reached": 85220525,
+    "site": "sqlite3PutVarint entry",
+    "test_files": 1108,
+    "violations": {
+     "LC_A005_VIOL": 6518
+    }
+   },
+   "comparator slack (measurement only)": {
+    "asan_checked": null,
+    "builds": {
+     "/usr/bin/tclsh8.6": {
+      "asan_checked": null,
+      "flags": "none",
+      "reached": 2325162,
+      "violations": {}
+     },
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan": {
+      "asan_checked": null,
+      "flags": "asan,debug",
+      "reached": 1105322,
+      "violations": {}
+     },
+     "all_debug_fuzzcheck-ubsan/fuzzcheck-ubsan": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 1105320,
+      "violations": {}
+     },
+     "all_debug_fuzzcheck/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 1104915,
+      "violations": {}
+     },
+     "all_debug_sessionfuzz/sessionfuzz": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 17601,
+      "violations": {}
+     },
+     "all_debug_testfixture/sqlite3": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 18971,
+      "violations": {}
+     },
+     "all_debug_testfixture/testfixture": {
+      "asan_checked": null,
+      "flags": "debug,test",
+      "reached": 58447640,
+      "violations": {}
+     },
+     "all_sanitize_fuzzcheck/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "asan,omit-lookaside",
+      "reached": 1112867,
+      "violations": {}
+     },
+     "all_sanitize_sessionfuzz/sessionfuzz": {
+      "asan_checked": null,
+      "flags": "asan,debug,omit-lookaside",
+      "reached": 17601,
+      "violations": {}
+     },
+     "all_sanitize_testfixture/sqlite3": {
+      "asan_checked": null,
+      "flags": "asan,omit-lookaside",
+      "reached": 10484,
+      "violations": {}
+     },
+     "all_sanitize_testfixture/testfixture": {
+      "asan_checked": null,
+      "flags": "asan,omit-lookaside,test",
+      "reached": 38600314,
+      "violations": {}
+     }
+    },
+    "detail": {
+     "LC_CMP_INT": 100589769,
+     "LC_CMP_STRING": 17019311
+    },
+    "hist": {
+     "LH_INT": {
+      "min": 160,
+      "nonzero": {
+       "160": 37742966
+      },
+      "total": 37742966
+     },
+     "LH_STRING": {
+      "min": 160,
+      "nonzero": {
+       "160": 8406344
+      },
+      "total": 8406344
+     },
+     "LH_WITHSKIP": {
+      "min": 0,
+      "nonzero": {
+       "0": 2028,
+       "1": 26174,
+       "10": 6452,
+       "100": 1840,
+       "101": 1071,
+       "102": 2247,
+       "103": 1415,
+       "104": 1858,
+       "105": 877,
+       "106": 1279,
+       "107": 928,
+       "108": 1960,
+       "109": 944,
+       "11": 5230,
+       "110": 1151,
+       "111": 1350,
+       "112": 1873,
+       "113": 978,
+       "114": 1258,
+       "115": 1021,
+       "116": 2030,
+       "117": 1071,
+       "118": 1259,
+       "119": 1459,
+       "12": 3518,
+       "120": 2011,
+       "121": 1158,
+       "122": 1196,
+       "123": 939,
+       "124": 1931,
+       "125": 941,
+       "126": 1232,
+       "127": 1359,
+       "128": 1802,
+       "129": 1070,
+       "13": 922,
+       "130": 1359,
+       "131": 1204,
+       "132": 1937,
+       "133": 1103,
+       "134": 1164,
+       "135": 1368,
+       "136": 2772,
+       "137": 1007,
+       "138": 1337,
+       "139": 1014,
+       "14": 1367,
+       "140": 1894,
+       "141": 981,
+       "142": 1370,
+       "143": 1378,
+       "144": 3107,
+       "145": 985,
+       "146": 1405,
+       "147": 1048,
+       "148": 2009,
+       "149": 1000,
+       "15": 1622,
+       "150": 1374,
+       "151": 1343,
+       "152": 1707,
+       "153": 1083,
+       "154": 1221,
+       "155": 967,
+       "156": 1812,
+       "157": 1037,
+       "158": 1292,
+       "159": 1378,
+       "16": 1768,
+       "160": 36227438,
+       "17": 892,
+       "18": 315897,
+       "19": 262556,
+       "2": 3924,
+       "20": 138193,
+       "21": 104541,
+       "22": 2849004,
+       "23": 264116,
+       "24": 75571,
+       "25": 93005,
+       "26": 2305,
+       "27": 1127,
+       "28": 1826,
+       "29": 1032,
+       "3": 24039,
+       "30": 1414,
+       "31": 1367,
+       "32": 1892,
+       "33": 961,
+       "34": 2539,
+       "35": 915,
+       "36": 2193,
+       "37": 982,
+       "38": 1336,
+       "39": 1288,
+       "4": 2239,
+       "40": 1933,
+       "41": 1011,
+       "42": 8573,
+       "43": 1715,
+       "44": 1787,
+       "45": 939,
+       "46": 1394,
+       "47": 1327,
+       "48": 1846,
+       "49": 1036,
+       "5": 1874,
+       "50": 1250,
+       "51": 943,
+       "52": 1896,
+       "53": 1087,
+       "54": 1180,
+       "55": 1409,
+       "56": 1883,
+       "57": 1077,
+       "58": 1167,
+       "59": 882,
+       "6": 191929,
+       "60": 2785,
+       "61": 1062,
+       "62": 1139,
+       "63": 1267,
+       "64": 1941,
+       "65": 980,
+       "66": 1299,
+       "67": 1086,
+       "68": 2964,
+       "69": 1060,
+       "7": 16806,
+       "70": 1366,
+       "71": 1465,
+       "72": 1993,
+       "73": 932,
+       "74": 1406,
+       "75": 824,
+       "76": 1906,
+       "77": 916,
+       "78": 1196,
+       "79": 1379,
+       "8": 21972,
+       "80": 1776,
+       "81": 1000,
+       "82": 1351,
+       "83": 1067,
+       "84": 1895,
+       "85": 949,
+       "86": 1292,
+       "87": 1427,
+       "88": 1883,
+       "89": 1020,
+       "9": 8578,
+       "90": 1225,
+       "91": 949,
+       "92": 1859,
+       "93": 1038,
+       "94": 1232,
+       "95": 1365,
+       "96": 1807,
+       "97": 969,
+       "98": 1223,
+       "99": 964
+      },
+      "total": 40846588
+     }
+    },
+    "reached": 103866197,
+    "site": "entries of sqlite3VdbeRecordCompareWithSkip, vdbeRecordCompareInt, vdbeRecordCompareString",
+    "test_files": 665,
+    "violations": {}
+   }
+  },
+  "name": "sdevtest",
+  "processes": 3172,
+  "raw": "build/raw/sdevtest",
+  "violation_groups": [
+   {
+    "builds": [
+     "all_sanitize_fuzzcheck/fuzzcheck",
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=6 pKey=0x5020000bbf78 slack=2 need=8 nField=4 nKeyField=3 bytes(record+slack,first 8)=040101090203bebe",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92617",
+     "btreeMoveto sqlite3.c:74463",
+     "sqlite3BtreeInsert sqlite3.c:83128"
+    ],
+    "kind": "slack",
+    "n_logged": 1098,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "affinity3.test",
+     "autoindex1.test",
+     "autoindex4.test",
+     "autoindex5.test",
+     "basexx1.test",
+     "bestindex6.test",
+     "bloom1.test",
+     "cast.test",
+     "collate2.test",
+     "distinctagg.test",
+     "e_select.test",
+     "e_select2.test",
+     "e_vacuum.test",
+     "existsexpr.test",
+     "existsexpr2.test",
+     "fts4upfrom.test",
+     "fts5misc.test",
+     "fuzzdata1.db",
+     "fuzzdata2.db",
+     "fuzzer1.test"
+    ]
+   },
+   {
+    "builds": [
+     "all_sanitize_fuzzcheck/fuzzcheck",
+     "all_sanitize_testfixture/sqlite3",
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=2 pKey=0x502000002418 slack=6 need=8 nField=2 nKeyField=1 bytes(record+slack,first 8)=0209bebebebebebe",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92617",
+     "sqlite3VdbeExec sqlite3.c:102661",
+     "sqlite3Step sqlite3.c:95197"
+    ],
+    "kind": "slack",
+    "n_logged": 701,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "altertab.test",
+     "conflict2.test",
+     "conflict3.test",
+     "corruptL.test",
+     "decimal.test",
+     "delete4.test",
+     "e_changes.test",
+     "e_totalchanges.test",
+     "expridx1.test",
+     "fkey8.test",
+     "fts5doclist.test",
+     "fts5integrity2.test",
+     "fts5secure.test",
+     "fuzzdata1.db",
+     "fuzzdata2.db",
+     "fuzzdata3.db",
+     "fuzzdata6.db",
+     "fuzzdata8.db",
+     "gencol1.test",
+     "imposter1.test"
+    ]
+   },
+   {
+    "builds": [
+     "all_sanitize_fuzzcheck/fuzzcheck",
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-005",
+    "example_args": "site=sqlite3PutVarint p=0x5020001c34fa v=80012 need=9 addressable=6 bytes_written=3 addressable_bytes=bebebebebebe",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "sqlite3LedgerA005 sqlite3.c:39000",
+     "sqlite3PutVarint sqlite3.c:38047",
+     "sqlite3VdbeExec sqlite3.c:101020",
+     "sqlite3Step sqlite3.c:95197"
+    ],
+    "kind": "?",
+    "n_logged": 358,
+    "site": "sqlite3PutVarint",
+    "tests": [
+     "alter.test",
+     "alterlegacy.test",
+     "altertab.test",
+     "autovacuum2.test",
+     "backup5.test",
+     "btree01.test",
+     "corruptI.test",
+     "dbstatus.test",
+     "delete4.test",
+     "enc.test",
+     "fallocate.test",
+     "fts3auto.test",
+     "fts3defer2.test",
+     "fts3matchinfo.test",
+     "fuzzdata1.db",
+     "fuzzdata2.db",
+     "fuzzdata6.db",
+     "fuzzdata8.db",
+     "in4.test",
+     "incrblob2.test"
+    ]
+   },
+   {
+    "builds": [
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=14 pKey=0x5030000018a8 slack=2 need=8 nField=4 nKeyField=3 bytes(record+slack,first 16)=0400171768656c6c6f776f726c64bebe",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92617",
+     "vdbeUnpackRecord sqlite3.c:96534",
+     "sqlite3_preupdate_new sqlite3.c:96740"
+    ],
+    "kind": "slack",
+    "n_logged": 251,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "hook.test",
+     "hook2.test",
+     "session1.test",
+     "session2.test",
+     "session3.test",
+     "session4.test",
+     "session5.test",
+     "session6.test",
+     "session8.test",
+     "session9.test",
+     "sessionA.test",
+     "sessionC.test",
+     "sessionD.test",
+     "sessionE.test",
+     "sessionF.test",
+     "sessionG.test",
+     "sessionH.test",
+     "sessionI.test",
+     "session_gen.test",
+     "sessionalter.test"
+    ]
+   },
+   {
+    "builds": [
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=10 pKey=0x503000002208 slack=6 need=8 nField=4 nKeyField=3 bytes(record+slack,first 16)=040013136768696a6b6cbebebebebebe",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92617",
+     "vdbeUnpackRecord sqlite3.c:96534",
+     "sqlite3_preupdate_old sqlite3.c:96590"
+    ],
+    "kind": "slack",
+    "n_logged": 238,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "bind2.test",
+     "hook.test",
+     "hook2.test",
+     "session1.test",
+     "session2.test",
+     "session4.test",
+     "session5.test",
+     "session6.test",
+     "session8.test",
+     "session9.test",
+     "sessionC.test",
+     "sessionF.test",
+     "sessionG.test",
+     "session_gen.test",
+     "sessionalter.test",
+     "sessionat.test",
+     "sessionblob.test",
+     "sessionconflict.test",
+     "sessionconflict2.test",
+     "sessioninvert.test"
+    ]
+   },
+   {
+    "builds": [
+     "all_sanitize_fuzzcheck/fuzzcheck",
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=11 pKey=0x53400003fbf8 slack=5 need=8 nField=1 nKeyField=1 bytes(record+slack,first 16)=031d0020202020202020200000000000",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92617",
+     "vdbeSorterCompare sqlite3.c:107972",
+     "vdbeSorterMerge sqlite3.c:108554"
+    ],
+    "kind": "slack",
+    "n_logged": 86,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "decimal.test",
+     "distinct2.test",
+     "fuzzdata7.db",
+     "index4.test",
+     "sort2.test",
+     "vacuummem.test"
+    ]
+   },
+   {
+    "builds": [
+     "all_sanitize_fuzzcheck/fuzzcheck",
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-005",
+    "example_args": "site=putVarint64 p=0x5020001c34fa v=80012 need=9 addressable=6 bytes_written=3 addressable_bytes=bebebebebebe",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "sqlite3LedgerA005 sqlite3.c:39000",
+     "putVarint64 sqlite3.c:38024",
+     "sqlite3PutVarint sqlite3.c:38057",
+     "sqlite3VdbeExec sqlite3.c:101020"
+    ],
+    "kind": "?",
+    "n_logged": 62,
+    "site": "putVarint64",
+    "tests": [
+     "autovacuum2.test",
+     "dbstatus.test",
+     "fallocate.test",
+     "fts3auto.test",
+     "fts3defer2.test",
+     "fts3matchinfo.test",
+     "fuzzdata1.db",
+     "fuzzdata2.db",
+     "fuzzdata6.db",
+     "fuzzdata8.db",
+     "incrblob2.test",
+     "incrvacuum2.test",
+     "multiplex.test",
+     "quota.test",
+     "sessionblob.test",
+     "tkt2332.test",
+     "tkt3762.test",
+     "tkt3918.test",
+     "wal.test",
+     "wal2.test"
+    ]
+   },
+   {
+    "builds": [
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=106 pKey=0x5190000fc71c slack=2 need=8 nField=1 nKeyField=1 bytes(record+slack,first 96)=048154020529a99ead7010e57bca1d34272284e3ad6732ad52b5af93b8b1fec8549c97fd31d7c3b825c6e95305a92104715e4050c3af7b430a9b982e0b68d0c55df6e04460d0ffd14be987d928e3e1c98125c42935b1538b0af831d38f08ae9c",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92617",
+     "vdbeSorterCompare sqlite3.c:107972",
+     "vdbeMergeEngineStep sqlite3.c:108847"
+    ],
+    "kind": "slack",
+    "n_logged": 60,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "orderby1.test",
+     "sort5.test",
+     "wal3.test"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=1992 pKey=0x51d000713e88 slack=0 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=039f1610f656e6d1fd55053e50c4875c9930a33f6d0263bd14dfd6ab8c70521c19338b2308b95cf8d0bb7d202d2102780ea3528f1cb48560f76b20f382b942500fceac26c02c80147c34a4282b3dee6a1886ad8f4364c1fca82134d318224ecc",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "sqlite3VdbeExec sqlite3.c:102662",
+     "sqlite3Step sqlite3.c:95198"
+    ],
+    "kind": "slack",
+    "n_logged": 56,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=13 pKey=0x5040000d1e68 slack=3 need=8 nField=1 nKeyField=1 bytes(record+slack,first 16)=03171774306530317430653031bebebe",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "vdbeSorterCompare sqlite3.c:107973",
+     "vdbeSorterMerge sqlite3.c:108555"
+    ],
+    "kind": "slack",
+    "n_logged": 37,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata2.db",
+     "fuzzdata7.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=410 pKey=0x514000004c48 slack=6 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=060186330000065827303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "btreeMoveto sqlite3.c:74464",
+     "btreeRestoreCursorPosition sqlite3.c:74497"
+    ],
+    "kind": "slack",
+    "n_logged": 20,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata8.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=11 pKey=0x51900006a87a slack=3 need=8 nField=1 nKeyField=1 bytes(record+slack,first 14)=031902332e35332e3400fb0b0319",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "vdbeSorterCompare sqlite3.c:107973",
+     "vdbeMergeEngineStep sqlite3.c:108848"
+    ],
+    "kind": "slack",
+    "n_logged": 4,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=1048574 pKey=0x71a1fbc1c808 slack=2 need=8 nField=18 nKeyField=18 bytes(record+slack,first 96)=1d02110011000032fa890a0c440c0e82aa320e82b84a818f5a832c080203e83030303000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "vdbeSorterCompare sqlite3.c:107973",
+     "vdbeMergeEngineCompare sqlite3.c:109269"
+    ],
+    "kind": "slack",
+    "n_logged": 2,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata2.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_debug_fuzzcheck-asan/fuzzcheck-asan"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=7 pKey=0x5020000cb678 slack=1 need=8 nField=4 nKeyField=3 bytes(record+slack,first 8)=04091309303030be",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38939",
+     "ledgerA001 sqlite3.c:92500",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92618",
+     "btreeMoveto sqlite3.c:74464",
+     "sqlite3BtreeInsert sqlite3.c:83129"
+    ],
+    "kind": "slack",
+    "n_logged": 2,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db"
+    ]
+   },
+   {
+    "builds": [
+     "all_sanitize_testfixture/testfixture"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=105 pKey=0x50c000001f08 slack=7 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=040181550a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeRecordUnpack sqlite3.c:92617",
+     "btreeMoveto sqlite3.c:74463",
+     "btreeRestoreCursorPosition sqlite3.c:74496"
+    ],
+    "kind": "slack",
+    "n_logged": 1,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "update2.test"
+    ]
+   }
+  ],
+  "violation_records": 2976
+ },
+ {
+  "builds": {
+   "run-fuzztest-asan/fuzzcheck": {
+    "flags": "asan",
+    "processes": 1
+   },
+   "run-fuzztest-asan/sessionfuzz": {
+    "flags": "asan,debug",
+    "processes": 1
+   }
+  },
+  "entries": {
+   "A-001": {
+    "asan_checked": 221176,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 221176,
+      "flags": "asan",
+      "reached": 221176,
+      "violations": {
+       "LC_A001_VIOL": 124
+      }
+     }
+    },
+    "detail": {
+     "LC_A001_VIOL_NKEY_NEG": 0,
+     "LC_A001_VIOL_NULL": 0,
+     "LC_A001_VIOL_RECORD": 0,
+     "LC_A001_VIOL_SLACK": 124
+    },
+    "hist": {
+     "LH_A001": {
+      "min": 0,
+      "nonzero": {
+       "0": 21,
+       "1": 2,
+       "10": 1,
+       "100": 1,
+       "105": 3,
+       "106": 1,
+       "107": 1,
+       "11": 2,
+       "110": 21,
+       "111": 1,
+       "112": 1,
+       "114": 1,
+       "116": 1,
+       "117": 2,
+       "118": 1,
+       "119": 1,
+       "120": 1,
+       "121": 11,
+       "122": 9,
+       "123": 2,
+       "124": 2,
+       "126": 2,
+       "130": 1,
+       "131": 1,
+       "132": 1,
+       "135": 1,
+       "136": 1,
+       "137": 5,
+       "14": 11,
+       "142": 4,
+       "143": 1,
+       "144": 1,
+       "147": 1,
+       "148": 1,
+       "15": 2,
+       "151": 1,
+       "153": 12,
+       "154": 2,
+       "155": 2,
+       "157": 1,
+       "158": 6,
+       "159": 2,
+       "16": 1,
+       "160": 213708,
+       "17": 446,
+       "18": 2919,
+       "19": 306,
+       "2": 3,
+       "20": 186,
+       "22": 1,
+       "23": 37,
+       "24": 3018,
+       "25": 2,
+       "26": 2,
+       "27": 1,
+       "28": 1,
+       "3": 18,
+       "30": 8,
+       "34": 2,
+       "35": 1,
+       "36": 2,
+       "39": 1,
+       "4": 1,
+       "40": 2,
+       "41": 3,
+       "42": 3,
+       "43": 1,
+       "46": 11,
+       "47": 1,
+       "48": 2,
+       "49": 2,
+       "5": 79,
+       "50": 172,
+       "51": 2,
+       "52": 1,
+       "55": 2,
+       "57": 1,
+       "58": 1,
+       "59": 1,
+       "62": 5,
+       "63": 1,
+       "64": 1,
+       "70": 2,
+       "71": 1,
+       "73": 8,
+       "75": 1,
+       "76": 3,
+       "78": 11,
+       "8": 3,
+       "82": 1,
+       "83": 1,
+       "87": 1,
+       "88": 1,
+       "89": 17,
+       "9": 2,
+       "90": 9,
+       "94": 10,
+       "95": 1,
+       "96": 2,
+       "98": 1,
+       "99": 1
+      },
+      "total": 221176
+     },
+     "LH_A001_N0": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 221176,
+    "site": "sqlite3VdbeRecordUnpack entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A001_VIOL": 124
+    }
+   },
+   "A-002": {
+    "asan_checked": 55701,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 55701,
+      "flags": "asan",
+      "reached": 55701,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A002_NULL": 0,
+     "LC_A002_VIOL_ALIGN": 0,
+     "LC_A002_VIOL_POISON": 0,
+     "LC_A002_VIOL_SIZE": 0
+    },
+    "hist": {},
+    "reached": 55701,
+    "site": "sqlite3DbMallocRaw return, in sqlite3VdbeAllocUnpackedRecord",
+    "test_files": 1,
+    "violations": {
+     "LC_A002_VIOL": 0
+    }
+   },
+   "A-003 (C-17 call site)": {
+    "asan_checked": 157313,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 157313,
+      "flags": "asan",
+      "reached": 157313,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003_ASSIGNS_CHECKED": 157313,
+     "LC_A003_ENCCHANGE": 872,
+     "LC_A003_PRCERR_WRITTEN": 0,
+     "LC_A003_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 157313,
+    "site": "vdbeCompareMemString call in sqlite3VdbeRecordCompareWithSkip",
+    "test_files": 1,
+    "violations": {
+     "LC_A003_VIOL_ASSIGNS": 0,
+     "LC_A003_VIOL_REQ": 0
+    }
+   },
+   "A-003 requires (entry, all callers)": {
+    "asan_checked": 815312,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 815311,
+      "flags": "asan",
+      "reached": 815311,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "run-fuzztest-asan/sessionfuzz": {
+      "asan_checked": 1,
+      "flags": "asan,debug",
+      "reached": 1,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003E_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 815312,
+    "site": "vdbeCompareMemString entry",
+    "test_files": 2,
+    "violations": {
+     "LC_A003E_VIOL": 0
+    }
+   },
+   "A-004": {
+    "asan_checked": null,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "asan",
+      "reached": 172,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A004_ASSIGNS_CHECKED": 172,
+     "LC_A004_XLOG_SET": 0
+    },
+    "hist": {},
+    "reached": 172,
+    "site": "SQLITE_CORRUPT_BKPT in sqlite3VdbeRecordCompareWithSkip and vdbeRecordCompareString",
+    "test_files": 1,
+    "violations": {
+     "LC_A004_VIOL_ASSIGNS": 0,
+     "LC_A004_VIOL_RC": 0
+    }
+   },
+   "A-005 (putVarint64)": {
+    "asan_checked": 20247,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 20247,
+      "flags": "asan",
+      "reached": 20247,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     }
+    },
+    "detail": {},
+    "hist": {
+     "LH_A005P": {
+      "min": 10,
+      "nonzero": {
+       "10": 107,
+       "160": 20140
+      },
+      "total": 20247
+     }
+    },
+    "reached": 20247,
+    "site": "putVarint64 entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A005P_VIOL": 0
+    }
+   },
+   "A-005 (sqlite3PutVarint)": {
+    "asan_checked": 1362430,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 1362403,
+      "flags": "asan",
+      "reached": 1362403,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "run-fuzztest-asan/sessionfuzz": {
+      "asan_checked": 27,
+      "flags": "asan,debug",
+      "reached": 27,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A005_REAL_OVERFLOW": 0,
+     "LC_A005_VIOL_NULL": 0
+    },
+    "hist": {
+     "LH_A005": {
+      "min": 10,
+      "nonzero": {
+       "10": 1808,
+       "101": 41,
+       "107": 130,
+       "115": 12,
+       "123": 1,
+       "125": 27,
+       "134": 1,
+       "139": 1,
+       "147": 9,
+       "155": 1,
+       "160": 1360166,
+       "91": 51,
+       "99": 182
+      },
+      "total": 1362430
+     }
+    },
+    "reached": 1362430,
+    "site": "sqlite3PutVarint entry",
+    "test_files": 2,
+    "violations": {
+     "LC_A005_VIOL": 0
+    }
+   },
+   "comparator slack (measurement only)": {
+    "asan_checked": null,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "asan",
+      "reached": 1098368,
+      "violations": {}
+     },
+     "run-fuzztest-asan/sessionfuzz": {
+      "asan_checked": null,
+      "flags": "asan,debug",
+      "reached": 17601,
+      "violations": {}
+     }
+    },
+    "detail": {
+     "LC_CMP_INT": 434536,
+     "LC_CMP_STRING": 97328
+    },
+    "hist": {
+     "LH_INT": {
+      "min": 160,
+      "nonzero": {
+       "160": 434536
+      },
+      "total": 434536
+     },
+     "LH_STRING": {
+      "min": 160,
+      "nonzero": {
+       "160": 97328
+      },
+      "total": 97328
+     },
+     "LH_WITHSKIP": {
+      "min": 0,
+      "nonzero": {
+       "0": 31,
+       "1": 2,
+       "10": 46,
+       "100": 3,
+       "103": 2,
+       "104": 7,
+       "108": 1,
+       "11": 1576,
+       "110": 4,
+       "112": 2,
+       "113": 1,
+       "114": 4,
+       "115": 1,
+       "117": 2,
+       "12": 80,
+       "120": 2,
+       "123": 1,
+       "124": 1,
+       "126": 18,
+       "127": 3,
+       "13": 9,
+       "132": 8,
+       "133": 1,
+       "134": 1,
+       "136": 3,
+       "14": 47,
+       "140": 1,
+       "143": 2,
+       "144": 1,
+       "147": 1,
+       "148": 7,
+       "15": 70,
+       "150": 3,
+       "154": 3,
+       "156": 1,
+       "157": 1,
+       "158": 6,
+       "159": 1,
+       "160": 1054830,
+       "17": 1,
+       "18": 18475,
+       "19": 31248,
+       "2": 1,
+       "20": 793,
+       "21": 816,
+       "22": 4210,
+       "23": 2677,
+       "24": 386,
+       "25": 177,
+       "26": 2,
+       "27": 3,
+       "28": 5,
+       "3": 17,
+       "30": 3,
+       "32": 1,
+       "33": 2,
+       "35": 1,
+       "36": 2,
+       "38": 1,
+       "4": 1,
+       "40": 1,
+       "42": 1,
+       "47": 1,
+       "48": 1,
+       "50": 19,
+       "51": 1,
+       "52": 4,
+       "54": 5,
+       "6": 211,
+       "60": 2,
+       "61": 2,
+       "62": 1,
+       "64": 1,
+       "66": 1,
+       "68": 2,
+       "69": 3,
+       "7": 15,
+       "73": 1,
+       "75": 7,
+       "78": 1,
+       "8": 4,
+       "80": 1,
+       "81": 2,
+       "82": 2,
+       "85": 2,
+       "88": 2,
+       "89": 2,
+       "9": 65,
+       "92": 1,
+       "98": 1,
+       "99": 2
+      },
+      "total": 1115969
+     }
+    },
+    "reached": 1115969,
+    "site": "entries of sqlite3VdbeRecordCompareWithSkip, vdbeRecordCompareInt, vdbeRecordCompareString",
+    "test_files": 2,
+    "violations": {}
+   }
+  },
+  "name": "fuzztest-asan",
+  "processes": 2,
+  "raw": "build/raw/fuzztest-asan",
+  "violation_groups": [
+   {
+    "builds": [
+     "run-fuzztest-asan/fuzzcheck"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=1992 pKey=0x51d00004e288 slack=0 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=039f16000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeExec sqlite3.c:102661",
+     "sqlite3Step sqlite3.c:95197",
+     "runSql fuzzcheck.c:1751"
+    ],
+    "kind": "slack",
+    "n_logged": 14,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db"
+    ]
+   },
+   {
+    "builds": [
+     "run-fuzztest-asan/fuzzcheck"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=11 pKey=0x51900076657a slack=3 need=8 nField=1 nKeyField=1 bytes(record+slack,first 14)=031902332e35332e3400fb0b0319",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "vdbeSorterCompare sqlite3.c:107972",
+     "vdbeMergeEngineStep sqlite3.c:108847",
+     "sqlite3VdbeSorterNext sqlite3.c:109859"
+    ],
+    "kind": "slack",
+    "n_logged": 4,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db"
+    ]
+   },
+   {
+    "builds": [
+     "run-fuzztest-asan/fuzzcheck"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=7 pKey=0x5020001a78b8 slack=1 need=8 nField=4 nKeyField=3 bytes(record+slack,first 8)=04091309303030be",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "btreeMoveto sqlite3.c:74463",
+     "sqlite3BtreeInsert sqlite3.c:83128",
+     "sqlite3VdbeExec sqlite3.c:103842"
+    ],
+    "kind": "slack",
+    "n_logged": 2,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db"
+    ]
+   }
+  ],
+  "violation_records": 20
+ },
+ {
+  "builds": {
+   "run-fuzztest-asan/fuzzcheck": {
+    "flags": "asan",
+    "processes": 1
+   }
+  },
+  "entries": {
+   "A-001": {
+    "asan_checked": 221050,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 221050,
+      "flags": "asan",
+      "reached": 221050,
+      "violations": {
+       "LC_A001_VIOL": 665
+      }
+     }
+    },
+    "detail": {
+     "LC_A001_VIOL_NKEY_NEG": 0,
+     "LC_A001_VIOL_NULL": 0,
+     "LC_A001_VIOL_RECORD": 0,
+     "LC_A001_VIOL_SLACK": 665
+    },
+    "hist": {
+     "LH_A001": {
+      "min": 0,
+      "nonzero": {
+       "0": 41,
+       "1": 2,
+       "10": 1,
+       "100": 41,
+       "103": 4,
+       "105": 7,
+       "106": 1,
+       "107": 1,
+       "11": 2,
+       "110": 21,
+       "111": 1,
+       "112": 1,
+       "113": 4,
+       "114": 1,
+       "116": 1,
+       "117": 11,
+       "118": 1,
+       "119": 1,
+       "120": 1,
+       "121": 11,
+       "122": 9,
+       "123": 2,
+       "124": 42,
+       "126": 2,
+       "130": 1,
+       "131": 1,
+       "132": 5,
+       "134": 3,
+       "135": 5,
+       "136": 1,
+       "137": 5,
+       "14": 11,
+       "141": 9,
+       "142": 4,
+       "143": 1,
+       "144": 1,
+       "147": 1,
+       "148": 41,
+       "15": 4,
+       "151": 1,
+       "153": 12,
+       "154": 2,
+       "155": 2,
+       "157": 1,
+       "158": 6,
+       "159": 2,
+       "16": 1,
+       "160": 212386,
+       "17": 452,
+       "18": 3085,
+       "19": 384,
+       "2": 131,
+       "20": 242,
+       "21": 37,
+       "22": 3,
+       "23": 39,
+       "24": 3020,
+       "25": 2,
+       "26": 2,
+       "27": 1,
+       "28": 39,
+       "3": 178,
+       "30": 8,
+       "34": 2,
+       "35": 1,
+       "36": 2,
+       "39": 1,
+       "4": 37,
+       "40": 2,
+       "41": 3,
+       "42": 5,
+       "43": 1,
+       "45": 9,
+       "46": 11,
+       "47": 1,
+       "48": 2,
+       "49": 2,
+       "5": 187,
+       "50": 172,
+       "51": 2,
+       "52": 39,
+       "55": 2,
+       "57": 1,
+       "58": 1,
+       "59": 1,
+       "6": 66,
+       "62": 5,
+       "63": 1,
+       "64": 1,
+       "69": 9,
+       "7": 23,
+       "70": 2,
+       "71": 1,
+       "73": 8,
+       "75": 1,
+       "76": 41,
+       "78": 11,
+       "8": 3,
+       "82": 1,
+       "83": 1,
+       "87": 1,
+       "88": 1,
+       "89": 17,
+       "9": 2,
+       "90": 9,
+       "93": 9,
+       "94": 10,
+       "95": 1,
+       "96": 2,
+       "98": 1,
+       "99": 1
+      },
+      "total": 221050
+     },
+     "LH_A001_N0": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 221050,
+    "site": "sqlite3VdbeRecordUnpack entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A001_VIOL": 665
+    }
+   },
+   "A-002": {
+    "asan_checked": 55697,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 55697,
+      "flags": "asan",
+      "reached": 55697,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A002_NULL": 0,
+     "LC_A002_VIOL_ALIGN": 0,
+     "LC_A002_VIOL_POISON": 0,
+     "LC_A002_VIOL_SIZE": 0
+    },
+    "hist": {},
+    "reached": 55697,
+    "site": "sqlite3DbMallocRaw return, in sqlite3VdbeAllocUnpackedRecord",
+    "test_files": 1,
+    "violations": {
+     "LC_A002_VIOL": 0
+    }
+   },
+   "A-003 (C-17 call site)": {
+    "asan_checked": 157307,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 157307,
+      "flags": "asan",
+      "reached": 157307,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003_ASSIGNS_CHECKED": 157307,
+     "LC_A003_ENCCHANGE": 872,
+     "LC_A003_PRCERR_WRITTEN": 0,
+     "LC_A003_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 157307,
+    "site": "vdbeCompareMemString call in sqlite3VdbeRecordCompareWithSkip",
+    "test_files": 1,
+    "violations": {
+     "LC_A003_VIOL_ASSIGNS": 0,
+     "LC_A003_VIOL_REQ": 0
+    }
+   },
+   "A-003 requires (entry, all callers)": {
+    "asan_checked": 815329,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 815329,
+      "flags": "asan",
+      "reached": 815329,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003E_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 815329,
+    "site": "vdbeCompareMemString entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A003E_VIOL": 0
+    }
+   },
+   "A-004": {
+    "asan_checked": null,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "asan",
+      "reached": 231,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A004_ASSIGNS_CHECKED": 231,
+     "LC_A004_XLOG_SET": 0
+    },
+    "hist": {},
+    "reached": 231,
+    "site": "SQLITE_CORRUPT_BKPT in sqlite3VdbeRecordCompareWithSkip and vdbeRecordCompareString",
+    "test_files": 1,
+    "violations": {
+     "LC_A004_VIOL_ASSIGNS": 0,
+     "LC_A004_VIOL_RC": 0
+    }
+   },
+   "A-005 (putVarint64)": {
+    "asan_checked": 21476,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 21476,
+      "flags": "asan",
+      "reached": 21476,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     }
+    },
+    "detail": {},
+    "hist": {
+     "LH_A005P": {
+      "min": 10,
+      "nonzero": {
+       "10": 107,
+       "160": 21369
+      },
+      "total": 21476
+     }
+    },
+    "reached": 21476,
+    "site": "putVarint64 entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A005P_VIOL": 0
+    }
+   },
+   "A-005 (sqlite3PutVarint)": {
+    "asan_checked": 1365052,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": 1365052,
+      "flags": "asan",
+      "reached": 1365052,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A005_REAL_OVERFLOW": 0,
+     "LC_A005_VIOL_NULL": 0
+    },
+    "hist": {
+     "LH_A005": {
+      "min": 10,
+      "nonzero": {
+       "10": 1808,
+       "101": 41,
+       "107": 146,
+       "115": 12,
+       "123": 2,
+       "125": 27,
+       "131": 8,
+       "134": 1,
+       "139": 38,
+       "147": 15,
+       "150": 399,
+       "155": 14,
+       "157": 197,
+       "160": 1362084,
+       "83": 11,
+       "91": 58,
+       "99": 191
+      },
+      "total": 1365052
+     }
+    },
+    "reached": 1365052,
+    "site": "sqlite3PutVarint entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A005_VIOL": 0
+    }
+   },
+   "comparator slack (measurement only)": {
+    "asan_checked": null,
+    "builds": {
+     "run-fuzztest-asan/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "asan",
+      "reached": 1112882,
+      "violations": {}
+     }
+    },
+    "detail": {
+     "LC_CMP_INT": 438044,
+     "LC_CMP_STRING": 97211
+    },
+    "hist": {
+     "LH_INT": {
+      "min": 160,
+      "nonzero": {
+       "160": 438044
+      },
+      "total": 438044
+     },
+     "LH_STRING": {
+      "min": 160,
+      "nonzero": {
+       "160": 97211
+      },
+      "total": 97211
+     },
+     "LH_WITHSKIP": {
+      "min": 0,
+      "nonzero": {
+       "0": 83,
+       "1": 4,
+       "10": 1776,
+       "100": 23,
+       "103": 2,
+       "104": 7,
+       "105": 2,
+       "108": 1,
+       "11": 1578,
+       "110": 4,
+       "112": 2,
+       "113": 1,
+       "114": 4,
+       "115": 1,
+       "117": 11,
+       "12": 605,
+       "120": 2,
+       "123": 1,
+       "124": 39,
+       "126": 18,
+       "127": 3,
+       "13": 19,
+       "132": 10,
+       "133": 1,
+       "134": 3,
+       "136": 3,
+       "14": 47,
+       "140": 1,
+       "141": 18,
+       "143": 2,
+       "144": 1,
+       "147": 1,
+       "148": 46,
+       "15": 70,
+       "150": 3,
+       "154": 3,
+       "156": 1,
+       "157": 1,
+       "158": 6,
+       "159": 1,
+       "160": 1037923,
+       "17": 1,
+       "18": 19177,
+       "19": 34459,
+       "2": 129,
+       "20": 1507,
+       "21": 919,
+       "22": 4294,
+       "23": 4681,
+       "24": 1588,
+       "25": 253,
+       "26": 2,
+       "27": 3,
+       "28": 23,
+       "3": 437,
+       "30": 3,
+       "32": 1,
+       "33": 2,
+       "35": 1,
+       "36": 2,
+       "38": 1,
+       "4": 3,
+       "40": 1,
+       "42": 1,
+       "45": 9,
+       "47": 1,
+       "48": 1,
+       "5": 36,
+       "50": 19,
+       "51": 1,
+       "52": 23,
+       "54": 5,
+       "6": 211,
+       "60": 2,
+       "61": 2,
+       "62": 1,
+       "64": 1,
+       "66": 1,
+       "68": 2,
+       "69": 12,
+       "7": 31,
+       "73": 1,
+       "75": 7,
+       "76": 37,
+       "78": 1,
+       "8": 6,
+       "80": 1,
+       "81": 2,
+       "82": 2,
+       "85": 2,
+       "88": 2,
+       "89": 2,
+       "9": 2624,
+       "92": 1,
+       "93": 18,
+       "98": 1,
+       "99": 2
+      },
+      "total": 1112882
+     }
+    },
+    "reached": 1112882,
+    "site": "entries of sqlite3VdbeRecordCompareWithSkip, vdbeRecordCompareInt, vdbeRecordCompareString",
+    "test_files": 1,
+    "violations": {}
+   }
+  },
+  "name": "fuzzcheck-native",
+  "processes": 1,
+  "raw": "build/raw/fuzzcheck-native",
+  "violation_groups": [
+   {
+    "builds": [
+     "run-fuzztest-asan/fuzzcheck"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=1992 pKey=0x51d00004e288 slack=0 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=039f16000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "sqlite3VdbeExec sqlite3.c:102661",
+     "sqlite3Step sqlite3.c:95197",
+     "runSql fuzzcheck.c:1751"
+    ],
+    "kind": "slack",
+    "n_logged": 14,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db"
+    ]
+   },
+   {
+    "builds": [
+     "run-fuzztest-asan/fuzzcheck"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=11 pKey=0x51900076657a slack=3 need=8 nField=1 nKeyField=1 bytes(record+slack,first 14)=031902332e35332e3400fb0b0319",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "vdbeSorterCompare sqlite3.c:107972",
+     "vdbeMergeEngineStep sqlite3.c:108847",
+     "sqlite3VdbeSorterNext sqlite3.c:109859"
+    ],
+    "kind": "slack",
+    "n_logged": 4,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db"
+    ]
+   },
+   {
+    "builds": [
+     "run-fuzztest-asan/fuzzcheck"
+    ],
+    "entry": "A-001",
+    "example_args": "site=sqlite3VdbeRecordUnpack kind=slack nKey=7 pKey=0x5020001a78b8 slack=1 need=8 nField=4 nKeyField=3 bytes(record+slack,first 8)=04091309303030be",
+    "frames": [
+     "sqlite3LedgerViolation sqlite3.c:38938",
+     "ledgerA001 sqlite3.c:92499",
+     "btreeMoveto sqlite3.c:74463",
+     "sqlite3BtreeInsert sqlite3.c:83128",
+     "sqlite3VdbeExec sqlite3.c:103842"
+    ],
+    "kind": "slack",
+    "n_logged": 2,
+    "site": "sqlite3VdbeRecordUnpack",
+    "tests": [
+     "fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db"
+    ]
+   }
+  ],
+  "violation_records": 20
+ },
+ {
+  "builds": {
+   "run-fuzztest-asan/dbfuzz2": {
+    "flags": "asan,debug",
+    "processes": 1
+   }
+  },
+  "entries": {
+   "A-001": {
+    "asan_checked": 10,
+    "builds": {
+     "run-fuzztest-asan/dbfuzz2": {
+      "asan_checked": 10,
+      "flags": "asan,debug",
+      "reached": 10,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A001_VIOL_NKEY_NEG": 0,
+     "LC_A001_VIOL_NULL": 0,
+     "LC_A001_VIOL_RECORD": 0,
+     "LC_A001_VIOL_SLACK": 0
+    },
+    "hist": {
+     "LH_A001": {
+      "min": 160,
+      "nonzero": {
+       "160": 10
+      },
+      "total": 10
+     },
+     "LH_A001_N0": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 10,
+    "site": "sqlite3VdbeRecordUnpack entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A001_VIOL": 0
+    }
+   },
+   "A-002": {
+    "asan_checked": 1,
+    "builds": {
+     "run-fuzztest-asan/dbfuzz2": {
+      "asan_checked": 1,
+      "flags": "asan,debug",
+      "reached": 1,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A002_NULL": 0,
+     "LC_A002_VIOL_ALIGN": 0,
+     "LC_A002_VIOL_POISON": 0,
+     "LC_A002_VIOL_SIZE": 0
+    },
+    "hist": {},
+    "reached": 1,
+    "site": "sqlite3DbMallocRaw return, in sqlite3VdbeAllocUnpackedRecord",
+    "test_files": 1,
+    "violations": {
+     "LC_A002_VIOL": 0
+    }
+   },
+   "A-003 (C-17 call site)": {
+    "asan_checked": 1,
+    "builds": {
+     "run-fuzztest-asan/dbfuzz2": {
+      "asan_checked": 1,
+      "flags": "asan,debug",
+      "reached": 1,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003_ASSIGNS_CHECKED": 1,
+     "LC_A003_ENCCHANGE": 0,
+     "LC_A003_PRCERR_WRITTEN": 0,
+     "LC_A003_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 1,
+    "site": "vdbeCompareMemString call in sqlite3VdbeRecordCompareWithSkip",
+    "test_files": 1,
+    "violations": {
+     "LC_A003_VIOL_ASSIGNS": 0,
+     "LC_A003_VIOL_REQ": 0
+    }
+   },
+   "A-003 requires (entry, all callers)": {
+    "asan_checked": 67,
+    "builds": {
+     "run-fuzztest-asan/dbfuzz2": {
+      "asan_checked": 67,
+      "flags": "asan,debug",
+      "reached": 67,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003E_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 67,
+    "site": "vdbeCompareMemString entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A003E_VIOL": 0
+    }
+   },
+   "A-004": {
+    "asan_checked": null,
+    "builds": {},
+    "detail": {
+     "LC_A004_ASSIGNS_CHECKED": 0,
+     "LC_A004_XLOG_SET": 0
+    },
+    "hist": {},
+    "reached": 0,
+    "site": "SQLITE_CORRUPT_BKPT in sqlite3VdbeRecordCompareWithSkip and vdbeRecordCompareString",
+    "test_files": 0,
+    "violations": {
+     "LC_A004_VIOL_ASSIGNS": 0,
+     "LC_A004_VIOL_RC": 0
+    }
+   },
+   "A-005 (putVarint64)": {
+    "asan_checked": 0,
+    "builds": {},
+    "detail": {},
+    "hist": {
+     "LH_A005P": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 0,
+    "site": "putVarint64 entry",
+    "test_files": 0,
+    "violations": {
+     "LC_A005P_VIOL": 0
+    }
+   },
+   "A-005 (sqlite3PutVarint)": {
+    "asan_checked": 47,
+    "builds": {
+     "run-fuzztest-asan/dbfuzz2": {
+      "asan_checked": 47,
+      "flags": "asan,debug",
+      "reached": 47,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A005_REAL_OVERFLOW": 0,
+     "LC_A005_VIOL_NULL": 0
+    },
+    "hist": {
+     "LH_A005": {
+      "min": 160,
+      "nonzero": {
+       "160": 47
+      },
+      "total": 47
+     }
+    },
+    "reached": 47,
+    "site": "sqlite3PutVarint entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A005_VIOL": 0
+    }
+   },
+   "comparator slack (measurement only)": {
+    "asan_checked": null,
+    "builds": {
+     "run-fuzztest-asan/dbfuzz2": {
+      "asan_checked": null,
+      "flags": "asan,debug",
+      "reached": 61,
+      "violations": {}
+     }
+    },
+    "detail": {
+     "LC_CMP_INT": 34,
+     "LC_CMP_STRING": 17
+    },
+    "hist": {
+     "LH_INT": {
+      "min": 160,
+      "nonzero": {
+       "160": 34
+      },
+      "total": 34
+     },
+     "LH_STRING": {
+      "min": 160,
+      "nonzero": {
+       "160": 17
+      },
+      "total": 17
+     },
+     "LH_WITHSKIP": {
+      "min": 160,
+      "nonzero": {
+       "160": 61
+      },
+      "total": 61
+     }
+    },
+    "reached": 61,
+    "site": "entries of sqlite3VdbeRecordCompareWithSkip, vdbeRecordCompareInt, vdbeRecordCompareString",
+    "test_files": 1,
+    "violations": {}
+   }
+  },
+  "name": "dbfuzz2",
+  "processes": 1,
+  "raw": "build/raw/dbfuzz2",
+  "violation_groups": [],
+  "violation_records": 0
+ },
+ {
+  "builds": {
+   "run-fuzztest/fuzzcheck": {
+    "flags": "none",
+    "processes": 1
+   },
+   "run-fuzztest/sessionfuzz": {
+    "flags": "debug",
+    "processes": 1
+   }
+  },
+  "entries": {
+   "A-001": {
+    "asan_checked": 0,
+    "builds": {
+     "run-fuzztest/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 221176,
+      "violations": {
+       "LC_A001_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A001_VIOL_NKEY_NEG": 0,
+     "LC_A001_VIOL_NULL": 0,
+     "LC_A001_VIOL_RECORD": 0,
+     "LC_A001_VIOL_SLACK": 0
+    },
+    "hist": {
+     "LH_A001": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     },
+     "LH_A001_N0": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 221176,
+    "site": "sqlite3VdbeRecordUnpack entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A001_VIOL": 0
+    }
+   },
+   "A-002": {
+    "asan_checked": 0,
+    "builds": {
+     "run-fuzztest/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 55701,
+      "violations": {
+       "LC_A002_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A002_NULL": 0,
+     "LC_A002_VIOL_ALIGN": 0,
+     "LC_A002_VIOL_POISON": 0,
+     "LC_A002_VIOL_SIZE": 0
+    },
+    "hist": {},
+    "reached": 55701,
+    "site": "sqlite3DbMallocRaw return, in sqlite3VdbeAllocUnpackedRecord",
+    "test_files": 1,
+    "violations": {
+     "LC_A002_VIOL": 0
+    }
+   },
+   "A-003 (C-17 call site)": {
+    "asan_checked": 0,
+    "builds": {
+     "run-fuzztest/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 157313,
+      "violations": {
+       "LC_A003_VIOL_ASSIGNS": 0,
+       "LC_A003_VIOL_REQ": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003_ASSIGNS_CHECKED": 157313,
+     "LC_A003_ENCCHANGE": 872,
+     "LC_A003_PRCERR_WRITTEN": 0,
+     "LC_A003_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 157313,
+    "site": "vdbeCompareMemString call in sqlite3VdbeRecordCompareWithSkip",
+    "test_files": 1,
+    "violations": {
+     "LC_A003_VIOL_ASSIGNS": 0,
+     "LC_A003_VIOL_REQ": 0
+    }
+   },
+   "A-003 requires (entry, all callers)": {
+    "asan_checked": 0,
+    "builds": {
+     "run-fuzztest/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 815311,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     },
+     "run-fuzztest/sessionfuzz": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 1,
+      "violations": {
+       "LC_A003E_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A003E_ZNULL_N0": 0
+    },
+    "hist": {},
+    "reached": 815312,
+    "site": "vdbeCompareMemString entry",
+    "test_files": 2,
+    "violations": {
+     "LC_A003E_VIOL": 0
+    }
+   },
+   "A-004": {
+    "asan_checked": null,
+    "builds": {
+     "run-fuzztest/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "none",
+      "reached": 171,
+      "violations": {
+       "LC_A004_VIOL_ASSIGNS": 0,
+       "LC_A004_VIOL_RC": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A004_ASSIGNS_CHECKED": 171,
+     "LC_A004_XLOG_SET": 0
+    },
+    "hist": {},
+    "reached": 171,
+    "site": "SQLITE_CORRUPT_BKPT in sqlite3VdbeRecordCompareWithSkip and vdbeRecordCompareString",
+    "test_files": 1,
+    "violations": {
+     "LC_A004_VIOL_ASSIGNS": 0,
+     "LC_A004_VIOL_RC": 0
+    }
+   },
+   "A-005 (putVarint64)": {
+    "asan_checked": 0,
+    "builds": {
+     "run-fuzztest/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 20247,
+      "violations": {
+       "LC_A005P_VIOL": 0
+      }
+     }
+    },
+    "detail": {},
+    "hist": {
+     "LH_A005P": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 20247,
+    "site": "putVarint64 entry",
+    "test_files": 1,
+    "violations": {
+     "LC_A005P_VIOL": 0
+    }
+   },
+   "A-005 (sqlite3PutVarint)": {
+    "asan_checked": 0,
+    "builds": {
+     "run-fuzztest/fuzzcheck": {
+      "asan_checked": 0,
+      "flags": "none",
+      "reached": 1362636,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     },
+     "run-fuzztest/sessionfuzz": {
+      "asan_checked": 0,
+      "flags": "debug",
+      "reached": 27,
+      "violations": {
+       "LC_A005_VIOL": 0
+      }
+     }
+    },
+    "detail": {
+     "LC_A005_REAL_OVERFLOW": 0,
+     "LC_A005_VIOL_NULL": 0
+    },
+    "hist": {
+     "LH_A005": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 1362663,
+    "site": "sqlite3PutVarint entry",
+    "test_files": 2,
+    "violations": {
+     "LC_A005_VIOL": 0
+    }
+   },
+   "comparator slack (measurement only)": {
+    "asan_checked": null,
+    "builds": {
+     "run-fuzztest/fuzzcheck": {
+      "asan_checked": null,
+      "flags": "none",
+      "reached": 1098782,
+      "violations": {}
+     },
+     "run-fuzztest/sessionfuzz": {
+      "asan_checked": null,
+      "flags": "debug",
+      "reached": 17601,
+      "violations": {}
+     }
+    },
+    "detail": {
+     "LC_CMP_INT": 434800,
+     "LC_CMP_STRING": 97586
+    },
+    "hist": {
+     "LH_INT": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     },
+     "LH_STRING": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     },
+     "LH_WITHSKIP": {
+      "min": null,
+      "nonzero": {},
+      "total": 0
+     }
+    },
+    "reached": 1116383,
+    "site": "entries of sqlite3VdbeRecordCompareWithSkip, vdbeRecordCompareInt, vdbeRecordCompareString",
+    "test_files": 2,
+    "violations": {}
+   }
+  },
+  "name": "fuzztest-default",
+  "processes": 2,
+  "raw": "build/raw/fuzztest",
+  "violation_groups": [],
+  "violation_records": 0
+ }
+]

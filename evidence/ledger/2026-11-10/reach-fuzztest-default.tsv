@@ -1,0 +1,19 @@
+counter	build	test_file
+LC_A001_REACHED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A002_REACHED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003E_REACHED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003E_REACHED	run-fuzztest/sessionfuzz	sessionfuzz-data1.db
+LC_A003_ASSIGNS_CHECKED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003_ENCCHANGE	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A003_REACHED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A004_ASSIGNS_CHECKED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A004_REACHED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A005P_REACHED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A005_REACHED	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_A005_REACHED	run-fuzztest/sessionfuzz	sessionfuzz-data1.db
+LC_CMP_INT	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_CMP_INT	run-fuzztest/sessionfuzz	sessionfuzz-data1.db
+LC_CMP_STRING	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_CMP_STRING	run-fuzztest/sessionfuzz	sessionfuzz-data1.db
+LC_CMP_WITHSKIP	run-fuzztest/fuzzcheck	fuzzdata1.db fuzzdata2.db fuzzdata3.db fuzzdata4.db fuzzdata5.db fuzzdata6.db fuzzdata7.db fuzzdata8.db
+LC_CMP_WITHSKIP	run-fuzztest/sessionfuzz	sessionfuzz-data1.db
