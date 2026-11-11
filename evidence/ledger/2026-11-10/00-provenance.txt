@@ -1,0 +1,8 @@
+Ledger validation build provenance (ledger agent, 2026-11-10)
+- Source: upstream/sqlite-src-3530400.zip, sha256 d18fa15a...232b (pin.txt), manifest.uuid bf7c7f30...9bcc.
+- Amalgamation rebuilt from that tree == upstream/sqlite3.c byte-for-byte (validation/build/amal).
+- validation/ledger.patch applied to the tree (insertions only; 'diff -ruN' removed-lines = 0).
+- Patched amalgamation (validation/build/lamal/sqlite3.c) == upstream/sqlite3.c plus inserted lines;
+  the only non-insertion diff is SQLITE_SOURCE_ID (the amalgamator rewrites the last 7 hex chars to 'alt1'
+  because the tree is modified). See patched-amalgamation.diff.txt.
+- Toolchain: gcc (goto-cc front end not used here) 13.3.0; tcl8.6; Ubuntu 24.04; cbmc not used by ledger.

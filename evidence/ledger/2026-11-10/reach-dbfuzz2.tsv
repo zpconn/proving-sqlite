@@ -1,0 +1,15 @@
+counter	build	test_file
+LC_A001_ASAN_CHECKED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A001_REACHED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A002_ASAN_CHECKED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A002_REACHED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A003E_ASAN_CHECKED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A003E_REACHED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A003_ASAN_CHECKED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A003_ASSIGNS_CHECKED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A003_REACHED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A005_ASAN_CHECKED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_A005_REACHED	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_CMP_INT	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_CMP_STRING	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
+LC_CMP_WITHSKIP	run-fuzztest-asan/dbfuzz2	dbfuzz2-seed1.db
