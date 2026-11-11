@@ -64,7 +64,10 @@ STRIP_ENV_PREFIX = ['CLAUDE_CODE_']   # the orchestrator's own session linkage; 
 VERDICTS_BUILDER = ('DONE', 'STUCK', 'FINDING', 'NEEDS-DECISION')
 VERDICTS_REVIEWER = ('APPROVE', 'REJECT', 'NEEDS-ZACH')
 LAND_ALLOWED = ['cards/', 'tests/repro/', 'evidence/approvals/', 'evidence/orchestrator/', 'PROGRESS.md', 'LEDGER.md',
-                'FINDINGS.md']
+                'FINDINGS.md',
+                # T-007: not frozen (GOAL.md §0.3), and its command lines must equal SESSION_COMMANDS, so a land
+                # can change only its models, efforts and patterns; land names the keys it changes in its trailer
+                'tools/sessions.toml']
 ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evidence/ledger/', 'reports/ledger-']}
 # GOAL.md §0.10, hard-coded (checkpoint 0, decision C5): sessions.toml supplies models and command lines, never vendors.
 # The spec was written by Claude, so its reviewer runs on Codex.
@@ -73,7 +76,7 @@ ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'sp
 # its reviewer on Codex, because the Codex service's content filter stops a Codex builder on it (T-005). A reviewer is
 # still never on its round's builder vendor. The models are those sessions.toml gives the vendor's own role at the
 # card's tier (VENDOR_ROLE), so Opus 5.5 builds and gpt-6-astra at xhigh reviews a high-tier card, as GOAL.md §0.10
-# gives each vendor; a land may not touch tools/sessions.toml (T-007).
+# gives each vendor. (They were not new sessions.toml roles: when this was written no land could carry that file, T-007.)
 CARD_ROLE_VENDOR = {'C-17': {'builder': 'claude', 'reviewer': 'codex'}}
 VENDOR_ROLE = {'claude': 'reviewer', 'codex': 'builder'}
 
@@ -2104,6 +2107,28 @@ def land_paths_problems(paths, added):
     return probs, bool(frozen)
 
 
+def sessions_toml_changes(cwd):
+    """The dotted keys whose values differ between HEAD's and the index's tools/sessions.toml, for a land's trailer."""
+    import tomllib
+
+    def flat(d, pre=''):
+        out = {}
+        for k, v in (d or {}).items():
+            if isinstance(v, dict):
+                out.update(flat(v, pre + k + '.'))
+            else:
+                out[pre + k] = v
+        return out
+    old = subprocess.run(['git', 'show', 'HEAD:tools/sessions.toml'], cwd=cwd, capture_output=True, text=True)
+    new = subprocess.run(['git', 'show', ':tools/sessions.toml'], cwd=cwd, capture_output=True, text=True)
+    try:
+        a = flat(tomllib.loads(old.stdout)) if old.returncode == 0 else {}
+        b = flat(tomllib.loads(new.stdout)) if new.returncode == 0 else {}
+    except tomllib.TOMLDecodeError as e:
+        return ['(unparsable: %s)' % e]
+    return sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+
+
 def do_land(p, job, logf):
     main_before = job['main_before']
     ensure_merge_wt(p)
@@ -2136,8 +2161,10 @@ def do_land(p, job, logf):
     if probs:
         return {'ok': False, 'detail': '; '.join(probs)}
     what = job.get('what') or 'orch %s' % sha[:12]
-    git(['commit', '-q', '-m', 'Land %s\n\nCampaign: land %s; paths checked: %s%s\nCampaign-Step: %s' % (
-        what, what, ', '.join(paths[:20]) + (' ...' if len(paths) > 20 else ''),
+    toml = ('; tools/sessions.toml keys changed: %s' % (', '.join(sessions_toml_changes(mw)) or 'none (comments only)')
+            if 'tools/sessions.toml' in paths else '')
+    git(['commit', '-q', '-m', 'Land %s\n\nCampaign: land %s; paths checked: %s%s%s\nCampaign-Step: %s' % (
+        what, what, ', '.join(paths[:20]) + (' ...' if len(paths) > 20 else ''), toml,
         '; frozen files changed with approval record and proof.lock, full gate below' if frozen else '', job['step'])], cwd=mw)
     res = {'ok': True, 'detail': 'landed %s (%d paths)' % (what, len(paths))}
     if frozen:

@@ -9,7 +9,7 @@
 Frozen: pin.txt, upstream/, GOAL.md, AGENTS.md, CLAUDE.md, agents/, PROPERTIES.md, TRUSTED.md, UB-CLASSES.md,
 proofs/spec/, proofs/CHECKS, proofs/CONFIGS, proofs/MUTANTS, tools/ (except tools/sessions.toml), and the gate's
 targets: Makefile, proofs/Makefile.common, proofs/include/proof.h; and the boundary headers proofs/contracts/
-{sqlite3DbMallocRaw,vdbeCompareMemString,sqlite3CorruptError}.h (checkpoint 1, D2).
+{sqlite3DbMallocRaw,vdbeCompareMemString,sqlite3CorruptError}.h (checkpoint 1, D2) and memcmp.h (B2).
 Ends with: RESULT lock PASS|FAIL <n> files
 """
 import hashlib
@@ -23,7 +23,9 @@ FROZEN = ['pin.txt', 'upstream/', 'GOAL.md', 'AGENTS.md', 'CLAUDE.md', 'agents/'
           'Makefile', 'proofs/Makefile.common', 'proofs/include/proof.h',
           # checkpoint 1, D2: the boundary headers, LEDGER.md A-002 to A-004 word for word
           'proofs/contracts/sqlite3DbMallocRaw.h', 'proofs/contracts/vdbeCompareMemString.h',
-          'proofs/contracts/sqlite3CorruptError.h']
+          'proofs/contracts/sqlite3CorruptError.h',
+          # B2 (Zach, 2026-11-10): memcmp's boundary contract, LEDGER.md A-006 word for word
+          'proofs/contracts/memcmp.h']
 EXEMPT = {'tools/sessions.toml'}
 
 
