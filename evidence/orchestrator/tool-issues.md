@@ -168,3 +168,15 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Repro:** evidence/orchestrator/tool-issues/T-012/: k-static-local.c (minimal), walk.c (SerialGet's own contract), m-own-same-sig.c (the control that passes) and run.sh, every step capped at 24 GB. The C-15 probe is c15-gen.py and c15-run.sh, with results in c15-results/.
 - **Effect:** C-15's proof can't replace sqlite3VdbeSerialGet under the legacy engine.
 - **Workaround:** keep the callee's body. It changes no SQLite code and weakens no check; the body is SQLite's own code, checked in place. With SerialGet's body kept and the other three callees replaced, the legacy engine takes C-15's real function through every pass. CBMC then gave a verdict in 141 s with 5.1 GB peak, on the builder's unfinished round-2 contract. On the toy, the same workaround proves: 0 of 88 failed. There is no goto-instrument option that spares static locals.
+
+## T-013 tools/campaign.py (frozen): a change to the land rules is judged by the old rules
+
+- **Tool:** tools/campaign.py's land. `cmd_land` runs in the orchestrator's checkout, on orch's code; `do_land` runs in the land job, on main's code.
+- **What happened:** B2 (auditor-approved) added proofs/contracts/memcmp.h to lock.py's FROZEN and tools/sessions.toml to LAND_ALLOWED. `tools/campaign.py land` accepted it, using orch's new rules. The land job (J0088, 2026-11-11 13:28) refused it, using main's old rules: "a land may touch only cards/, … this one touches proofs/contracts/memcmp.h, tools/sessions.toml". Nothing reached main.
+- **Repro:** land any change that both widens the land rules and uses the widening.
+- **Effect:** B2 lands in two parts (evidence/approvals/B2-memcmp-contract/LANDING.md):
+  - part A changes only the rules;
+  - part B uses them.
+
+  The daemon is stopped while each part's job runs, so no session starts on mismatched code. A related trap: a part that changed campaign.py's command lines without sessions.toml's would leave the daemon unable to start, because cmd_start refuses a sessions.toml that differs. So the `--tools` lines go only in part B, with sessions.toml.
+- **Workaround:** split such a change: widen the rules first, then use them. Stop the daemon across a land that changes campaign.py's command lines, and restart it after the land job exits (T-008).
