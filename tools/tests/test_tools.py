@@ -260,6 +260,126 @@ include ../Makefile.common
 '''
 
 
+# T-006 (Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/): CBMC's legacy contracts, opted into per proof.
+# The validation toys are in tools/tests/legacy/: toys.c (the "upstream"), heads/<fn>.h (contract_<fn>), harness.c.
+LEGACY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'legacy')
+# proof: (entry, enforced, replaced, loop contracts, the check its bad variant must fail by; None: no bad variant)
+LEGACY_PROOFS = [
+    ('forget', 'h_forget', 't_forget', ['keep'], False, 'Check ensures clause'),
+    ('callee_frame', 'h_callee_frame', 't_callee_frame', ['reset'], True, 'other->flags (assigned by the contract of reset) is assignable'),
+    ('alias_frame', 'h_alias_frame', 't_alias_frame', [], True, 'Check that q->flags is assignable'),
+    ('invariant', 'h_invariant', 't_invariant', [], True, 'Check that loop invariant is preserved'),
+    ('decreases', 'h_decreases', 't_decreases', [], True, 'Check decreases clause on loop iteration'),
+    ('after', 'h_after', 't_after', [], True, 'Check ensures clause'),
+    ('oob', 'h_oob', 't_oob', [], True, 'pointer outside object bounds'),
+    ('callee_requires', 'h_callee_requires', 't_callee_requires', ['reset'], False, 'Check requires clause of reset'),
+    ('flex', 'h_flex', 't_flex', [], False, 'dynamic object upper bound'),
+    ('fresh', 'h_fresh', 't_fresh', ['two'], False, 'Check requires clause of two'),
+    ('two', 'h_two', 'two', [], False, None),
+    ('carried', 'h_carried', 't_carried', ['reset'], True, None),
+]
+
+
+def legacy_text(rel):
+    with open(os.path.join(LEGACY_DIR, rel)) as f:
+        return f.read()
+
+
+def legacy_makefile(card, proofs, contracts='legacy'):
+    out = ['CARD := %s' % card, 'PROOFS := ' + ' '.join(p[0] for p in proofs)]
+    for name, entry, enf, rep, loops, _ in proofs:
+        out += ['%s_ENTRY := %s' % (name, entry), '%s_ENFORCE := %s/contract_%s' % (name, enf, enf),
+                '%s_CONTRACTS := %s' % (name, contracts)]
+        if rep:
+            out.append('%s_REPLACE := ' % name + ' '.join('%s/contract_%s' % (r, r) for r in rep))
+        if loops:
+            out.append('%s_LOOPS := contracts' % name)
+    return '\n'.join(out + ['include ../Makefile.common']) + '\n'
+
+
+def legacy_repo(t, card='C-15', proofs=None):
+    proofs = LEGACY_PROOFS if proofs is None else proofs
+    toys = legacy_text('toys.c')
+    r = t.fresh()
+    t.write(r, 'upstream/sqlite3.c', toys)
+    t.write(r, 'overlay/sqlite3.c', toys)
+    t.write(r, 'overlay-bad/sqlite3.c', ''.join('#define VARIANT_%s\n' % p[0] for p in LEGACY_PROOFS) + toys)
+    heads = sorted(n[:-2] for n in os.listdir(os.path.join(LEGACY_DIR, 'heads')))
+    for fn in heads:
+        t.write(r, 'proofs/contracts/%s.h' % fn, legacy_text('heads/%s.h' % fn))
+    inc = ''.join('#include "contracts/%s.h"\n' % fn for fn in heads)
+    t.write(r, 'proofs/%s/harness.c' % card, '#include "sqlite3.c"\n' + inc + legacy_text('harness.c'))
+    t.write(r, 'cards/%s.md' % card, card_md(card, sorted(set(p[2] for p in proofs)), src=toys))
+    t.write(r, 'proofs/%s/Makefile' % card, legacy_makefile(card, proofs))
+    return r
+
+
+def legacy_failures(r, card, name):
+    import json as _json
+    j = os.path.join(r, 'proofs', card, 'build', 'lp64-le', name + '.json')
+    return [f.get('desc', '') for f in (_json.load(open(j)).get('failures') or [])] if os.path.exists(j) else []
+
+# B2 (Zach, 2026-11-10, evidence/approvals/B2-memcmp-contract/): memcmp's boundary contract, clause guards, kept bodies
+B2_TOY = r"""#include <stdlib.h>
+#include <string.h>
+typedef struct Cell { unsigned flags; void *payload; } Cell;
+int cmpneg(const unsigned char *a, const unsigned char *b, size_t n) {
+#ifdef BAD
+  int rc = memcmp(a, b, n + 1);
+#else
+  int rc = memcmp(a, b, n);
+#endif
+  return -rc;
+}
+void bump(Cell *p) { p->flags++; }
+void walk(Cell *a, Cell *other, unsigned n) {
+  unsigned i = 0;
+  while (i < n)
+    __CPROVER_assigns(i, __CPROVER_object_whole(a)
+#ifndef BAD
+                      , other->flags
+#endif
+                      )
+    __CPROVER_loop_invariant(i <= n)
+    __CPROVER_decreases(n - i)
+  { bump(other); i++; }
+}
+"""
+B2_MEMCMP_H = open(os.path.join(REPO, 'proofs', 'contracts', 'memcmp.h')).read()
+B2_HEADS = {
+    'cmpneg': 'int contract_cmpneg(const unsigned char *a, const unsigned char *b, size_t n)\n'
+              '  __CPROVER_requires(n <= 1000000 && __CPROVER_r_ok(a, n + 1) && __CPROVER_r_ok(b, n))\n'
+              '  __CPROVER_assigns()\n'
+              '  __CPROVER_ensures(-255 <= __CPROVER_return_value && __CPROVER_return_value <= 255);\n',
+    'walk': 'void contract_walk(Cell *a, Cell *other, unsigned n)\n'
+            '  __CPROVER_requires(n <= 4 && __CPROVER_w_ok(a, 4 * sizeof(Cell)) && __CPROVER_w_ok(other, sizeof(Cell)))\n'
+            '  __CPROVER_assigns(__CPROVER_object_whole(a), other->flags);\n',
+}
+B2_HARNESS = ('#include "sqlite3.c"\n#include "contracts/memcmp.h"\n#include "contracts/cmpneg.h"\n#include "contracts/walk.h"\n'
+              'void h_cmp(void) { size_t n; __CPROVER_assume(n <= 1000000);\n'
+              '  unsigned char *a = malloc(n + 1), *b = malloc(n); __CPROVER_assume(a && b); cmpneg(a, b, n); }\n'
+              'void h_walk(void) { unsigned n; Cell *a = malloc(4 * sizeof(Cell)), *o = malloc(sizeof(Cell));\n'
+              '  __CPROVER_assume(a && o); walk(a, o, n); }\n')
+
+
+def b2_repo(t, card, contracts):
+    r = t.fresh()
+    t.write(r, 'upstream/sqlite3.c', B2_TOY)
+    t.write(r, 'overlay/sqlite3.c', B2_TOY)
+    t.write(r, 'overlay-bad/sqlite3.c', '#define BAD\n' + B2_TOY)
+    t.write(r, 'proofs/contracts/memcmp.h', B2_MEMCMP_H)
+    for fn, text in B2_HEADS.items():
+        t.write(r, 'proofs/contracts/%s.h' % fn, text)
+    t.write(r, 'proofs/%s/harness.c' % card, B2_HARNESS)
+    t.write(r, 'cards/%s.md' % card, card_md(card, ['cmpneg', 'walk'], src=B2_TOY))
+    lines = ['CARD := %s' % card, 'PROOFS := cmp walk',
+             'cmp_ENTRY := h_cmp', 'cmp_ENFORCE := cmpneg/contract_cmpneg', 'cmp_REPLACE := memcmp/contract_memcmp',
+             'walk_ENTRY := h_walk', 'walk_ENFORCE := walk/contract_walk', 'walk_LOOPS := contracts']
+    if contracts == 'legacy':
+        lines += ['cmp_CONTRACTS := legacy', 'walk_CONTRACTS := legacy']
+    t.write(r, 'proofs/%s/Makefile' % card, '\n'.join(lines + ['include ../Makefile.common']) + '\n')
+    return r
+
 class T:
     def __init__(self, keep):
         self.base = tempfile.mkdtemp(prefix='tooltests-')
@@ -1223,6 +1343,137 @@ def main():
             '- Depends on:', '- Unreached callees, bodies removed: toyClose (upstream/sqlite3.c:%d)\n- Depends on:' % line_of(SYSCALL_TOY, ' toyClose(')))
         rc, out, res = t.run(r, [py, 'tools/scan.py'])
         t.expect('cards: a card function listed as its own unreached callee is rejected', rc != 0 and 'both a function of the card' in out, out)
+
+    # ---- T-006: legacy contracts (Zach's conditions 1-3, evidence/approvals/T-006-dfcc-loop-pointer/)
+    if want('legacy'):
+        r = legacy_repo(t)
+        prove = lambda ov, card='C-15': t.run(r, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + card, '--config',  # noqa: E731
+                                                  'lp64-le', '--overlay', ov, '--build-dir', 'proofs/%s/build' % card])
+        rc, out, res = prove('overlay')
+        t.expect('legacy: every validation toy proves under legacy contracts, T-006\'s loop-carried pointer included',
+                 rc == 0 and 'RESULT prove C-15 lp64-le PASS' in res, out[-1500:])
+        gen = os.path.join(r, 'proofs', 'C-15', 'build', 'lp64-le', 'callee_frame.legacy.c')
+        gtext = open(gen).read() if os.path.exists(gen) else ''
+        t.expect('legacy: the generated unit redeclares the enforced and replaced functions with their headers\' clauses',
+                 'void t_callee_frame(Cell *a, Cell *other, unsigned n)' in gtext and 'void reset(Cell *p)' in gtext
+                 and '__CPROVER_ensures(p->flags == 0)' in gtext and 'contract_reset' not in gtext.split('*/', 1)[-1], gtext)
+        keep_h = legacy_text('heads/keep.h')
+        t.write(r, 'proofs/contracts/keep.h', keep_h.replace('\n  __CPROVER_ensures(p->flags == __CPROVER_old(p->flags))', ''))
+        rc, out, res = prove('overlay-bad')
+        for name, _, _, _, _, check in LEGACY_PROOFS:
+            if check is None:
+                continue
+            fails = legacy_failures(r, 'C-15', name)
+            t.expect('legacy: the %s toy\'s bad variant fails by "%s"' % (name, check), any(check in f for f in fails),
+                     str(fails) if fails else out[-1500:])
+        # no stored copy to diverge: a header edit changes the next build
+        t.write(r, 'proofs/contracts/keep.h', keep_h)
+        after_h = legacy_text('heads/t_after.h')
+        t.write(r, 'proofs/contracts/t_after.h', after_h.replace('__CPROVER_return_value == n', '__CPROVER_return_value == n + 1'))
+        rc, out, res = prove('overlay')
+        fa = legacy_failures(r, 'C-15', 'after')
+        t.expect('legacy: a header edit reaches the next build (contract_t_after\'s ensures made false fails the proof)',
+                 rc != 0 and any('Check ensures clause' in f for f in fa), str(fa) if fa else out[-800:])
+        t.write(r, 'proofs/contracts/t_after.h', after_h)
+        # globals start unconstrained under legacy, as TRUSTED.md says of DFCC
+        toys = legacy_text('toys.c')
+        t.write(r, 'cards/C-17.md', card_md('C-17', ['t_glob', 't_static'], src=toys))
+        t.write(r, 'proofs/C-17/harness.c', open(os.path.join(r, 'proofs', 'C-15', 'harness.c')).read())
+        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('glob', 'h_glob', 't_glob', [], False, None)]))
+        rc, out, res = prove('overlay', 'C-17')
+        t.expect('legacy: globals start unconstrained (a contract claiming a global\'s initial value fails), as under DFCC',
+                 rc != 0 and 'RESULT prove C-17 lp64-le FAIL' in res and any('Check ensures clause' in f for f in legacy_failures(r, 'C-17', 'glob')), out[-600:])
+        # T-012: a replaced callee with a static local aborts the legacy enforce pass; prove.py says so, and keeping its body works
+        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('st', 'h_static', 't_static', ['stat'], True, None)]))
+        rc, out, res = prove('overlay', 'C-17')
+        t.expect('legacy: a replaced callee with a static local fails the build, and prove.py names T-012',
+                 rc != 0 and 'legacy-enforce failed' in out and 'T-012' in out, out[-800:])
+        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('st', 'h_static', 't_static', [], True, None)]))
+        rc, out, res = prove('overlay', 'C-17')
+        t.expect('legacy: the same proof with that callee\'s body kept proves (T-012\'s workaround)',
+                 rc == 0 and 'RESULT prove C-17 lp64-le PASS' in res, out[-800:])
+        # only LEGACY_CARDS may opt in
+        r2 = legacy_repo(t, card='C-96')
+        rc, out, res = t.run(r2, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-96', '--config', 'lp64-le',
+                                  '--overlay', 'overlay', '--build-dir', 'proofs/C-96/build'])
+        t.expect('legacy: a card not in LEGACY_CARDS may not use legacy contracts', rc != 0 and 'only C-15, C-17 may use' in out, out[-600:])
+        # a legacy harness may carry no function contract clauses of its own
+        h = open(os.path.join(r, 'proofs', 'C-15', 'harness.c')).read()
+        t.write(r, 'proofs/C-15/harness.c', h + 'void reset(Cell *p) __CPROVER_ensures(1);\n')
+        rc, out, res = prove('overlay')
+        t.expect('legacy: a harness with function contract clauses is refused', rc != 0 and 'no function contract clauses' in out, out[-600:])
+        t.write(r, 'proofs/C-15/harness.c', h)
+        # the generator: exactly one declaration, copied with only the name changed
+        code = ('import sys; sys.path.insert(0, "tools"); import prove\n'
+                'h = open("proofs/contracts/reset.h").read()\n'
+                'print("REDECL", repr(prove.legacy_redeclaration(h, "reset")))\n'
+                'try:\n    prove.legacy_redeclaration(h + h.replace("C_reset_H", "X"), "reset"); print("TWO ok")\n'
+                'except prove.CardError as e:\n    print("TWO refused", e)\n')
+        rc, out, res = t.run(r, [py, '-c', code])
+        t.expect('legacy: the redeclaration is the header\'s declaration with only its name changed; two declarations are refused',
+                 "REDECL 'void reset(Cell *p)\\n  __CPROVER_requires(__CPROVER_w_ok(p, sizeof(Cell)))\\n  __CPROVER_assigns(p->flags)\\n  __CPROVER_ensures(p->flags == 0);'" in out
+                 and 'TWO refused' in out, out)
+        # DFCC stays the default, and an unknown engine is refused
+        t.write(r, 'proofs/C-15/Makefile', legacy_makefile('C-15', LEGACY_PROOFS[:1]).replace('legacy', 'cbmc5'))
+        rc, out, res = prove('overlay')
+        t.expect('legacy: <name>_CONTRACTS takes only dfcc or legacy', rc != 0 and 'must be dfcc or legacy' in out, out[-400:])
+
+    # ---- B2 (Zach, 2026-11-10): memcmp's contract, clause guards, kept bodies under legacy, land rules
+    if want('b2'):
+        for engine, card in (('dfcc', 'C-93'), ('legacy', 'C-15')):
+            r = b2_repo(t, card, engine)
+            run = lambda ov, c=card, rr=r: t.run(rr, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + c, '--config',  # noqa: E731
+                                                      'lp64-le', '--overlay', ov, '--build-dir', 'proofs/%s/build' % c])
+            rc, out, res = run('overlay')
+            t.expect('b2 (%s): memcmp replaced by A-006\'s contract proves for lengths up to 10^6, and a kept callee body '
+                     'writing only inside the loop\'s assigns proves' % engine, rc == 0 and 'PASS' in res, out[-1200:])
+            rc, out, res = run('overlay-bad')
+            fc = legacy_failures(r, card, 'cmp')
+            t.expect('b2 (%s): a memcmp call one byte past an argument fails by the contract\'s requires' % engine,
+                     any('requires clause' in f for f in fc), str(fc) if fc else out[-1000:])
+            if engine == 'legacy':
+                fw = legacy_failures(r, card, 'walk')
+                t.expect('b2 (legacy): a kept callee body writing outside the loop\'s assigns fails ("is assignable")',
+                         any('is assignable' in f for f in fw), str(fw) if fw else out[-1000:])
+            # a clause smuggled onto the ENFORCE function in preds.h, or onto a REPLACE function in a contracts header
+            for where, text, name in (
+                    ('proofs/include/preds.h', 'int cmpneg(const unsigned char *a, const unsigned char *b, size_t n)\n'
+                     '  __CPROVER_ensures(1);\n', 'preds.h, onto the ENFORCE function'),
+                    ('proofs/contracts/cmpneg.h', B2_HEADS['cmpneg'] + 'int memcmp(const void *s1, const void *s2, size_t n)\n'
+                     '  __CPROVER_ensures(__CPROVER_return_value == 0);\n', 'a contracts header, onto the REPLACE function')):
+                old = open(os.path.join(r, where)).read() if os.path.exists(os.path.join(r, where)) else None
+                t.write(r, where, (old or '') + text)
+                rc, out, res = run('overlay')
+                t.expect('b2 (%s): a contract clause smuggled into %s fails the build' % (engine, name),
+                         rc != 0 and 'contract clause' in out, out[-600:])
+                rc, out, res = t.run(r, [py, 'tools/scan.py'])
+                if where.endswith('preds.h'):
+                    t.expect('b2 (%s): scan rejects a function contract clause in proofs/include/preds.h' % engine,
+                             rc != 0 and 'no function contract clauses in proofs/include/' in out, out[-600:])
+                if old is None:
+                    os.remove(os.path.join(r, where))
+                else:
+                    t.write(r, where, old)
+        # memcmp.h is frozen; a land may carry it only with an approval record and proof.lock; sessions.toml may land
+        code = ('import sys; sys.path.insert(0, "tools"); import lock, campaign\n'
+                'print("FROZEN", "proofs/contracts/memcmp.h" in lock.FROZEN)\n'
+                'print("BARE", campaign.land_paths_problems(["proofs/contracts/memcmp.h"], [])[0])\n'
+                'print("OK", campaign.land_paths_problems(["proofs/contracts/memcmp.h", "proof.lock", "evidence/approvals/x/APPROVED.md"], ["evidence/approvals/x/APPROVED.md"])[0])\n'
+                'print("TOML", campaign.land_paths_problems(["tools/sessions.toml"], [])[0])\n')
+        rc, out, res = t.run(t.fresh(), [py, '-c', code])
+        rt = os.path.join(t.base, 'toml-keys')
+        os.makedirs(rt)
+        subprocess.run(['git', 'init', '-q', rt], check=True)
+        t.write(rt, 'tools/sessions.toml', '[vendors.codex]\nusage_limit_patterns = ["a"]\n[roles.builder.high]\nmodel = "m1"\neffort = "high"\n')
+        subprocess.run(['git', 'add', '-A'], cwd=rt, check=True)
+        subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'x'], cwd=rt, check=True)
+        t.write(rt, 'tools/sessions.toml', '[vendors.codex]\nusage_limit_patterns = ["a", "b"]\n[roles.builder.high]\nmodel = "m2"\neffort = "high"\n')
+        subprocess.run(['git', 'add', 'tools/sessions.toml'], cwd=rt, check=True)
+        rc2, out2, _ = t.run(rt, [py, '-c', 'import sys; sys.path.insert(0, %r); import campaign; print("KEYS", campaign.sessions_toml_changes("."))' % os.path.join(REPO, 'tools')])
+        t.expect('b2: a land that changes tools/sessions.toml names the changed keys in its trailer',
+                 "KEYS ['roles.builder.high.model', 'vendors.codex.usage_limit_patterns']" in out2, out2)
+        t.expect('b2: memcmp.h is frozen and lands only with an approval record and proof.lock; tools/sessions.toml may land (T-007)',
+                 'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out and 'TOML []' in out, out)
 
     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
     if want('probe'):

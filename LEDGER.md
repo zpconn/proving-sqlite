@@ -103,3 +103,18 @@ Lines are upstream/sqlite3.c's.
 - Who must make it true: callers in later milestones: the record and b-tree writers, and the sorter (balance_nonroot, fillInCell, sqlite3BtreeTransferRow, sqlite3VdbeExec, vdbePmaWriteVarint). One example is vdbePmaWriteVarint's `aByte[10]` (108087–108088); that one example does not establish the obligation for the others. In milestone 1, C-02's harness supplies `buffer[9]`.
 - Evidence: none
 - Status: draft
+
+## A-006 memcmp reads n bytes of each argument, writes nothing, and returns a value in [-255, 255]
+- Function(s): memcmp, the C library's, a boundary callee of sqlite3VdbeRecordCompareWithSkip (C-17: 92739, 92767) and vdbeRecordCompareString (C-19: 92975).
+- Clause, as CBMC states it (proofs/contracts/memcmp.h is this clause word for word, frozen in proof.lock; C-17 and C-19 replace the calls with it):
+  ~~~
+  int contract_memcmp(const void *s1, const void *s2, size_t n)
+    __CPROVER_requires(__CPROVER_r_ok(s1, n) && __CPROVER_r_ok(s2, n))
+    __CPROVER_assigns()
+    __CPROVER_ensures(-255 <= __CPROVER_return_value && __CPROVER_return_value <= 255);
+  ~~~
+- Plain English: memcmp reads exactly n bytes from each of its two arguments and writes nothing. Its result has the sign C11 7.24.4.1 gives it, and its magnitude is at most 255: the difference of the first differing bytes, read as unsigned char, or 0.
+- Why the proof needs it: CBMC's memcmp model loops once per byte, so under `--unwinding-assertions` it can't be unwound for unbounded lengths (C-17 round 3, B2; evidence/orchestrator/tool-issues/T-010/). The result's range matters because 92739–92740 and 92767–92768 pass memcmp's result to the DESC negation at 92793, which overflows for INT_MIN (F-001). C11 fixes only the sign, so the bound is an assumption about the C library, not the standard. The proofs need less than the whole range: C-17 needs only a result other than INT_MIN (the negation at 92793), and C-19 uses only the sign. [−255, 255] is what glibc and CBMC's model give, and stating it is simpler than a weaker clause.
+- Who must make it true: the C library SQLite is linked with. glibc returns the byte difference (C-17 round 3, *tested* on 65-byte buffers differing by 0x00/0xff at byte 40: −255 and 255), and so does CBMC's own model. A C library returning other magnitudes would bring the memcmp paths to F-001's overflow too.
+- Evidence: none yet (the ledger agent's second run tests it).
+- Status: draft (approved by Zach, 2026-11-10, as C-17's B2)

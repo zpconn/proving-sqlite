@@ -4,3 +4,4 @@ recorded,label,session,models,messages,input,cache_read,cache_write,output,total
 2026-11-09T16:45:48-06:00,"setup session, checkpoint 1 (cumulative)",6615eff2-bd58-433f-bd3d-67fc94571781,claude-opus-5-5,677,1394,184865926,2034563,963908,187865791
 2026-11-10T10:40:12-06:00,"setup session, checkpoint 1 fixes (cumulative)",6615eff2-bd58-433f-bd3d-67fc94571781,claude-opus-5-5,910,1868,260210960,2538865,1206592,263958285
 2026-11-10T11:50:52-06:00,"setup session, handoff (cumulative)",6615eff2-bd58-433f-bd3d-67fc94571781,claude-opus-5-5,939,1926,264566972,2625048,1225765,268419711
+2026-11-11T15:57:15-06:00,"campaign session, B2 landed (cumulative)",6615eff2-bd58-433f-bd3d-67fc94571781,<synthetic> claude-opus-5-5,1429,2994,502382438,4293068,1692706,508371206

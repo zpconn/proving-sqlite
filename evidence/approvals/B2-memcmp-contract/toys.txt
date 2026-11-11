@@ -1,0 +1,15 @@
+# B2 toys, 2026-11-10, CBMC 6.11.0, every option line in proofs/CHECKS, each step under ulimit -v 25165824
+mc.c   (DFCC: --dfcc h --enforce-contract f/contract_f --replace-call-with-contract memcmp/contract_memcmp)
+  GOOD  VERIFICATION SUCCESSFUL (lengths up to 10^6, under 1 s)
+  BAD   VERIFICATION FAILED: "Check requires clause of contract contract::contract_memcmp for function memcmp: FAILURE"
+  no replacement (CBMC's memcmp model, lengths up to 10^6): no verdict within 300 s
+mcl.c  (legacy: --replace-call-with-contract memcmp, then --enforce-contract f)
+  GOOD  VERIFICATION SUCCESSFUL
+  BAD   VERIFICATION FAILED: "Check requires clause of memcmp in f: FAILURE"
+kept.c (legacy: --apply-loop-contracts, then --enforce-contract walk; bump keeps its body)
+  GOOD  VERIFICATION SUCCESSFUL
+  BAD   VERIFICATION FAILED: "line 5 Check that p->flags is assignable: FAILURE" (inside bump's body)
+# Claude Code 2.1.322 with the new --disallowedTools command line (real session, probe.py on wip/b2-memcmp's campaign.py):
+  tools: Task Bash CronList DesignSync Edit EnterWorktree ExitWorktree ListAgents Monitor NotebookEdit Read ReportFindings
+         ScheduleWakeup SendMessage TaskStop ToolSearch Write   (WebFetch WebSearch RemoteTrigger PushNotification
+         CronCreate CronDelete Workflow gone); result: success "OK"

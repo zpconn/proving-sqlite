@@ -1,0 +1,2 @@
+2026-11-10T23:53:19 J0079-oneoff claude OFF-LIST: TaskStop x1 | Bash=88 Monitor=2 Read=1 TaskStop=1 ToolSearch=2 Write=2
+2026-11-11T14:43:48 J0086-builder codex OK | exec=48 tools.apply_patch=13 tools.exec_command=62 tools.write_stdin=23

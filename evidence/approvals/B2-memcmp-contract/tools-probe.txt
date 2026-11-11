@@ -1,0 +1,8 @@
+# Claude Code 2.1.322, real sessions with the --tools command line (checkpoint 1's probe.py, wip/b2-memcmp's campaign.py),
+# 2026-11-11. Each init event's tool list:
+start  session c03d42e8-76c4-40a4-98c6-d3f860262e16 tools Bash Edit Glob Grep Monitor Read TaskStop ToolSearch Write
+       result success 'OK'
+       argv claude -p --disable-slash-commands --strict-mcp-config --tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch --model claude-sonnet-5-5 --effort low --permission-mode auto --output-format stream-json --verbose --include-partial-messages
+resume session c03d42e8-76c4-40a4-98c6-d3f860262e16 tools Bash Edit Glob Grep Monitor Read TaskStop ToolSearch Write
+       result success 'OK'
+       argv claude -p --resume c03d42e8-76c4-40a4-98c6-d3f860262e16 --disable-slash-commands --strict-mcp-config --tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch --model claude-sonnet-5-5 --effort low --permission-mode auto --output-format stream-json --verbose --include-partial-messages

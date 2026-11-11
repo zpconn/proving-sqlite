@@ -1,0 +1,805 @@
+diff --git a/TRUSTED.md b/TRUSTED.md
+index 94eb11c..75db76a 100644
+--- a/TRUSTED.md
++++ b/TRUSTED.md
+@@ -10,6 +10,27 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
+   - `--drop-unused-functions` and its function-pointer removal;
+   - `--dfcc` with `--enforce-contract`, `--replace-call-with-contract` and `--apply-loop-contracts`: replacing a callee by its contract is sound only if DFCC checks the contract's requires at each call and assumes no more than its ensures;
+   - `--slice-global-inits`;
++  - **CBMC's legacy contracts, a second contracts implementation** (T-006; Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/):
++    - **Which proofs:** only those whose Makefile sets `<name>_CONTRACTS := legacy`, and only on cards C-15 (sqlite3VdbeRecordUnpack) and C-17 (sqlite3VdbeRecordCompareWithSkip, if its proof hits T-006), the cards in tools/prove.py's LEGACY_CARDS. Every other proof uses DFCC. RESULTS.md's rows for those proofs rest on this engine.
++    - **Trusted the way DFCC is:**
++      - `--replace-call-with-contract f` checks f's requires at each call, havocs what its assigns names and assumes no more than its ensures;
++      - `--apply-loop-contracts` checks each invariant on entry and after each iteration, its decreases, and that the loop writes only what its assigns lists, callees' contracts included;
++      - `--enforce-contract f` checks f's ensures and assigns under its requires.
++    - **Pass order:** prove.py runs them in that order, replace, then loops, then enforce. With loops applied before the replacement, a replaced callee whose body is removed can write outside the loop's assigns unchecked, which the callee-frame toy shows.
++    - **Contract text:** the legacy engine reads clauses only from a function's own declaration. So each legacy contract is its proofs/contracts/<fn>.h `contract_<fn>` declaration with only the name changed, generated at every build, with no stored copy.
++    - **Static locals:** a replaced callee with a static local, called in a loop, aborts the enforce pass (T-012). Such a callee keeps its body, and prove.py says so. For C-15 that is sqlite3VdbeSerialGet.
++    - **Validated on toys** (tool tests `-k legacy`, tools/tests/legacy/), each failing by the expected check:
++      - a replaced call forgets what its contract assigns;
++      - a callee assigning outside the loop's frame;
++      - a write through an alias outside it;
++      - an invariant true at entry but not preserved;
++      - a wrong decreases;
++      - a claim after the loop that the invariant doesn't support;
++      - an out-of-bounds write in the loop;
++      - an out-of-bounds pointer to a replaced callee;
++      - T-003's flexible array, with an exact allocation;
++      - aliased arguments to an `is_fresh` contract, while separate ones prove.
++    - **The same as DFCC in two respects:** globals start unconstrained, and T-003's bounds gap is the same, because both engines share the bounds instrumentation (a one-byte-short element read in a legacy-enforced function passes; evidence/approvals/T-006-dfcc-loop-pointer/flexgap.c).
+   - unwinding with `--unwinding-assertions`.
+ - **A known false failure in `--conversion-check`** (C-11, evidence/approvals/C-11-f2i-exact-min/): for a conversion from a floating type to a signed integer type of width w, CBMC 6.11 reports the exact minimum −2^(w−1) as overflowing whenever the floating type cannot represent −2^(w−1)−1: double to a 64-bit type, float to a 32-bit type. Its check reads `r > -9.223372e+18 && r < 9.223372e+18` for (i64)r. On toys, the next double below −2^63 and 2^63 itself are still flagged, and double to 32-bit is exact. So this rejects one defined input and misses none. In scope it applies only at sqlite3IntFloatCompare 92434, the one float-to-integer conversion in Appendix A; that input is argued in UB-CLASSES.md.
+ - **A known gap in `--bounds-check`** (C-16, evidence/orchestrator/tool-issues.md T-003; evidence/approvals/T-003-flexarray-bounds/): CBMC 6.11 checks an element of a flexible array member, read or written as `s->a[k]`, only where it starts. A read of `pKeyInfo->aColl[0]` from a KeyInfo one byte short of SZ_KEYINFO(1) passes, though it overflows, as ASan shows natively. The same element through a pointer is caught, and so are heap arrays, struct members and a flexible array with no element. `__CPROVER_r_ok` checks the whole range. A proof that touches such an array is sound only if both of these hold, and its reviewer checks both:
+diff --git a/cards/C-15.md b/cards/C-15.md
+index bd098cd..73a3363 100644
+--- a/cards/C-15.md
++++ b/cards/C-15.md
+@@ -7,4 +7,4 @@
+ - Depends on: C-04, C-06, C-08, C-13, C-14 (not a callee: its requires on p, aMem holding p->nField writable 8-byte-aligned Mems, is what C-14 ensures of the UnpackedRecord sqlite3VdbeAllocUnpackedRecord returns, which callers pass here)
+ - May change: proofs/C-15/harness.c, proofs/C-15/Makefile, proofs/C-15/NOTES.md, proofs/contracts/sqlite3VdbeRecordUnpack.h, overlay/sqlite3.c, proofs/include/preds.h, tests/repro/F-draft-C-15-1.c, tests/repro/F-draft-C-15-2.c, tests/repro/F-draft-C-15-3.c, reports/C-15-b1.md, reports/C-15-b2.md, reports/C-15-b3.md, reports/C-15-b4.md, reports/C-15-b5.md, reports/C-15-b6.md
+ - Cap: builder 60M; reviewer half that. Tier: high
+-- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. Appendix A: the loop tests `idx<szHdr` and `d<=nKey` before each field, but nothing bounds how far the varint at aKey[idx] or the value at aKey[d] extends, so a corrupt record makes the decoders read past pKey+nKey (the native probe confirms it: evidence/bringup/08-probes.md), and the comment at 92150-92153 notes the last Mem may then hold uninitialized memory. The proof needs a slack requires, LEDGER.md A-001, whose clause is `__CPROVER_requires(nKey >= 0 && __CPROVER_r_ok(pKey, (size_t)(nKey > 0 ? nKey : 1) + 8))`: the function reads at most max(nKey, 1) + 8 bytes from pKey, whatever p->nField is. Derivation (A-001): the header varint at 92131 reads at most 9 bytes; the loop body (92134) runs only while szHdr <= d <= nKey, since d starts at szHdr and only grows (d += len cannot wrap: d <= 2^31-1 and len <= 2^31-7), so idx < szHdr <= nKey there; the varint at aKey[idx] (92137) and sqlite3VdbeSerialGet at aKey[d] (92143, at most 8 bytes) both end at or before aKey[nKey+7]. nKey >= 0 is needed: a negative nKey wraps (u32)nKey. Prove that bound, and show one byte less fails (builder §2.4): with `max(nKey, 1) + 7` a proof must fail, e.g. at nKey >= 2 on the header {nKey, 6}, whose 8-byte integer at aKey[nKey] ends at aKey[nKey+7], and at nKey = 0 on a 9-byte header varint. If the bound is wrong, report it with the failing trace rather than pick another constant. The loop runs up to nField times (a u16), so it needs a loop contract (PROOF span). The EIGHT_BYTE_ALIGNMENT assert (92130) is compiled out, so p->aMem's alignment is a requires, justified by C-14's ensures (UB-CLASSES.md). sqlite3VdbeMemSetNull's contract requires !VdbeMemDynamic(pMem): show the call at 92153 meets it. Mutants: M-050 and M-051 (card=C-15).
++- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. Appendix A: the loop tests `idx<szHdr` and `d<=nKey` before each field, but nothing bounds how far the varint at aKey[idx] or the value at aKey[d] extends, so a corrupt record makes the decoders read past pKey+nKey (the native probe confirms it: evidence/bringup/08-probes.md), and the comment at 92150-92153 notes the last Mem may then hold uninitialized memory. The proof needs a slack requires, LEDGER.md A-001, whose clause is `__CPROVER_requires(nKey >= 0 && __CPROVER_r_ok(pKey, (size_t)(nKey > 0 ? nKey : 1) + 8))`: the function reads at most max(nKey, 1) + 8 bytes from pKey, whatever p->nField is. Derivation (A-001): the header varint at 92131 reads at most 9 bytes; the loop body (92134) runs only while szHdr <= d <= nKey, since d starts at szHdr and only grows (d += len cannot wrap: d <= 2^31-1 and len <= 2^31-7), so idx < szHdr <= nKey there; the varint at aKey[idx] (92137) and sqlite3VdbeSerialGet at aKey[d] (92143, at most 8 bytes) both end at or before aKey[nKey+7]. nKey >= 0 is needed: a negative nKey wraps (u32)nKey. Prove that bound, and show one byte less fails (builder §2.4): with `max(nKey, 1) + 7` a proof must fail, e.g. at nKey >= 2 on the header {nKey, 6}, whose 8-byte integer at aKey[nKey] ends at aKey[nKey+7], and at nKey = 0 on a 9-byte header varint. If the bound is wrong, report it with the failing trace rather than pick another constant. The loop runs up to nField times (a u16), so it needs a loop contract (PROOF span). The EIGHT_BYTE_ALIGNMENT assert (92130) is compiled out, so p->aMem's alignment is a requires, justified by C-14's ensures (UB-CLASSES.md). sqlite3VdbeMemSetNull's contract requires !VdbeMemDynamic(pMem): show the call at 92153 meets it. T-006 (Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/): CBMC 6.11's DFCC can't encode this loop, which carries pMem. This card may set `<name>_CONTRACTS := legacy` in its Makefile, which runs CBMC's legacy contracts for that proof (TRUSTED.md; tools/prove.py). Under legacy, leave sqlite3VdbeSerialGet off REPLACE and keep its body: its static local `aFlag` (92080) aborts the legacy enforce pass (T-012). The probe in evidence/approvals/T-006-dfcc-loop-pointer/ reached a CBMC verdict that way. Opt in only for the proof that needs it, state why in NOTES.md, and keep every check, footprint and the A-001 clause unchanged. Mutants: M-050 and M-051 (card=C-15).
+diff --git a/cards/C-17.md b/cards/C-17.md
+index 07b9e9c..c5d32f5 100644
+--- a/cards/C-17.md
++++ b/cards/C-17.md
+@@ -7,4 +7,4 @@
+ - Depends on: C-04, C-05, C-06, C-07, C-08, C-10, C-11, C-12
+ - May change: proofs/C-17/harness.c, proofs/C-17/Makefile, proofs/C-17/NOTES.md, proofs/contracts/sqlite3VdbeRecordCompareWithSkip.h, overlay/sqlite3.c, proofs/include/preds.h, tests/repro/F-draft-C-17-1.c, tests/repro/F-draft-C-17-2.c, tests/repro/F-draft-C-17-3.c, reports/C-17-b1.md, reports/C-17-b2.md, reports/C-17-b3.md, reports/C-17-b4.md, reports/C-17-b5.md, reports/C-17-b6.md
+ - Cap: builder 80M; reviewer half that. Tier: high
+-- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. The two boundary contracts, proofs/contracts/vdbeCompareMemString.h and proofs/contracts/sqlite3CorruptError.h, are already written: LEDGER.md A-003's and A-004's clauses word for word, with the lines "Ledger: A-003" and "Ledger: A-004" (scan.py checks they match, and proof.lock freezes them). Replace the calls with them; if a clause doesn't work, say why in your report, since neither the headers nor LEDGER.md are yours to change. Its `while(1)` loop exits by break or return, at most once per field of pPKey2 (nField), so it needs a loop contract (PROOF span). It checks d1 against nKey1 (92645, 92724, 92756, 92805) and idx1 against szHdr1 (92807), but the varint at aKey1[idx1] and the 8-byte reads at aKey1[d1] (serialGet7, vdbeRecordDecodeInt) can extend past nKey1: if that needs slack, use A-001 and determine the smallest. With bSkip set it skips the first field (92625-92635): state what that requires of pPKey2, since C-18 passes 0 and C-19 and C-20 pass 1. KeyInfo's aColl is a flexible array member (92730, 92736), which CBMC 6.11 bounds-checks only at an element's start (evidence/orchestrator/tool-issues.md (T-003)): state its footprint as `r_ok(pKeyInfo, SZ_KEYINFO(n))` in whole entries; show minus one entry fails in CBMC and minus one byte overflows natively under ASan; the reviewer checks every such footprint is whole entries. Zach's addition (2026-11-10, evidence/approvals/T-003-flexarray-bounds/APPROVED.md): whole-entry footprints are sound only if the harness allocates the KeyInfo at exactly SZ_KEYINFO(n) bytes (`__CPROVER_is_fresh` or `malloc` of that size, never larger). Then a read of aColl[n] starts out of bounds and CBMC catches it. NOTES.md shows that a read one entry past the end fails. The reviewer checks both the whole-entry footprint and the exact allocation. Decision (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): for this card only, Claude builds and Codex reviews, because the Codex service's content filter stopped rounds 1 and 2 (T-005). If the Codex reviewer is flagged too, the card is parked again. Nothing is reworded to get past the filter. Finding candidate (Zach): A-003's contract puts no bound on vdbeCompareMemString's result, which is the collation's xCmp result (92344, 92359), and 92793 negates rc for a DESC key, so a result of INT_MIN would be a signed overflow. Settle it either with a native repro on unmodified upstream (tests/repro/F-draft-C-17-<k>.c, reported as FINDING), or with a ledger statement and its justification, reported as NEEDS-DECISION with the draft. The loop carries `pRhs` (`pRhs++`, 92803), the pattern behind T-006 (CBMC 6.11's DFCC encoding blow-up, evidence/orchestrator/tool-issues.md). If your proof hits it, report NEEDS-DECISION citing T-006 rather than spending eight runs. Mutants: M-054 to M-056 (card=C-17).
++- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. The two boundary contracts, proofs/contracts/vdbeCompareMemString.h and proofs/contracts/sqlite3CorruptError.h, are already written: LEDGER.md A-003's and A-004's clauses word for word, with the lines "Ledger: A-003" and "Ledger: A-004" (scan.py checks they match, and proof.lock freezes them). Replace the calls with them; if a clause doesn't work, say why in your report, since neither the headers nor LEDGER.md are yours to change. Its `while(1)` loop exits by break or return, at most once per field of pPKey2 (nField), so it needs a loop contract (PROOF span). It checks d1 against nKey1 (92645, 92724, 92756, 92805) and idx1 against szHdr1 (92807), but the varint at aKey1[idx1] and the 8-byte reads at aKey1[d1] (serialGet7, vdbeRecordDecodeInt) can extend past nKey1: if that needs slack, use A-001 and determine the smallest. With bSkip set it skips the first field (92625-92635): state what that requires of pPKey2, since C-18 passes 0 and C-19 and C-20 pass 1. KeyInfo's aColl is a flexible array member (92730, 92736), which CBMC 6.11 bounds-checks only at an element's start (evidence/orchestrator/tool-issues.md (T-003)): state its footprint as `r_ok(pKeyInfo, SZ_KEYINFO(n))` in whole entries; show minus one entry fails in CBMC and minus one byte overflows natively under ASan; the reviewer checks every such footprint is whole entries. Zach's addition (2026-11-10, evidence/approvals/T-003-flexarray-bounds/APPROVED.md): whole-entry footprints are sound only if the harness allocates the KeyInfo at exactly SZ_KEYINFO(n) bytes (`__CPROVER_is_fresh` or `malloc` of that size, never larger). Then a read of aColl[n] starts out of bounds and CBMC catches it. NOTES.md shows that a read one entry past the end fails. The reviewer checks both the whole-entry footprint and the exact allocation. Decision (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): for this card only, Claude builds and Codex reviews, because the Codex service's content filter stopped rounds 1 and 2 (T-005). If the Codex reviewer is flagged too, the card is parked again. Nothing is reworded to get past the filter. Finding candidate (Zach): A-003's contract puts no bound on vdbeCompareMemString's result, which is the collation's xCmp result (92344, 92359), and 92793 negates rc for a DESC key, so a result of INT_MIN would be a signed overflow. Settle it either with a native repro on unmodified upstream (tests/repro/F-draft-C-17-<k>.c, reported as FINDING), or with a ledger statement and its justification, reported as NEEDS-DECISION with the draft. The loop carries `pRhs` (`pRhs++`, 92803), the pattern behind T-006 (CBMC 6.11's DFCC encoding blow-up, evidence/orchestrator/tool-issues.md). If your proof hits it, set `<name>_CONTRACTS := legacy` for that proof (Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/; TRUSTED.md) and record the DFCC run that showed it in NOTES.md. Under legacy, a replaced callee with a static local must keep its body (T-012). Mutants: M-054 to M-056 (card=C-17).
+diff --git a/tools/prove.py b/tools/prove.py
+index 061686c..459609a 100755
+--- a/tools/prove.py
++++ b/tools/prove.py
+@@ -17,6 +17,19 @@ configuration the pipeline is:
+                   [--apply-loop-contracts]       (only if the proof uses contracts)
+   goto-instrument --slice-global-inits
+   cbmc <every option in proofs/CHECKS> [--unwindset ...] [solver] [--object-bits n]
++
++A proof with <name>_CONTRACTS := legacy (only the cards in LEGACY_CARDS: T-006, Zach 2026-11-10,
++evidence/approvals/T-006-dfcc-loop-pointer/) uses CBMC's legacy contracts instead of DFCC:
++  goto-cc ... -c <build>/<name>.legacy.c         (harness.c, then each ENFORCE and REPLACE function redeclared with
++                                                  the clauses of its proofs/contracts/<fn>.h, generated at every build)
++  link, remove-bodies, drop-unused and the argument-type check as above
++  goto-instrument --replace-call-with-contract g ...   then   --apply-loop-contracts   then   --enforce-contract f
++That order is required: with loop contracts applied before the replacement, a replaced callee whose body is removed
++can write outside the loop's assigns unchecked (evidence/approvals/T-006-dfcc-loop-pointer/, the callee-frame toy).
++The legacy engine reads clauses only from a function's own declaration (it can't use contract_<fn>), so each one is
++copied, mechanically, from its header's contract_<fn> declaration with only the name changed; there is no stored
++copy to diverge, and the build key includes the generated text, so a header edit always rebuilds. A replaced callee
++with a static local aborts the legacy enforce pass (T-012): such a callee keeps its body.
+   cbmc ... --conversion-check --property <id>... (the %float-to-int pass, when such properties exist)
+ 
+ Bodies are removed before drop-unused-functions (checkpoint 1, fix 1): otherwise drop-unused keeps everything a
+@@ -40,6 +53,7 @@ The card's Makefile is declarative (tools/scan.py enforces it):
+   <name>_SOLVER := --smt2 | --z3 | --sat-solver cadical | --sat-solver minisat2 | --sat-solver glucose
+   <name>_OBJECT_BITS := <8..16>
+   <name>_COVER := <fn> ...                           functions whose lines coverage reports
++  <name>_CONTRACTS := dfcc | legacy                 default dfcc; legacy only for LEGACY_CARDS (T-006)
+   include ../Makefile.common
+ 
+ Every command prints one RESULT line last, e.g.
+@@ -67,6 +81,11 @@ MEM_LIMIT = 12 * 1024 ** 3     # address-space cap per tool process, so CBMC fai
+ ALLOWED_SOLVERS = ['', '--smt2', '--z3', '--sat-solver cadical', '--sat-solver minisat2',
+                    '--sat-solver glucose']
+ FLOAT2INT_DIRECTIVE = '%float-to-int'
++# Zach, 2026-11-10 (evidence/approvals/T-006-dfcc-loop-pointer/): CBMC's legacy contracts, opted into per proof, only
++# for the cards whose loops carry a pointer that DFCC can't encode (T-006). Every other proof stays on DFCC.
++LEGACY_CARDS = ('C-15', 'C-17')
++CONTRACT_CLAUSE_RX = re.compile(r'__CPROVER_(requires|ensures|assigns|frees)\b')
++LEGACY_STATIC_ABORT = 'Expected an assignment of the form `symbol_exprt := side_effect_expr_nondett`'
+ 
+ IDENT = r'[A-Za-z_][A-Za-z0-9_]*'
+ RE_PAIR = re.compile(r'^(%s)/contract_(%s)$' % (IDENT, IDENT))
+@@ -153,11 +172,14 @@ class Proof:
+         self.solver = ' '.join(g('SOLVER').split())
+         self.object_bits = g('OBJECT_BITS')
+         self.cover = g('COVER').split()
++        self.contracts = g('CONTRACTS', 'dfcc') or 'dfcc'
+         if len(self.enforce) > 1:
+             raise CardError('%s_ENFORCE: at most one function per proof (DFCC checks one contract per run)' % name)
+         for p in self.enforce + self.replace:
+             if not RE_PAIR.match(p) or RE_PAIR.match(p).group(1) != RE_PAIR.match(p).group(2):
+                 raise CardError('%s: %r must be <fn>/contract_<fn>' % (name, p))
++        if self.contracts not in ('dfcc', 'legacy'):
++            raise CardError('%s_CONTRACTS must be dfcc or legacy' % name)
+         if self.loops not in ('contracts', 'unwind', 'none'):
+             raise CardError('%s_LOOPS must be contracts, unwind or none' % name)
+         if self.unwindset:
+@@ -172,9 +194,15 @@ class Proof:
+             self.cover = [p.split('/')[0] for p in self.enforce]
+         self.enforced = [p.split('/')[0] for p in self.enforce]
+ 
+-    def uses_dfcc(self):
++    def uses_contracts(self):
+         return bool(self.enforce or self.replace or self.loops == 'contracts')
+ 
++    def uses_dfcc(self):
++        return self.contracts == 'dfcc' and self.uses_contracts()
++
++    def uses_legacy(self):
++        return self.contracts == 'legacy' and self.uses_contracts()
++
+ 
+ def load_card(card_dir):
+     mk = os.path.join(card_dir, 'Makefile')
+@@ -189,12 +217,73 @@ def load_card(card_dir):
+         raise CardError('%s: PROOFS is empty' % mk)
+     allowed = {'CARD', 'PROOFS'}
+     for n in names:
+-        for k in ('ENTRY', 'ENFORCE', 'REPLACE', 'LOOPS', 'UNWINDSET', 'SOLVER', 'OBJECT_BITS', 'COVER'):
++        for k in ('ENTRY', 'ENFORCE', 'REPLACE', 'LOOPS', 'UNWINDSET', 'SOLVER', 'OBJECT_BITS', 'COVER', 'CONTRACTS'):
+             allowed.add('%s_%s' % (n, k))
+     extra = sorted(set(v) - allowed)
+     if extra:
+         raise CardError('%s: variables not allowed: %s' % (mk, ' '.join(extra)))
+-    return card, [Proof(n, v) for n in names]
++    proofs = [Proof(n, v) for n in names]
++    legacy = [p.name for p in proofs if p.contracts == 'legacy']
++    if legacy and card not in LEGACY_CARDS:
++        raise CardError('%s: %s_CONTRACTS := legacy, but only %s may use CBMC\'s legacy contracts (T-006)' % (
++            mk, legacy[0], ', '.join(LEGACY_CARDS)))
++    return card, proofs
++
++
++def _strip_comments(text):
++    return re.sub(r'//[^\n]*', '', re.sub(r'/\*.*?\*/', lambda m: ' ' * len(m.group(0)), text, flags=re.S))
++
++
++def contract_declaration(text, fn):
++    """The declaration of contract_<fn> in a contracts header, comments removed: (start, end, text). Exactly one."""
++    t = _strip_comments(text)
++    hits = [m for m in re.finditer(r'\bcontract_%s\s*\(' % re.escape(fn), t)]
++    if len(hits) != 1:
++        raise CardError('proofs/contracts/%s.h: %d declarations of contract_%s, want exactly one' % (fn, len(hits), fn))
++    p = hits[0].start()
++    start = max(t.rfind(';', 0, p), t.rfind('}', 0, p)) + 1
++    nl = t.rfind('\n#', 0, p)                          # after the last preprocessor line, too
++    if nl >= start:
++        start = t.index('\n', nl + 1) + 1
++    depth, i = 0, hits[0].end() - 1
++    while i < len(t):
++        c = t[i]
++        if c == '(':
++            depth += 1
++        elif c == ')':
++            depth -= 1
++        elif c == ';' and depth == 0:
++            return start, i + 1, t[start:i + 1].strip()
++        i += 1
++    raise CardError('proofs/contracts/%s.h: contract_%s\'s declaration has no closing ;' % (fn, fn))
++
++
++def legacy_redeclaration(text, fn):
++    """<fn> redeclared with exactly contract_<fn>'s clauses: the header's declaration with only its name changed."""
++    decl = contract_declaration(text, fn)[2]
++    out = re.sub(r'\bcontract_%s(\s*\()' % re.escape(fn), lambda m: fn + m.group(1), decl, count=1)
++    # the check that the two can't diverge: the redeclaration is the header's declaration, token for token, but the name
++    norm = lambda s: re.sub(r'\s+', ' ', s).strip()  # noqa: E731
++    if norm(out.replace(fn + '(', 'contract_' + fn + '(', 1)) != norm(decl) or not CONTRACT_CLAUSE_RX.search(decl):
++        raise CardError('proofs/contracts/%s.h: the legacy redeclaration does not match contract_%s' % (fn, fn))
++    return out
++
++
++def legacy_source(card_dir, proof):
++    """The legacy translation unit: harness.c, then each ENFORCE and REPLACE function redeclared from its header."""
++    harness = os.path.join(card_dir, 'harness.c')
++    if CONTRACT_CLAUSE_RX.search(_strip_comments(open(harness, errors='replace').read())):
++        raise CardError('%s: a legacy proof\'s harness may carry no function contract clauses: under the legacy engine '
++                        'a redeclaration there would attach a contract of its own to a SQLite function' % harness)
++    parts = ['/* Generated by tools/prove.py for proof %s (legacy contracts, T-006). Do not edit: it is rebuilt from '
++             'proofs/contracts/ at every build. */' % proof.name, '#include "%s"' % os.path.abspath(harness)]
++    for pair in proof.enforce + proof.replace:
++        fn = pair.split('/')[0]
++        hdr = os.path.join(ROOT, 'proofs', 'contracts', fn + '.h')
++        if not os.path.exists(hdr):
++            raise CardError('%s: no proofs/contracts/%s.h to generate its legacy contract from' % (proof.name, fn))
++        parts.append('/* from proofs/contracts/%s.h */\n%s' % (fn, legacy_redeclaration(open(hdr, errors='replace').read(), fn)))
++    return '\n'.join(parts) + '\n'
+ 
+ 
+ # ---------------------------------------------------------------- running tools
+@@ -409,6 +498,17 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
+     harness = os.path.join(card_dir, 'harness.c')
+     stamp = os.path.join(bdir, 'harness.o.stamp')
+     key = json.dumps([cfg_flags, os.path.abspath(overlay_dir), _mtimes(card_dir, overlay_dir)])
++    if proof.uses_legacy():
++        try:
++            src = legacy_source(card_dir, proof)
++        except (CardError, OSError) as e:
++            return None, str(e)
++        harness = os.path.join(bdir, proof.name + '.legacy.c')
++        with open(harness, 'w') as f:
++            f.write(src)
++        obj = os.path.join(bdir, proof.name + '.legacy.o.goto')
++        stamp = os.path.join(bdir, proof.name + '.legacy.o.stamp')
++        key = json.dumps([cfg_flags, os.path.abspath(overlay_dir), _mtimes(card_dir, overlay_dir), src])
+     if not (os.path.exists(obj) and os.path.exists(stamp) and open(stamp).read() == key):
+         cmd = ['goto-cc'] + cfg_flags + ['-include', os.path.join(ROOT, 'proofs', 'include', 'proof.h'),
+                                          '-I', overlay_dir, '-I', os.path.join(ROOT, 'proofs', 'include'),
+@@ -469,13 +569,27 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
+         cmd += [cur, p2]
+         steps.append((cmd, 'dfcc'))
+         cur = p2
++    elif proof.uses_legacy():
++        # replace, then loops, then enforce: the order the callee-frame toy requires (T-006)
++        passes = [('legacy-replace', sum([['--replace-call-with-contract', r.split('/')[0]] for r in proof.replace], [])),
++                  ('legacy-loops', ['--apply-loop-contracts'] if proof.loops == 'contracts' else []),
++                  ('legacy-enforce', sum([['--enforce-contract', e.split('/')[0]] for e in proof.enforce], []))]
++        for k, (tag, opts) in enumerate(p for p in passes if p[1]):
++            nxt = os.path.join(bdir, proof.name + '.2%s.goto' % 'abc'[k])
++            steps.append((['goto-instrument'] + opts + [cur, nxt], tag))
++            cur = nxt
+     p3 = os.path.join(bdir, proof.name + '.goto')
+     steps.append((['goto-instrument', '--slice-global-inits', cur, p3], 'slice-global-inits'))
+     for cmd, tag in steps:
+         rc, _ = run(cmd, log + '.' + tag, timeout=900)
+         if rc != 0:
+-            return None, '%s failed (%s); see %s' % (tag, rc, log + '.' + tag)
+-    for f in (p0, p0b, p1, os.path.join(bdir, proof.name + '.2.goto')):
++            hint = ''
++            if tag.startswith('legacy-') and LEGACY_STATIC_ABORT in open(log + '.' + tag, errors='replace').read():
++                hint = (' (T-012: the legacy engine aborts when a replaced callee has a static local; keep that callee\'s '
++                        'body, that is, leave it off REPLACE)')
++            return None, '%s failed (%s); see %s%s' % (tag, rc, log + '.' + tag, hint)
++    for f in (p0, p0b, p1, os.path.join(bdir, proof.name + '.2.goto')) + tuple(
++            os.path.join(bdir, proof.name + '.2%s.goto' % x) for x in 'abc'):
+         if os.path.exists(f):
+             os.remove(f)
+     return p3, None
+diff --git a/tools/tests/legacy/harness.c b/tools/tests/legacy/harness.c
+new file mode 100644
+index 0000000..b183c39
+--- /dev/null
++++ b/tools/tests/legacy/harness.c
+@@ -0,0 +1,20 @@
++/* harnesses for the legacy validation toys: every pointer malloc'd at the size the requires names, never larger */
++void h_forget(void) { Cell *p = malloc(sizeof(Cell)); __CPROVER_assume(p); t_forget(p); }
++void h_callee_frame(void) { unsigned n; Cell *a = malloc(4 * sizeof(Cell)), *o = malloc(sizeof(Cell));
++  __CPROVER_assume(a && o); t_callee_frame(a, o, n); }
++void h_alias_frame(void) { unsigned n; Cell *a = malloc(4 * sizeof(Cell)), *b = malloc(sizeof(Cell));
++  __CPROVER_assume(a && b); t_alias_frame(a, b, n); }
++void h_invariant(void) { unsigned n; t_invariant(n); }
++void h_decreases(void) { unsigned n; t_decreases(n); }
++void h_after(void) { unsigned n; t_after(n); }
++void h_oob(void) { unsigned n; __CPROVER_assume(n >= 1 && n <= 4); Cell *a = malloc(n * sizeof(Cell));
++  __CPROVER_assume(a); t_oob(a, n); }
++void h_callee_requires(void) { unsigned n; __CPROVER_assume(n >= 1 && n <= 4); Cell *a = malloc(n * sizeof(Cell));
++  __CPROVER_assume(a); t_callee_requires(a, n); }
++void h_flex(void) { int n; __CPROVER_assume(n >= 1 && n <= 4); Flex *s = malloc(sizeof(Flex) + (size_t)n * sizeof(void *));
++  __CPROVER_assume(s); t_flex(s, n); }
++void h_fresh(void) { int *x = malloc(sizeof(int)), *y = malloc(sizeof(int)); __CPROVER_assume(x && y); t_fresh(x, y); }
++void h_two(void) { int *p = malloc(sizeof(int)), *q = malloc(sizeof(int)); __CPROVER_assume(p && q); two(p, q); }
++void h_carried(void) { Cell *a = malloc(4 * sizeof(Cell)); __CPROVER_assume(a); t_carried(a); }
++void h_glob(void) { t_glob(); }
++void h_static(void) { Cell *a = malloc(2 * sizeof(Cell)); __CPROVER_assume(a); t_static(a); }
+diff --git a/tools/tests/legacy/heads/keep.h b/tools/tests/legacy/heads/keep.h
+new file mode 100644
+index 0000000..7ba829a
+--- /dev/null
++++ b/tools/tests/legacy/heads/keep.h
+@@ -0,0 +1,7 @@
++#ifndef C_keep_H
++#define C_keep_H
++void contract_keep(Cell *p)
++  __CPROVER_requires(__CPROVER_w_ok(p, sizeof(Cell)))
++  __CPROVER_assigns(p->flags)
++  __CPROVER_ensures(p->flags == __CPROVER_old(p->flags));
++#endif
+diff --git a/tools/tests/legacy/heads/reset.h b/tools/tests/legacy/heads/reset.h
+new file mode 100644
+index 0000000..39e62b8
+--- /dev/null
++++ b/tools/tests/legacy/heads/reset.h
+@@ -0,0 +1,7 @@
++#ifndef C_reset_H
++#define C_reset_H
++void contract_reset(Cell *p)
++  __CPROVER_requires(__CPROVER_w_ok(p, sizeof(Cell)))
++  __CPROVER_assigns(p->flags)
++  __CPROVER_ensures(p->flags == 0);
++#endif
+diff --git a/tools/tests/legacy/heads/stat.h b/tools/tests/legacy/heads/stat.h
+new file mode 100644
+index 0000000..5a2c686
+--- /dev/null
++++ b/tools/tests/legacy/heads/stat.h
+@@ -0,0 +1,7 @@
++#ifndef C_stat_H
++#define C_stat_H
++void contract_stat(Cell *p)
++  __CPROVER_requires(__CPROVER_w_ok(p, sizeof(Cell)))
++  __CPROVER_assigns(p->flags)
++  __CPROVER_ensures(p->flags == 1 || p->flags == 2);
++#endif
+diff --git a/tools/tests/legacy/heads/t_after.h b/tools/tests/legacy/heads/t_after.h
+new file mode 100644
+index 0000000..36260cf
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_after.h
+@@ -0,0 +1,7 @@
++#ifndef C_t_after_H
++#define C_t_after_H
++unsigned contract_t_after(unsigned n)
++  __CPROVER_requires(n <= 10)
++  __CPROVER_assigns()
++  __CPROVER_ensures(__CPROVER_return_value == n);
++#endif
+diff --git a/tools/tests/legacy/heads/t_alias_frame.h b/tools/tests/legacy/heads/t_alias_frame.h
+new file mode 100644
+index 0000000..a1ac774
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_alias_frame.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_alias_frame_H
++#define C_t_alias_frame_H
++void contract_t_alias_frame(Cell *a, Cell *b, unsigned n)
++  __CPROVER_requires(n <= 4 && __CPROVER_w_ok(a, 4 * sizeof(Cell)) && __CPROVER_w_ok(b, sizeof(Cell)))
++  __CPROVER_assigns(__CPROVER_object_whole(a), b->flags);
++#endif
+diff --git a/tools/tests/legacy/heads/t_callee_frame.h b/tools/tests/legacy/heads/t_callee_frame.h
+new file mode 100644
+index 0000000..e48d730
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_callee_frame.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_callee_frame_H
++#define C_t_callee_frame_H
++void contract_t_callee_frame(Cell *a, Cell *other, unsigned n)
++  __CPROVER_requires(n <= 4 && __CPROVER_w_ok(a, 4 * sizeof(Cell)) && __CPROVER_w_ok(other, sizeof(Cell)))
++  __CPROVER_assigns(__CPROVER_object_whole(a), other->flags);
++#endif
+diff --git a/tools/tests/legacy/heads/t_callee_requires.h b/tools/tests/legacy/heads/t_callee_requires.h
+new file mode 100644
+index 0000000..6fcf8ed
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_callee_requires.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_callee_requires_H
++#define C_t_callee_requires_H
++void contract_t_callee_requires(Cell *a, unsigned n)
++  __CPROVER_requires(n >= 1 && n <= 4 && __CPROVER_w_ok(a, n * sizeof(Cell)))
++  __CPROVER_assigns(__CPROVER_object_whole(a));
++#endif
+diff --git a/tools/tests/legacy/heads/t_carried.h b/tools/tests/legacy/heads/t_carried.h
+new file mode 100644
+index 0000000..a19b9ae
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_carried.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_carried_H
++#define C_t_carried_H
++void contract_t_carried(Cell *a)
++  __CPROVER_requires(__CPROVER_w_ok(a, 4 * sizeof(Cell)))
++  __CPROVER_assigns(__CPROVER_object_whole(a));
++#endif
+diff --git a/tools/tests/legacy/heads/t_decreases.h b/tools/tests/legacy/heads/t_decreases.h
+new file mode 100644
+index 0000000..775232b
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_decreases.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_decreases_H
++#define C_t_decreases_H
++void contract_t_decreases(unsigned n)
++  __CPROVER_requires(n <= 10)
++  __CPROVER_assigns();
++#endif
+diff --git a/tools/tests/legacy/heads/t_flex.h b/tools/tests/legacy/heads/t_flex.h
+new file mode 100644
+index 0000000..5107a87
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_flex.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_flex_H
++#define C_t_flex_H
++void *contract_t_flex(Flex *s, int n)
++  __CPROVER_requires(n >= 1 && n <= 4 && __CPROVER_r_ok(s, sizeof(Flex) + (size_t)n * sizeof(void *)))
++  __CPROVER_assigns();
++#endif
+diff --git a/tools/tests/legacy/heads/t_forget.h b/tools/tests/legacy/heads/t_forget.h
+new file mode 100644
+index 0000000..f2b3951
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_forget.h
+@@ -0,0 +1,7 @@
++#ifndef C_t_forget_H
++#define C_t_forget_H
++unsigned contract_t_forget(Cell *p)
++  __CPROVER_requires(__CPROVER_w_ok(p, sizeof(Cell)))
++  __CPROVER_assigns(p->flags)
++  __CPROVER_ensures(__CPROVER_return_value == 5);
++#endif
+diff --git a/tools/tests/legacy/heads/t_fresh.h b/tools/tests/legacy/heads/t_fresh.h
+new file mode 100644
+index 0000000..27b266e
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_fresh.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_fresh_H
++#define C_t_fresh_H
++int contract_t_fresh(int *x, int *y)
++  __CPROVER_requires(__CPROVER_w_ok(x, sizeof(int)) && __CPROVER_w_ok(y, sizeof(int)))
++  __CPROVER_assigns(*x);
++#endif
+diff --git a/tools/tests/legacy/heads/t_glob.h b/tools/tests/legacy/heads/t_glob.h
+new file mode 100644
+index 0000000..eae76eb
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_glob.h
+@@ -0,0 +1,7 @@
++#ifndef C_t_glob_H
++#define C_t_glob_H
++int contract_t_glob(void)
++  __CPROVER_requires(1)
++  __CPROVER_assigns()
++  __CPROVER_ensures(__CPROVER_return_value == 5);
++#endif
+diff --git a/tools/tests/legacy/heads/t_invariant.h b/tools/tests/legacy/heads/t_invariant.h
+new file mode 100644
+index 0000000..8f64088
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_invariant.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_invariant_H
++#define C_t_invariant_H
++void contract_t_invariant(unsigned n)
++  __CPROVER_requires(n <= 10)
++  __CPROVER_assigns();
++#endif
+diff --git a/tools/tests/legacy/heads/t_oob.h b/tools/tests/legacy/heads/t_oob.h
+new file mode 100644
+index 0000000..136480b
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_oob.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_oob_H
++#define C_t_oob_H
++void contract_t_oob(Cell *a, unsigned n)
++  __CPROVER_requires(n >= 1 && n <= 4 && __CPROVER_w_ok(a, n * sizeof(Cell)))
++  __CPROVER_assigns(__CPROVER_object_whole(a));
++#endif
+diff --git a/tools/tests/legacy/heads/t_static.h b/tools/tests/legacy/heads/t_static.h
+new file mode 100644
+index 0000000..01551f1
+--- /dev/null
++++ b/tools/tests/legacy/heads/t_static.h
+@@ -0,0 +1,6 @@
++#ifndef C_t_static_H
++#define C_t_static_H
++void contract_t_static(Cell *a)
++  __CPROVER_requires(__CPROVER_w_ok(a, 2 * sizeof(Cell)))
++  __CPROVER_assigns(__CPROVER_object_whole(a));
++#endif
+diff --git a/tools/tests/legacy/heads/two.h b/tools/tests/legacy/heads/two.h
+new file mode 100644
+index 0000000..8e605db
+--- /dev/null
++++ b/tools/tests/legacy/heads/two.h
+@@ -0,0 +1,7 @@
++#ifndef C_two_H
++#define C_two_H
++void contract_two(int *p, int *q)
++  __CPROVER_requires(__CPROVER_is_fresh(p, sizeof(int)) && __CPROVER_is_fresh(q, sizeof(int)))
++  __CPROVER_assigns(*p)
++  __CPROVER_ensures(*q == __CPROVER_old(*q));
++#endif
+diff --git a/tools/tests/legacy/toys.c b/tools/tests/legacy/toys.c
+new file mode 100644
+index 0000000..9439aa9
+--- /dev/null
++++ b/tools/tests/legacy/toys.c
+@@ -0,0 +1,159 @@
++/* Legacy-contracts validation toys (T-006, Zach's condition 3; tools/tests/test_tools.py -k legacy). They stand in for
++ * upstream/sqlite3.c in a scratch repository. Each proof passes as written and fails, by the check the test names,
++ * when VARIANT_<name> is defined (for forget, when contract_keep loses its ensures). */
++#include <stdlib.h>
++#include <string.h>
++typedef struct Cell { unsigned flags; void *payload; } Cell;
++typedef struct Flex { int n; void *a[]; } Flex;
++
++/* callees replaced by their contracts in the toys that call them */
++void keep(Cell *p) { (void)p; }                       /* its body changes nothing */
++void reset(Cell *p) { p->flags = 0; }
++
++/* 1. a replaced call must forget the old value of what its contract assigns */
++unsigned t_forget(Cell *p) { p->flags = 5; keep(p); return p->flags; }
++
++/* 2. a callee assigning outside the loop's frame */
++void t_callee_frame(Cell *a, Cell *other, unsigned n) {
++  unsigned i = 0;
++  while (i < n)
++    __CPROVER_assigns(i, __CPROVER_object_whole(a)
++#ifndef VARIANT_callee_frame
++                      , other->flags
++#endif
++                      )
++    __CPROVER_loop_invariant(i <= n)
++    __CPROVER_decreases(n - i)
++  { reset(other); i++; }
++}
++
++/* 3. a write through an alias outside the loop's frame */
++void t_alias_frame(Cell *a, Cell *b, unsigned n) {
++  unsigned i = 0;
++  Cell *q = b;
++  while (i < n)
++    __CPROVER_assigns(i, __CPROVER_object_whole(a)
++#ifndef VARIANT_alias_frame
++                      , b->flags
++#endif
++                      )
++    __CPROVER_loop_invariant(i <= n)
++    __CPROVER_decreases(n - i)
++  { q->flags = 1; i++; }
++}
++
++/* 4. an invariant true at entry but false on a later pass */
++void t_invariant(unsigned n) {
++  unsigned i = 0;
++  while (i < n)
++    __CPROVER_assigns(i)
++#ifdef VARIANT_invariant
++    __CPROVER_loop_invariant(i <= 1)
++#else
++    __CPROVER_loop_invariant(i <= n)
++#endif
++    __CPROVER_decreases(n - i)
++  { i++; }
++}
++
++/* 5. a wrong decreases */
++void t_decreases(unsigned n) {
++  unsigned i = 0;
++  while (i < n)
++    __CPROVER_assigns(i)
++    __CPROVER_loop_invariant(i <= n)
++#ifdef VARIANT_decreases
++    __CPROVER_decreases(i)
++#else
++    __CPROVER_decreases(n - i)
++#endif
++  { i++; }
++}
++
++/* 6. a claim after the loop the invariant doesn't support */
++unsigned t_after(unsigned n) {
++  unsigned i = 0;
++  while (i < n)
++    __CPROVER_assigns(i)
++#ifdef VARIANT_after
++    __CPROVER_loop_invariant(i <= n + 1)
++#else
++    __CPROVER_loop_invariant(i <= n)
++#endif
++    __CPROVER_decreases(n - i)
++  { i++; }
++  return i;                                           /* the contract ensures i == n */
++}
++
++/* 7. an out-of-bounds write in the loop */
++void t_oob(Cell *a, unsigned n) {
++  unsigned i = 0;
++#ifdef VARIANT_oob
++  while (i <= n)
++    __CPROVER_assigns(i, __CPROVER_object_whole(a))
++    __CPROVER_loop_invariant(i <= n + 1)
++    __CPROVER_decreases(n + 1 - i)
++#else
++  while (i < n)
++    __CPROVER_assigns(i, __CPROVER_object_whole(a))
++    __CPROVER_loop_invariant(i <= n)
++    __CPROVER_decreases(n - i)
++#endif
++  { a[i].flags = 0; i++; }
++}
++
++/* 8. an out-of-bounds pointer passed to a replaced callee: its requires */
++void t_callee_requires(Cell *a, unsigned n) {
++#ifdef VARIANT_callee_requires
++  reset(a + n);
++#else
++  reset(a + n - 1);
++#endif
++}
++
++/* 9. T-003's flexible array: with an exact allocation, a read one element past the end is caught */
++void * t_flex(Flex *s, int n) {
++#ifdef VARIANT_flex
++  return s->a[n];
++#else
++  return s->a[n - 1];
++#endif
++}
++
++/* 10. is_fresh: separate objects under enforcement; aliased arguments refused at a replaced call */
++void two(int *p, int *q) { *p = 1; }
++int t_fresh(int *x, int *y) {
++#ifdef VARIANT_fresh
++  two(x, x);
++#else
++  two(x, y);
++#endif
++  return 0;
++}
++
++/* 11. T-006's pattern: a loop-carried pointer and four replaced calls per iteration (DFCC: no verdict; legacy: proves) */
++void t_carried(Cell *a) {
++  Cell *p = a;
++  unsigned k = 0;
++  while (k < 4)
++    __CPROVER_assigns(k, p, __CPROVER_object_whole(a))
++    __CPROVER_loop_invariant(k <= 4 && p == a + k)
++    __CPROVER_decreases(4 - k)
++  { reset(p); reset(p); reset(p); reset(p); ++p; ++k; }
++}
++
++/* 12. globals start unconstrained under legacy contracts too, as under DFCC (TRUSTED.md) */
++int g_toy = 5;
++int t_glob(void) { return g_toy; }
++
++/* 13. T-012: a replaced callee with a static local, called in a loop, aborts the legacy enforce pass */
++void stat(Cell *p) { static const unsigned tbl[] = { 1, 2 }; p->flags = tbl[p->flags & 1]; }
++void t_static(Cell *a) {
++  Cell *p = a;
++  unsigned k = 0;
++  while (k < 2)
++    __CPROVER_assigns(k, p, __CPROVER_object_whole(a))
++    __CPROVER_loop_invariant(k <= 2 && p == a + k)
++    __CPROVER_decreases(2 - k)
++  { stat(p); ++p; ++k; }
++}
+diff --git a/tools/tests/test_tools.py b/tools/tests/test_tools.py
+index 42201cc..5eb126d 100755
+--- a/tools/tests/test_tools.py
++++ b/tools/tests/test_tools.py
+@@ -260,6 +260,65 @@ include ../Makefile.common
+ '''
+ 
+ 
++# T-006 (Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/): CBMC's legacy contracts, opted into per proof.
++# The validation toys are in tools/tests/legacy/: toys.c (the "upstream"), heads/<fn>.h (contract_<fn>), harness.c.
++LEGACY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'legacy')
++# proof: (entry, enforced, replaced, loop contracts, the check its bad variant must fail by; None: no bad variant)
++LEGACY_PROOFS = [
++    ('forget', 'h_forget', 't_forget', ['keep'], False, 'Check ensures clause'),
++    ('callee_frame', 'h_callee_frame', 't_callee_frame', ['reset'], True, 'other->flags (assigned by the contract of reset) is assignable'),
++    ('alias_frame', 'h_alias_frame', 't_alias_frame', [], True, 'Check that q->flags is assignable'),
++    ('invariant', 'h_invariant', 't_invariant', [], True, 'Check that loop invariant is preserved'),
++    ('decreases', 'h_decreases', 't_decreases', [], True, 'Check decreases clause on loop iteration'),
++    ('after', 'h_after', 't_after', [], True, 'Check ensures clause'),
++    ('oob', 'h_oob', 't_oob', [], True, 'pointer outside object bounds'),
++    ('callee_requires', 'h_callee_requires', 't_callee_requires', ['reset'], False, 'Check requires clause of reset'),
++    ('flex', 'h_flex', 't_flex', [], False, 'dynamic object upper bound'),
++    ('fresh', 'h_fresh', 't_fresh', ['two'], False, 'Check requires clause of two'),
++    ('two', 'h_two', 'two', [], False, None),
++    ('carried', 'h_carried', 't_carried', ['reset'], True, None),
++]
++
++
++def legacy_text(rel):
++    with open(os.path.join(LEGACY_DIR, rel)) as f:
++        return f.read()
++
++
++def legacy_makefile(card, proofs, contracts='legacy'):
++    out = ['CARD := %s' % card, 'PROOFS := ' + ' '.join(p[0] for p in proofs)]
++    for name, entry, enf, rep, loops, _ in proofs:
++        out += ['%s_ENTRY := %s' % (name, entry), '%s_ENFORCE := %s/contract_%s' % (name, enf, enf),
++                '%s_CONTRACTS := %s' % (name, contracts)]
++        if rep:
++            out.append('%s_REPLACE := ' % name + ' '.join('%s/contract_%s' % (r, r) for r in rep))
++        if loops:
++            out.append('%s_LOOPS := contracts' % name)
++    return '\n'.join(out + ['include ../Makefile.common']) + '\n'
++
++
++def legacy_repo(t, card='C-15', proofs=None):
++    proofs = LEGACY_PROOFS if proofs is None else proofs
++    toys = legacy_text('toys.c')
++    r = t.fresh()
++    t.write(r, 'upstream/sqlite3.c', toys)
++    t.write(r, 'overlay/sqlite3.c', toys)
++    t.write(r, 'overlay-bad/sqlite3.c', ''.join('#define VARIANT_%s\n' % p[0] for p in LEGACY_PROOFS) + toys)
++    heads = sorted(n[:-2] for n in os.listdir(os.path.join(LEGACY_DIR, 'heads')))
++    for fn in heads:
++        t.write(r, 'proofs/contracts/%s.h' % fn, legacy_text('heads/%s.h' % fn))
++    inc = ''.join('#include "contracts/%s.h"\n' % fn for fn in heads)
++    t.write(r, 'proofs/%s/harness.c' % card, '#include "sqlite3.c"\n' + inc + legacy_text('harness.c'))
++    t.write(r, 'cards/%s.md' % card, card_md(card, sorted(set(p[2] for p in proofs)), src=toys))
++    t.write(r, 'proofs/%s/Makefile' % card, legacy_makefile(card, proofs))
++    return r
++
++
++def legacy_failures(r, card, name):
++    import json as _json
++    j = os.path.join(r, 'proofs', card, 'build', 'lp64-le', name + '.json')
++    return [f.get('desc', '') for f in (_json.load(open(j)).get('failures') or [])] if os.path.exists(j) else []
++
+ class T:
+     def __init__(self, keep):
+         self.base = tempfile.mkdtemp(prefix='tooltests-')
+@@ -1224,6 +1283,80 @@ def main():
+         rc, out, res = t.run(r, [py, 'tools/scan.py'])
+         t.expect('cards: a card function listed as its own unreached callee is rejected', rc != 0 and 'both a function of the card' in out, out)
+ 
++    # ---- T-006: legacy contracts (Zach's conditions 1-3, evidence/approvals/T-006-dfcc-loop-pointer/)
++    if want('legacy'):
++        r = legacy_repo(t)
++        prove = lambda ov, card='C-15': t.run(r, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + card, '--config',  # noqa: E731
++                                                  'lp64-le', '--overlay', ov, '--build-dir', 'proofs/%s/build' % card])
++        rc, out, res = prove('overlay')
++        t.expect('legacy: every validation toy proves under legacy contracts, T-006\'s loop-carried pointer included',
++                 rc == 0 and 'RESULT prove C-15 lp64-le PASS' in res, out[-1500:])
++        gen = os.path.join(r, 'proofs', 'C-15', 'build', 'lp64-le', 'callee_frame.legacy.c')
++        gtext = open(gen).read() if os.path.exists(gen) else ''
++        t.expect('legacy: the generated unit redeclares the enforced and replaced functions with their headers\' clauses',
++                 'void t_callee_frame(Cell *a, Cell *other, unsigned n)' in gtext and 'void reset(Cell *p)' in gtext
++                 and '__CPROVER_ensures(p->flags == 0)' in gtext and 'contract_reset' not in gtext.split('*/', 1)[-1], gtext)
++        keep_h = legacy_text('heads/keep.h')
++        t.write(r, 'proofs/contracts/keep.h', keep_h.replace('\n  __CPROVER_ensures(p->flags == __CPROVER_old(p->flags))', ''))
++        rc, out, res = prove('overlay-bad')
++        for name, _, _, _, _, check in LEGACY_PROOFS:
++            if check is None:
++                continue
++            fails = legacy_failures(r, 'C-15', name)
++            t.expect('legacy: the %s toy\'s bad variant fails by "%s"' % (name, check), any(check in f for f in fails),
++                     str(fails) if fails else out[-1500:])
++        # no stored copy to diverge: a header edit changes the next build
++        t.write(r, 'proofs/contracts/keep.h', keep_h)
++        after_h = legacy_text('heads/t_after.h')
++        t.write(r, 'proofs/contracts/t_after.h', after_h.replace('__CPROVER_return_value == n', '__CPROVER_return_value == n + 1'))
++        rc, out, res = prove('overlay')
++        fa = legacy_failures(r, 'C-15', 'after')
++        t.expect('legacy: a header edit reaches the next build (contract_t_after\'s ensures made false fails the proof)',
++                 rc != 0 and any('Check ensures clause' in f for f in fa), str(fa) if fa else out[-800:])
++        t.write(r, 'proofs/contracts/t_after.h', after_h)
++        # globals start unconstrained under legacy, as TRUSTED.md says of DFCC
++        toys = legacy_text('toys.c')
++        t.write(r, 'cards/C-17.md', card_md('C-17', ['t_glob', 't_static'], src=toys))
++        t.write(r, 'proofs/C-17/harness.c', open(os.path.join(r, 'proofs', 'C-15', 'harness.c')).read())
++        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('glob', 'h_glob', 't_glob', [], False, None)]))
++        rc, out, res = prove('overlay', 'C-17')
++        t.expect('legacy: globals start unconstrained (a contract claiming a global\'s initial value fails), as under DFCC',
++                 rc != 0 and 'RESULT prove C-17 lp64-le FAIL' in res and any('Check ensures clause' in f for f in legacy_failures(r, 'C-17', 'glob')), out[-600:])
++        # T-012: a replaced callee with a static local aborts the legacy enforce pass; prove.py says so, and keeping its body works
++        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('st', 'h_static', 't_static', ['stat'], True, None)]))
++        rc, out, res = prove('overlay', 'C-17')
++        t.expect('legacy: a replaced callee with a static local fails the build, and prove.py names T-012',
++                 rc != 0 and 'legacy-enforce failed' in out and 'T-012' in out, out[-800:])
++        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('st', 'h_static', 't_static', [], True, None)]))
++        rc, out, res = prove('overlay', 'C-17')
++        t.expect('legacy: the same proof with that callee\'s body kept proves (T-012\'s workaround)',
++                 rc == 0 and 'RESULT prove C-17 lp64-le PASS' in res, out[-800:])
++        # only LEGACY_CARDS may opt in
++        r2 = legacy_repo(t, card='C-96')
++        rc, out, res = t.run(r2, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-96', '--config', 'lp64-le',
++                                  '--overlay', 'overlay', '--build-dir', 'proofs/C-96/build'])
++        t.expect('legacy: a card not in LEGACY_CARDS may not use legacy contracts', rc != 0 and 'only C-15, C-17 may use' in out, out[-600:])
++        # a legacy harness may carry no function contract clauses of its own
++        h = open(os.path.join(r, 'proofs', 'C-15', 'harness.c')).read()
++        t.write(r, 'proofs/C-15/harness.c', h + 'void reset(Cell *p) __CPROVER_ensures(1);\n')
++        rc, out, res = prove('overlay')
++        t.expect('legacy: a harness with function contract clauses is refused', rc != 0 and 'no function contract clauses' in out, out[-600:])
++        t.write(r, 'proofs/C-15/harness.c', h)
++        # the generator: exactly one declaration, copied with only the name changed
++        code = ('import sys; sys.path.insert(0, "tools"); import prove\n'
++                'h = open("proofs/contracts/reset.h").read()\n'
++                'print("REDECL", repr(prove.legacy_redeclaration(h, "reset")))\n'
++                'try:\n    prove.legacy_redeclaration(h + h.replace("C_reset_H", "X"), "reset"); print("TWO ok")\n'
++                'except prove.CardError as e:\n    print("TWO refused", e)\n')
++        rc, out, res = t.run(r, [py, '-c', code])
++        t.expect('legacy: the redeclaration is the header\'s declaration with only its name changed; two declarations are refused',
++                 "REDECL 'void reset(Cell *p)\\n  __CPROVER_requires(__CPROVER_w_ok(p, sizeof(Cell)))\\n  __CPROVER_assigns(p->flags)\\n  __CPROVER_ensures(p->flags == 0);'" in out
++                 and 'TWO refused' in out, out)
++        # DFCC stays the default, and an unknown engine is refused
++        t.write(r, 'proofs/C-15/Makefile', legacy_makefile('C-15', LEGACY_PROOFS[:1]).replace('legacy', 'cbmc5'))
++        rc, out, res = prove('overlay')
++        t.expect('legacy: <name>_CONTRACTS takes only dfcc or legacy', rc != 0 and 'must be dfcc or legacy' in out, out[-400:])
++
+     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
+     if want('probe'):
+         r = t.fresh()

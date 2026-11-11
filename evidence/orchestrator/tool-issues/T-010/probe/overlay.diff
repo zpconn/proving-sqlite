@@ -1,0 +1,31 @@
+--- upstream/sqlite3.c	2026-11-10 18:43:27.808912845 -0600
++++ tmp/ov/sqlite3.c	2026-11-10 21:40:30.493761677 -0600
+@@ -92368,7 +92368,11 @@
+ */
+ static int isAllZero(const char *z, int n){
+   int i;
+-  for(i=0; i<n; i++){
++  for(i=0; i<n; i++)PROOF(
++    __CPROVER_assigns(i)
++    __CPROVER_loop_invariant(0 <= i && i <= (n > 0 ? n : 0))
++    __CPROVER_decreases(n > 0 ? n - i : 0)
++  ){
+     if( z[i] ) return 0;
+   }
+   return 1;
+@@ -92653,7 +92657,14 @@
+   assert( pPKey2->pKeyInfo->aSortFlags!=0 );
+   assert( pPKey2->pKeyInfo->nKeyField>0 );
+   assert( idx1<=szHdr1 || CORRUPT_DB );
+-  while( 1 /*exit-by-break*/ ){
++  while( 1 /*exit-by-break*/ )PROOF(
++    __CPROVER_assigns(i, pRhs, d1, idx1, rc, mem1, pKeyInfo, pPKey2->errCode)
++    __CPROVER_loop_invariant((bSkip ? 1 : 0) <= i && i < pPKey2->nField
++      && pRhs == pPKey2->aMem + i && rc == 0
++      && szHdr1 <= d1 && d1 <= (u32)nKey1
++      && (i == (bSkip ? 1 : 0) ? idx1 <= (bSkip ? 10u : 9u) : idx1 < szHdr1))
++    __CPROVER_decreases(pPKey2->nField - i)
++  ){
+     u32 serial_type;
+ 
+     /* RHS is an integer */

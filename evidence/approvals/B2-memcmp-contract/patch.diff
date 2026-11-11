@@ -1,0 +1,491 @@
+diff --git a/LEDGER.md b/LEDGER.md
+index 698041e..33c72d5 100644
+--- a/LEDGER.md
++++ b/LEDGER.md
+@@ -103,3 +103,18 @@ Lines are upstream/sqlite3.c's.
+ - Who must make it true: callers in later milestones: the record and b-tree writers, and the sorter (balance_nonroot, fillInCell, sqlite3BtreeTransferRow, sqlite3VdbeExec, vdbePmaWriteVarint). One example is vdbePmaWriteVarint's `aByte[10]` (108087–108088); that one example does not establish the obligation for the others. In milestone 1, C-02's harness supplies `buffer[9]`.
+ - Evidence: none
+ - Status: draft
++
++## A-006 memcmp reads n bytes of each argument, writes nothing, and returns a value in [-255, 255]
++- Function(s): memcmp, the C library's, a boundary callee of sqlite3VdbeRecordCompareWithSkip (C-17: 92739, 92767) and vdbeRecordCompareString (C-19: 92975).
++- Clause, as CBMC states it (proofs/contracts/memcmp.h is this clause word for word, frozen in proof.lock; C-17 and C-19 replace the calls with it):
++  ~~~
++  int contract_memcmp(const void *s1, const void *s2, size_t n)
++    __CPROVER_requires(__CPROVER_r_ok(s1, n) && __CPROVER_r_ok(s2, n))
++    __CPROVER_assigns()
++    __CPROVER_ensures(-255 <= __CPROVER_return_value && __CPROVER_return_value <= 255);
++  ~~~
++- Plain English: memcmp reads exactly n bytes from each of its two arguments and writes nothing. Its result has the sign C11 7.24.4.1 gives it, and its magnitude is at most 255: the difference of the first differing bytes, read as unsigned char, or 0.
++- Why the proof needs it: CBMC's memcmp model loops once per byte, so under `--unwinding-assertions` it can't be unwound for unbounded lengths (C-17 round 3, B2; evidence/orchestrator/tool-issues/T-010/). The result's range matters because 92739–92740 and 92767–92768 pass memcmp's result to the DESC negation at 92793, which overflows for INT_MIN (F-001). C11 fixes only the sign, so the bound is an assumption about the C library, not the standard. The proofs need less than the whole range: C-17 needs only a result other than INT_MIN (the negation at 92793), and C-19 uses only the sign. [−255, 255] is what glibc and CBMC's model give, and stating it is simpler than a weaker clause.
++- Who must make it true: the C library SQLite is linked with. glibc returns the byte difference (C-17 round 3, *tested* on 65-byte buffers differing by 0x00/0xff at byte 40: −255 and 255), and so does CBMC's own model. A C library returning other magnitudes would bring the memcmp paths to F-001's overflow too.
++- Evidence: none yet (the ledger agent's second run tests it).
++- Status: draft (approved by Zach, 2026-11-10, as C-17's B2)
+diff --git a/TRUSTED.md b/TRUSTED.md
+index 75db76a..6a349b3 100644
+--- a/TRUSTED.md
++++ b/TRUSTED.md
+@@ -19,6 +19,8 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
+     - **Pass order:** prove.py runs them in that order, replace, then loops, then enforce. With loops applied before the replacement, a replaced callee whose body is removed can write outside the loop's assigns unchecked, which the callee-frame toy shows.
+     - **Contract text:** the legacy engine reads clauses only from a function's own declaration. So each legacy contract is its proofs/contracts/<fn>.h `contract_<fn>` declaration with only the name changed, generated at every build, with no stored copy.
+     - **Static locals:** a replaced callee with a static local, called in a loop, aborts the enforce pass (T-012). Such a callee keeps its body, and prove.py says so. For C-15 that is sqlite3VdbeSerialGet.
++    - **Kept callee bodies:** loop frames are checked against kept callee bodies too. A callee called in the loop with its body kept, writing outside the loop's assigns, fails by "Check that … is assignable" inside the callee (tool tests `-k b2`).
++    - **Clause placement:** contract clauses count only on a proofs/contracts/<fn>.h `contract_<fn>` declaration. prove.py fails any build whose proofs/include/ headers carry a clause, or whose contracts headers put one on another name, and scan.py rejects such headers (B2). prove.py's textual check misses a clause hidden in a one-line `#define`; scan.py's rule 15 (no #define in shared headers but the include guard) is the guard for that form, and DFCC ignores such a clause.
+     - **Validated on toys** (tool tests `-k legacy`, tools/tests/legacy/), each failing by the expected check:
+       - a replaced call forgets what its contract assigns;
+       - a callee assigning outside the loop's frame;
+@@ -42,7 +44,7 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
+ - **Coverage:** `cbmc --cover location`, which the gate uses to require that proofs reach every line of the functions under proof (tools/prove.py coverage).
+ - **Its library models,** used in place of the C library:
+   - `memcpy`: serialGet (91976), serialGet7 (91989), sqlite3IsNaN (36449);
+-  - `memcmp`: sqlite3VdbeRecordCompareWithSkip (92739, 92767), vdbeRecordCompareString (92975);
++  - `memcmp`: sqlite3VdbeRecordCompareWithSkip (92739, 92767), vdbeRecordCompareString (92975). Where C-17 and C-19 replace those calls with LEDGER.md A-006's boundary contract (proofs/contracts/memcmp.h, B2), the model is not used and the contract is *assumed*;
+   - `malloc` and `free`, under `--malloc-may-fail --malloc-fail-null`: harnesses only.
+ 
+   Under `--pointer-check`, each model checks that its arguments are accessible for the length it is given. It also checks that memcpy's source and destination don't overlap (UB-CLASSES.md).
+diff --git a/proof.lock b/proof.lock
+index 334dc18..80e4cd7 100644
+--- a/proof.lock
++++ b/proof.lock
+@@ -4,7 +4,7 @@ ffa51ed87799d432f31f08b2df5ca05e2b6a9856b88cdb76eafe7fa685f06910  CLAUDE.md
+ 87b822b4a3da3e8c91adaab36fad6c189eda41942c8cbc2ddd07a3a7b4a19987  GOAL.md
+ fae960f9a882576ce2d9d9181c5a48a68edcf03d080fe30b1897a7091a4bbc5f  Makefile
+ 98a6a05f220f303008ab82c9f62eb970c14365bff8a7bca8e45eceb390509f05  PROPERTIES.md
+-6b58bc227508fa230889d2ead03b8cafc2ab93c21244c9692ba980adf091fac3  TRUSTED.md
++cccd8d5170af3f29a71c00e1854e15e7525a342486b89e1893377af9526cc3aa  TRUSTED.md
+ d4b8a329811768e57bfda0578d8e95d3518df17bd7135fad8a50d1778d95dd39  UB-CLASSES.md
+ e0c275b9768ec45c7e0ad2c5661e74ff185b4fd0729a32d4d9296e06f3bfe3b3  agents/builder/GOAL.md
+ 0766329592d310d2d711c69ce2ce2e6c54511a521257150ad2f3dda8ddcae296  agents/ledger/GOAL.md
+@@ -14,26 +14,46 @@ e0c275b9768ec45c7e0ad2c5661e74ff185b4fd0729a32d4d9296e06f3bfe3b3  agents/builder
+ 6ad9d5924a3c11c36b11a33c5dbd32c637a0decba0c53ffcc94fd08054692399  proofs/CONFIGS
+ 9cf75306a48da7d2829baca095af30c87d9338f57561f042b0bf2652cc3a850c  proofs/MUTANTS
+ 3d900297e0883eeaed9ab452aa9dfbce911b0781e38e29d5670157c873aac56b  proofs/Makefile.common
++ecf22912bd99a291fb9b7979d2855a0b971815bfeb12b4029f56f7f3ce3a7c26  proofs/contracts/memcmp.h
+ 9554eb832219c061a2a9efedc86c296d186d578858a459ff84e7dd2b4c3eb1c0  proofs/contracts/sqlite3CorruptError.h
+ 96f84e2a80c47c9823a95ec89d669adce3f78ad5ecd2124ae1349983d6142344  proofs/contracts/sqlite3DbMallocRaw.h
+ 3e4de50aa1d6eb4f210039b66f511af4f5f4d9ce5efaaa64afd45b316d4622a7  proofs/contracts/vdbeCompareMemString.h
+ 2fe70b351a95fd093eeb525fad7ee9d522ff213077c8183d5f90b19b860677c9  proofs/include/proof.h
+ 573d52372d88b23ee74ac0cdd9442b434d8f19c5de78737dcd1d67dd70e6873f  proofs/spec/record_format.h
+-d30bfde781ed76d6c61af0f5fcdd6d1dc68883d7667f9999415fe7bd77f90998  tools/campaign.py
++5b16c866d7e1d9951cefa01dd4656a15210c066ae25bc9037e23a653b5e6396e  tools/campaign.py
+ d28062752b6b77219f3b5c9ffb0fa3dfbd31a6008ecb80212174bb9ae53eed37  tools/cards.py
+ 053d3824b5e518643b62f4601ae55a0ba0260321ceb8f10a5d2ee8add0fbb73d  tools/check_overlay.py
+ 512451e43bee5b77fe0c739eed41ccfbe547e3374b48d1e12a2678c586d54c05  tools/fakecli/claude
+ 0640c2ca3d49f22f8587d3ea97eb7a6453f50bd509a9ef60771babc46f78eb80  tools/fakecli/codex
+ 2ca2da9301c5c196bab1979a3bc91829fb513349dcabfe18326a003a6cce2314  tools/fakecli/fake.py
+ bc7749ef8038e41aeeca97eb1faf478aefa88f09fbaae0b3fc87ae11d13fee26  tools/gate.py
+-7eced6cdd53851d00eeeb8ff9b4082a097de8ce17fc51fe03c608bac6c7234f9  tools/lock.py
++db640faba7594aaaccac78609e920410f9dfa6364567adad844555cdd602730e  tools/lock.py
+ 86e78969183b2f279086dbffffa4c7401a97f0e24a017446921f5fd3728ac1ca  tools/mutate.py
+ 34e0fb1c269cb4e3ecb035a3ef5968e03e8d886b9cf7e360e0525738f5575ddb  tools/overlay.py
+ 49c150b7237dda1d00c1807d4ca25e19de49b4d5509bcdc224591d21cef8fc02  tools/probe/config_probe.c
+-64d91aa26a5ea3695f9b1fceb65af22bce8e383a0de8560007dfefedbd2adcc9  tools/prove.py
++9beb966a26e76433be1e949c83d7133d79aebf4fbf10a5fea7e5de535aef1442  tools/prove.py
+ deec3022a22138c19cce8ae428d01b68d790a6effe70fd243b9bc19034f58217  tools/results.py
+-49ad9d5de25c57fe1da1b56bab932b8b5a89c4c2e7d84cec9111b287539ec7a6  tools/scan.py
+-1f47807b0d02a926c844dc3aa1e7278b2a751565b42fc9b9634817d8056b848d  tools/tests/test_tools.py
++7c02bfab5745ed85a03c8bbd5359e6ced72321b20552cee2c11199ccffbe74f1  tools/scan.py
++97c9a7c742e5dbcf8b8edf315411e37d160773d48c42a6ca2c641b662d820a1b  tools/tests/legacy/harness.c
++a6955cb66f4bec234268713f8caf3db5d11e652fc303d81891a56564004892b3  tools/tests/legacy/heads/keep.h
++0a1facd9192307970841372073db9831883429f20b17cef480fa13cf30a88f19  tools/tests/legacy/heads/reset.h
++5ca5686972ab921b67c84e3c702c10319bd7b28f89eccd8898a4bfdb4d02b4d8  tools/tests/legacy/heads/stat.h
++9d096a8db96e38395ef45c9d1a3b8e5a4bb29eb7101f2a6ce86955a02c42eff7  tools/tests/legacy/heads/t_after.h
++39ad71e1e70d1395c61ab8f3b465ad744f5a4d09533e6bfae691d87133d25a99  tools/tests/legacy/heads/t_alias_frame.h
++11840845378719b8e7c6941a142f72dcef89f9d08471602155a36762d7947d54  tools/tests/legacy/heads/t_callee_frame.h
++6c0d9e066212c49e12f60e7182c75553221501744603d3da44b9e2abc7adb255  tools/tests/legacy/heads/t_callee_requires.h
++bbf780787a2dcb38612a14d857f412291312a998e2224a93a0e3e50e61bbb6ab  tools/tests/legacy/heads/t_carried.h
++fa0e01827ff186be3de18907d8b98e291bedf194fe7364cfd2cf34d262075a22  tools/tests/legacy/heads/t_decreases.h
++21f809c620e96e7ca235297521f6c3dfb43b559fc742a948ab9fa2f803dd5a7e  tools/tests/legacy/heads/t_flex.h
++21641c45c9e1bab94010d27e273bcff79ca82feb863d5a898e8ffe762841a840  tools/tests/legacy/heads/t_forget.h
++81c8df792f4a725f00e6fb7d63d88ec05f4e0a404570939557224608347c7bbb  tools/tests/legacy/heads/t_fresh.h
++45d131a1ad1ab0bc166a8b81131122605c8991ff97a2fb17dde0fdaeb237ccb7  tools/tests/legacy/heads/t_glob.h
++78e7157df0c192ab925399c0c57135d7c5ef2b7b5e774b7c74424b85553c505d  tools/tests/legacy/heads/t_invariant.h
++4832c94e1d1039d67ad6331644d05c4a04db04840df9836f4944db47f44f9701  tools/tests/legacy/heads/t_oob.h
++8252ec564fdc5cb31fb9e14c17354a8caf57664040e5b953fde11761d237989e  tools/tests/legacy/heads/t_static.h
++12f5fb25fb2b29a5f58c8b17ceff4aac33891a52faaff1a52fce513b4e5479ea  tools/tests/legacy/heads/two.h
++3a77111d017b5e004129c10635b9d67fa6575c3fd6fdffa5177680fe49270c6b  tools/tests/legacy/toys.c
++656d01ec817a10fde55893cba5c73531bbed4352cf934dd6d529eee5b64dfd90  tools/tests/test_tools.py
+ d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b  upstream/sqlite-src-3530400.zip
+ b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189  upstream/sqlite3.c
+ 919e7f2e8ed1d8f56ac17b412b8971c76aa5d1a879752cc6058f75e7d5910e1d  upstream/sqlite3.h
+diff --git a/proofs/contracts/memcmp.h b/proofs/contracts/memcmp.h
+new file mode 100644
+index 0000000..0a06a7d
+--- /dev/null
++++ b/proofs/contracts/memcmp.h
+@@ -0,0 +1,8 @@
++/* Boundary contract for memcmp (the C library; called at upstream/sqlite3.c:92739, 92767 and 92975), replaced at its
++   calls in C-17 (sqlite3VdbeRecordCompareWithSkip) and C-19 (vdbeRecordCompareString).
++   Ledger: A-006. The clause below is LEDGER.md A-006's, word for word (scan.py checks it); frozen in proof.lock
++   (Zach, 2026-11-10, evidence/approvals/B2-memcmp-contract/). Builders do not change it. */
++int contract_memcmp(const void *s1, const void *s2, size_t n)
++  __CPROVER_requires(__CPROVER_r_ok(s1, n) && __CPROVER_r_ok(s2, n))
++  __CPROVER_assigns()
++  __CPROVER_ensures(-255 <= __CPROVER_return_value && __CPROVER_return_value <= 255);
+diff --git a/tools/campaign.py b/tools/campaign.py
+index 121d70d..48959a2 100755
+--- a/tools/campaign.py
++++ b/tools/campaign.py
+@@ -64,7 +64,10 @@ STRIP_ENV_PREFIX = ['CLAUDE_CODE_']   # the orchestrator's own session linkage;
+ VERDICTS_BUILDER = ('DONE', 'STUCK', 'FINDING', 'NEEDS-DECISION')
+ VERDICTS_REVIEWER = ('APPROVE', 'REJECT', 'NEEDS-ZACH')
+ LAND_ALLOWED = ['cards/', 'tests/repro/', 'evidence/approvals/', 'evidence/orchestrator/', 'PROGRESS.md', 'LEDGER.md',
+-                'FINDINGS.md']
++                'FINDINGS.md',
++                # T-007: not frozen (GOAL.md §0.3), and its command lines must equal SESSION_COMMANDS, so a land
++                # can change only its models, efforts and patterns; land names the keys it changes in its trailer
++                'tools/sessions.toml']
+ ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evidence/ledger/', 'reports/ledger-']}
+ # GOAL.md §0.10, hard-coded (checkpoint 0, decision C5): sessions.toml supplies models and command lines, never vendors.
+ # The spec was written by Claude, so its reviewer runs on Codex.
+@@ -73,7 +76,7 @@ ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'sp
+ # its reviewer on Codex, because the Codex service's content filter stops a Codex builder on it (T-005). A reviewer is
+ # still never on its round's builder vendor. The models are those sessions.toml gives the vendor's own role at the
+ # card's tier (VENDOR_ROLE), so Opus 5.5 builds and gpt-6-astra at xhigh reviews a high-tier card, as GOAL.md §0.10
+-# gives each vendor; a land may not touch tools/sessions.toml (T-007).
++# gives each vendor. (They were not new sessions.toml roles: when this was written no land could carry that file, T-007.)
+ CARD_ROLE_VENDOR = {'C-17': {'builder': 'claude', 'reviewer': 'codex'}}
+ VENDOR_ROLE = {'claude': 'reviewer', 'codex': 'builder'}
+ 
+@@ -296,7 +299,11 @@ _BWRAP_CODEX = (_BWRAP_BASE +
+                 ['--bind', '{dir}', '{dir}', '--remount-ro', '{home}', '--chdir', '{dir}'])
+ # checkpoint 1, Q2: no skills or commands (the account's synced skills land in the config directory at startup), and
+ # no MCP servers but --mcp-config's, which is never given (the account's claude.ai connectors included)
+-_CLAUDE_TAIL = ['--disable-slash-commands', '--strict-mcp-config', '--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
++# Zach and the auditor, 2026-11-11 (after T-011): an allowlist of built-in tools, not a denylist, which every CLI
++# update can outflank. It is evidence/orchestrator/session_tools.py's CLAUDE_OK. --tools takes a variadic list, so
++# it is followed by another flag here.
++CLAUDE_TOOLS = 'Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch'
++_CLAUDE_TAIL = ['--disable-slash-commands', '--strict-mcp-config', '--tools', CLAUDE_TOOLS, '--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
+                 '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
+ SESSION_COMMANDS = {
+     'codex': {'start': _BWRAP_CODEX + ['codex', 'exec', '--json'] + _CODEX_SAFE,
+@@ -607,6 +614,11 @@ def command_problems(vendor, argv, wt, p):
+     for flag in ('--disable-slash-commands', '--strict-mcp-config'):
+         if flag not in cl:
+             probs.append('claude must run with %s (checkpoint 1, Q2: no skills, no MCP servers)' % flag)
++    tools = [cl[i + 1] for i, a in enumerate(cl[:-1]) if a == '--tools']
++    if cl.count('--tools') != 1 or len(tools) != 1 or tools[0] != CLAUDE_TOOLS:
++        probs.append('claude must run with --tools %s, once and exactly (Zach and the auditor, after T-011)' % CLAUDE_TOOLS)
++    if any(a in ('--allowedTools', '--allowed-tools', '--disallowedTools', '--disallowed-tools') for a in cl):
++        probs.append('claude\'s tools are set by --tools alone')
+     return probs
+ 
+ 
+@@ -2104,6 +2116,28 @@ def land_paths_problems(paths, added):
+     return probs, bool(frozen)
+ 
+ 
++def sessions_toml_changes(cwd):
++    """The dotted keys whose values differ between HEAD's and the index's tools/sessions.toml, for a land's trailer."""
++    import tomllib
++
++    def flat(d, pre=''):
++        out = {}
++        for k, v in (d or {}).items():
++            if isinstance(v, dict):
++                out.update(flat(v, pre + k + '.'))
++            else:
++                out[pre + k] = v
++        return out
++    old = subprocess.run(['git', 'show', 'HEAD:tools/sessions.toml'], cwd=cwd, capture_output=True, text=True)
++    new = subprocess.run(['git', 'show', ':tools/sessions.toml'], cwd=cwd, capture_output=True, text=True)
++    try:
++        a = flat(tomllib.loads(old.stdout)) if old.returncode == 0 else {}
++        b = flat(tomllib.loads(new.stdout)) if new.returncode == 0 else {}
++    except tomllib.TOMLDecodeError as e:
++        return ['(unparsable: %s)' % e]
++    return sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
++
++
+ def do_land(p, job, logf):
+     main_before = job['main_before']
+     ensure_merge_wt(p)
+@@ -2136,8 +2170,10 @@ def do_land(p, job, logf):
+     if probs:
+         return {'ok': False, 'detail': '; '.join(probs)}
+     what = job.get('what') or 'orch %s' % sha[:12]
+-    git(['commit', '-q', '-m', 'Land %s\n\nCampaign: land %s; paths checked: %s%s\nCampaign-Step: %s' % (
+-        what, what, ', '.join(paths[:20]) + (' ...' if len(paths) > 20 else ''),
++    toml = ('; tools/sessions.toml keys changed: %s' % (', '.join(sessions_toml_changes(mw)) or 'none (comments only)')
++            if 'tools/sessions.toml' in paths else '')
++    git(['commit', '-q', '-m', 'Land %s\n\nCampaign: land %s; paths checked: %s%s%s\nCampaign-Step: %s' % (
++        what, what, ', '.join(paths[:20]) + (' ...' if len(paths) > 20 else ''), toml,
+         '; frozen files changed with approval record and proof.lock, full gate below' if frozen else '', job['step'])], cwd=mw)
+     res = {'ok': True, 'detail': 'landed %s (%d paths)' % (what, len(paths))}
+     if frozen:
+@@ -2971,6 +3007,12 @@ class SelfTest:
+              lambda a: [x for x in a if x != '--disable-slash-commands'], '--disable-slash-commands'),
+             ('claude with MCP servers from anywhere but --mcp-config (claude.ai connectors)', 'claude',
+              lambda a: [x for x in a if x != '--strict-mcp-config'], '--strict-mcp-config'),
++            ('claude without --tools (every built-in tool back)', 'claude',
++             lambda a: [x for i, x in enumerate(a) if x != '--tools' and not (i and a[i - 1] == '--tools')], '--tools'),
++            ('claude with --tools default', 'claude',
++             lambda a: [('default' if (i and a[i - 1] == '--tools') else x) for i, x in enumerate(a)], '--tools'),
++            ('claude whose --tools list has one extra tool (SendMessage)', 'claude',
++             lambda a: [(x + ',SendMessage' if (i and a[i - 1] == '--tools') else x) for i, x in enumerate(a)], '--tools'),
+             ('claude bwrap that leaves $HOME visible', 'claude', drop(('--tmpfs', home)), 'hide %s ' % home),
+             ('claude bwrap that leaves /mnt visible', 'claude', drop(('--tmpfs', '/mnt')), 'hide /mnt'),
+             ('claude bwrap that leaves $HOME writable', 'claude', drop(('--remount-ro', home)), 'remount %s read-only' % home),
+diff --git a/tools/lock.py b/tools/lock.py
+index 5da6824..1540f46 100755
+--- a/tools/lock.py
++++ b/tools/lock.py
+@@ -9,7 +9,7 @@
+ Frozen: pin.txt, upstream/, GOAL.md, AGENTS.md, CLAUDE.md, agents/, PROPERTIES.md, TRUSTED.md, UB-CLASSES.md,
+ proofs/spec/, proofs/CHECKS, proofs/CONFIGS, proofs/MUTANTS, tools/ (except tools/sessions.toml), and the gate's
+ targets: Makefile, proofs/Makefile.common, proofs/include/proof.h; and the boundary headers proofs/contracts/
+-{sqlite3DbMallocRaw,vdbeCompareMemString,sqlite3CorruptError}.h (checkpoint 1, D2).
++{sqlite3DbMallocRaw,vdbeCompareMemString,sqlite3CorruptError}.h (checkpoint 1, D2) and memcmp.h (B2).
+ Ends with: RESULT lock PASS|FAIL <n> files
+ """
+ import hashlib
+@@ -23,7 +23,9 @@ FROZEN = ['pin.txt', 'upstream/', 'GOAL.md', 'AGENTS.md', 'CLAUDE.md', 'agents/'
+           'Makefile', 'proofs/Makefile.common', 'proofs/include/proof.h',
+           # checkpoint 1, D2: the boundary headers, LEDGER.md A-002 to A-004 word for word
+           'proofs/contracts/sqlite3DbMallocRaw.h', 'proofs/contracts/vdbeCompareMemString.h',
+-          'proofs/contracts/sqlite3CorruptError.h']
++          'proofs/contracts/sqlite3CorruptError.h',
++          # B2 (Zach, 2026-11-10): memcmp's boundary contract, LEDGER.md A-006 word for word
++          'proofs/contracts/memcmp.h']
+ EXEMPT = {'tools/sessions.toml'}
+ 
+ 
+diff --git a/tools/prove.py b/tools/prove.py
+index 459609a..8d6f915 100755
+--- a/tools/prove.py
++++ b/tools/prove.py
+@@ -269,6 +269,38 @@ def legacy_redeclaration(text, fn):
+     return out
+ 
+ 
++def header_clause_problems(root=ROOT):
++    """B2 (Zach, 2026-11-10): proofs/include/ headers carry no function contract clauses, and a contracts header puts
++    clauses only on contract_<name> declarations. Under the legacy engine (T-006) a clause anywhere else would attach
++    a contract of its own to a SQLite function; under DFCC it is meaningless. Every build checks this."""
++    probs = []
++    d = os.path.join(root, 'proofs', 'include')
++    for n in sorted(os.listdir(d)) if os.path.isdir(d) else []:
++        if n.endswith('.h') and n != 'proof.h':
++            if CONTRACT_CLAUSE_RX.search(_strip_comments(open(os.path.join(d, n), errors='replace').read())):
++                probs.append('proofs/include/%s carries a function contract clause (contracts live in proofs/contracts/)' % n)
++    d = os.path.join(root, 'proofs', 'contracts')
++    for n in sorted(os.listdir(d)) if os.path.isdir(d) else []:
++        if not n.endswith('.h'):
++            continue
++        t = '\n'.join(l for l in _strip_comments(open(os.path.join(d, n), errors='replace').read()).split('\n')
++                      if not l.lstrip().startswith('#'))
++        depth, start = 0, 0
++        for i, c in enumerate(t + ';'):
++            if c in '({':
++                depth += 1
++            elif c in ')}':
++                depth -= 1
++            elif c == ';' and depth == 0:
++                stmt, start = t[start:i], i + 1
++                if CONTRACT_CLAUSE_RX.search(stmt):
++                    m = re.search(r'\b([A-Za-z_][A-Za-z0-9_]*)\s*\(', stmt)
++                    if not m or not m.group(1).startswith('contract_'):
++                        probs.append('proofs/contracts/%s puts contract clauses on %s, not on a contract_<name> '
++                                     'declaration' % (n, m.group(1) if m else '?'))
++    return probs
++
++
+ def legacy_source(card_dir, proof):
+     """The legacy translation unit: harness.c, then each ENFORCE and REPLACE function redeclared from its header."""
+     harness = os.path.join(card_dir, 'harness.c')
+@@ -494,6 +526,9 @@ def bodies_to_remove(card_dir, proof):
+ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
+     """Build the instrumented goto program for one proof and config. Returns (path, error)."""
+     os.makedirs(bdir, exist_ok=True)
++    hp = header_clause_problems()
++    if hp:
++        return None, '; '.join(hp)
+     obj = os.path.join(bdir, 'harness.o.goto')
+     harness = os.path.join(card_dir, 'harness.c')
+     stamp = os.path.join(bdir, 'harness.o.stamp')
+diff --git a/tools/scan.py b/tools/scan.py
+index 1e0a27a..133beb7 100755
+--- a/tools/scan.py
++++ b/tools/scan.py
+@@ -1120,6 +1120,10 @@ def check_preds(s, sqlite_ids):
+             check_assumes(s, where, raw, code, allow_setup=False)
+             check_zero_fill(s, where, code)
+             check_function_defs(s, where, code, sqlite_ids)
++            if sub == 'proofs/include' and re.search(r'__CPROVER_(requires|ensures|assigns|frees)\b', code):
++                # B2 (Zach, 2026-11-10): under the legacy engine (T-006) a clause here would attach to a SQLite function
++                s.bad(where, 'no function contract clauses in proofs/include/ (contracts live in proofs/contracts/<fn>.h '
++                             'as contract_<fn>)')
+     pp = os.path.join(s.root, 'proofs', 'include', 'proof.h')
+     if os.path.exists(pp):
+         body = strip_comments(open(pp).read())
+diff --git a/tools/sessions.toml b/tools/sessions.toml
+index c432444..cbe05f8 100644
+--- a/tools/sessions.toml
++++ b/tools/sessions.toml
+@@ -79,7 +79,8 @@ auth_failure_patterns = ["(?i)sign in again", "(?i)codex login", "(?i)access tok
+ #   their own tmpfs as well, ~/.claude.json covered by /dev/null (kept from checkpoint 0); {wtroot} =
+ #   ../proving-sqlite-wt, so state/ (session logs) and every other worktree; {repo}, the primary checkout, except its
+ #   .git, read-only, which the worktree's git needs. --disable-slash-commands and --strict-mcp-config: no skills (the
+-#   account's synced ones included) and no MCP servers (the account's claude.ai connectors included).
++#   account's synced ones included) and no MCP servers (the account's claude.ai connectors included). --tools
++#   allows only Bash, Read, Write, Edit, Glob, Grep, Monitor, TaskStop and ToolSearch (Zach and the auditor, after T-011).
+ #   Writable: the session's own worktree {dir}, and {config}, its own CLAUDE_CONFIG_DIR, which campaign.py creates
+ #   under state/claude-config/ and seeds with a copy of the login only. A resumed session gets its own directory back.
+ # Auto permission mode: no prompts; unsafe actions are refused. Network stays on: Claude Code needs it.
+@@ -91,7 +92,8 @@ start = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--
+          "{home}/.claude", "--ro-bind", "/dev/null", "{home}/.claude.json", "--tmpfs", "{wtroot}", "--tmpfs",
+          "{repo}", "--ro-bind", "{repo}/.git", "{repo}/.git", "--bind", "{config}", "{config}", "--setenv",
+          "CLAUDE_CONFIG_DIR", "{config}", "--bind", "{dir}", "{dir}", "--remount-ro", "{home}", "--chdir", "{dir}",
+-         "claude", "-p", "--disable-slash-commands", "--strict-mcp-config", "--model", "{model}", "--effort",
++         "claude", "-p", "--disable-slash-commands", "--strict-mcp-config", "--tools",
++         "Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch", "--model", "{model}", "--effort",
+          "{effort}", "--permission-mode", "auto", "--output-format", "stream-json", "--verbose",
+          "--include-partial-messages"]
+ resume = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--tmpfs",
+@@ -102,7 +104,8 @@ resume = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "-
+           "{home}/.claude", "--ro-bind", "/dev/null", "{home}/.claude.json", "--tmpfs", "{wtroot}", "--tmpfs",
+           "{repo}", "--ro-bind", "{repo}/.git", "{repo}/.git", "--bind", "{config}", "{config}", "--setenv",
+           "CLAUDE_CONFIG_DIR", "{config}", "--bind", "{dir}", "{dir}", "--remount-ro", "{home}", "--chdir", "{dir}",
+-          "claude", "-p", "--resume", "{session}", "--disable-slash-commands", "--strict-mcp-config", "--model",
++          "claude", "-p", "--resume", "{session}", "--disable-slash-commands", "--strict-mcp-config",
++          "--tools", "Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch", "--model",
+           "{model}", "--effort", "{effort}", "--permission-mode", "auto", "--output-format", "stream-json",
+           "--verbose", "--include-partial-messages"]
+ login_check = ["claude", "auth", "status"]
+diff --git a/tools/tests/test_tools.py b/tools/tests/test_tools.py
+index 5eb126d..fb2c260 100755
+--- a/tools/tests/test_tools.py
++++ b/tools/tests/test_tools.py
+@@ -319,6 +319,67 @@ def legacy_failures(r, card, name):
+     j = os.path.join(r, 'proofs', card, 'build', 'lp64-le', name + '.json')
+     return [f.get('desc', '') for f in (_json.load(open(j)).get('failures') or [])] if os.path.exists(j) else []
+ 
++# B2 (Zach, 2026-11-10, evidence/approvals/B2-memcmp-contract/): memcmp's boundary contract, clause guards, kept bodies
++B2_TOY = r"""#include <stdlib.h>
++#include <string.h>
++typedef struct Cell { unsigned flags; void *payload; } Cell;
++int cmpneg(const unsigned char *a, const unsigned char *b, size_t n) {
++#ifdef BAD
++  int rc = memcmp(a, b, n + 1);
++#else
++  int rc = memcmp(a, b, n);
++#endif
++  return -rc;
++}
++void bump(Cell *p) { p->flags++; }
++void walk(Cell *a, Cell *other, unsigned n) {
++  unsigned i = 0;
++  while (i < n)
++    __CPROVER_assigns(i, __CPROVER_object_whole(a)
++#ifndef BAD
++                      , other->flags
++#endif
++                      )
++    __CPROVER_loop_invariant(i <= n)
++    __CPROVER_decreases(n - i)
++  { bump(other); i++; }
++}
++"""
++B2_MEMCMP_H = open(os.path.join(REPO, 'proofs', 'contracts', 'memcmp.h')).read()
++B2_HEADS = {
++    'cmpneg': 'int contract_cmpneg(const unsigned char *a, const unsigned char *b, size_t n)\n'
++              '  __CPROVER_requires(n <= 1000000 && __CPROVER_r_ok(a, n + 1) && __CPROVER_r_ok(b, n))\n'
++              '  __CPROVER_assigns()\n'
++              '  __CPROVER_ensures(-255 <= __CPROVER_return_value && __CPROVER_return_value <= 255);\n',
++    'walk': 'void contract_walk(Cell *a, Cell *other, unsigned n)\n'
++            '  __CPROVER_requires(n <= 4 && __CPROVER_w_ok(a, 4 * sizeof(Cell)) && __CPROVER_w_ok(other, sizeof(Cell)))\n'
++            '  __CPROVER_assigns(__CPROVER_object_whole(a), other->flags);\n',
++}
++B2_HARNESS = ('#include "sqlite3.c"\n#include "contracts/memcmp.h"\n#include "contracts/cmpneg.h"\n#include "contracts/walk.h"\n'
++              'void h_cmp(void) { size_t n; __CPROVER_assume(n <= 1000000);\n'
++              '  unsigned char *a = malloc(n + 1), *b = malloc(n); __CPROVER_assume(a && b); cmpneg(a, b, n); }\n'
++              'void h_walk(void) { unsigned n; Cell *a = malloc(4 * sizeof(Cell)), *o = malloc(sizeof(Cell));\n'
++              '  __CPROVER_assume(a && o); walk(a, o, n); }\n')
++
++
++def b2_repo(t, card, contracts):
++    r = t.fresh()
++    t.write(r, 'upstream/sqlite3.c', B2_TOY)
++    t.write(r, 'overlay/sqlite3.c', B2_TOY)
++    t.write(r, 'overlay-bad/sqlite3.c', '#define BAD\n' + B2_TOY)
++    t.write(r, 'proofs/contracts/memcmp.h', B2_MEMCMP_H)
++    for fn, text in B2_HEADS.items():
++        t.write(r, 'proofs/contracts/%s.h' % fn, text)
++    t.write(r, 'proofs/%s/harness.c' % card, B2_HARNESS)
++    t.write(r, 'cards/%s.md' % card, card_md(card, ['cmpneg', 'walk'], src=B2_TOY))
++    lines = ['CARD := %s' % card, 'PROOFS := cmp walk',
++             'cmp_ENTRY := h_cmp', 'cmp_ENFORCE := cmpneg/contract_cmpneg', 'cmp_REPLACE := memcmp/contract_memcmp',
++             'walk_ENTRY := h_walk', 'walk_ENFORCE := walk/contract_walk', 'walk_LOOPS := contracts']
++    if contracts == 'legacy':
++        lines += ['cmp_CONTRACTS := legacy', 'walk_CONTRACTS := legacy']
++    t.write(r, 'proofs/%s/Makefile' % card, '\n'.join(lines + ['include ../Makefile.common']) + '\n')
++    return r
++
+ class T:
+     def __init__(self, keep):
+         self.base = tempfile.mkdtemp(prefix='tooltests-')
+@@ -1357,6 +1418,63 @@ def main():
+         rc, out, res = prove('overlay')
+         t.expect('legacy: <name>_CONTRACTS takes only dfcc or legacy', rc != 0 and 'must be dfcc or legacy' in out, out[-400:])
+ 
++    # ---- B2 (Zach, 2026-11-10): memcmp's contract, clause guards, kept bodies under legacy, land rules
++    if want('b2'):
++        for engine, card in (('dfcc', 'C-93'), ('legacy', 'C-15')):
++            r = b2_repo(t, card, engine)
++            run = lambda ov, c=card, rr=r: t.run(rr, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + c, '--config',  # noqa: E731
++                                                      'lp64-le', '--overlay', ov, '--build-dir', 'proofs/%s/build' % c])
++            rc, out, res = run('overlay')
++            t.expect('b2 (%s): memcmp replaced by A-006\'s contract proves for lengths up to 10^6, and a kept callee body '
++                     'writing only inside the loop\'s assigns proves' % engine, rc == 0 and 'PASS' in res, out[-1200:])
++            rc, out, res = run('overlay-bad')
++            fc = legacy_failures(r, card, 'cmp')
++            t.expect('b2 (%s): a memcmp call one byte past an argument fails by the contract\'s requires' % engine,
++                     any('requires clause' in f for f in fc), str(fc) if fc else out[-1000:])
++            if engine == 'legacy':
++                fw = legacy_failures(r, card, 'walk')
++                t.expect('b2 (legacy): a kept callee body writing outside the loop\'s assigns fails ("is assignable")',
++                         any('is assignable' in f for f in fw), str(fw) if fw else out[-1000:])
++            # a clause smuggled onto the ENFORCE function in preds.h, or onto a REPLACE function in a contracts header
++            for where, text, name in (
++                    ('proofs/include/preds.h', 'int cmpneg(const unsigned char *a, const unsigned char *b, size_t n)\n'
++                     '  __CPROVER_ensures(1);\n', 'preds.h, onto the ENFORCE function'),
++                    ('proofs/contracts/cmpneg.h', B2_HEADS['cmpneg'] + 'int memcmp(const void *s1, const void *s2, size_t n)\n'
++                     '  __CPROVER_ensures(__CPROVER_return_value == 0);\n', 'a contracts header, onto the REPLACE function')):
++                old = open(os.path.join(r, where)).read() if os.path.exists(os.path.join(r, where)) else None
++                t.write(r, where, (old or '') + text)
++                rc, out, res = run('overlay')
++                t.expect('b2 (%s): a contract clause smuggled into %s fails the build' % (engine, name),
++                         rc != 0 and 'contract clause' in out, out[-600:])
++                rc, out, res = t.run(r, [py, 'tools/scan.py'])
++                if where.endswith('preds.h'):
++                    t.expect('b2 (%s): scan rejects a function contract clause in proofs/include/preds.h' % engine,
++                             rc != 0 and 'no function contract clauses in proofs/include/' in out, out[-600:])
++                if old is None:
++                    os.remove(os.path.join(r, where))
++                else:
++                    t.write(r, where, old)
++        # memcmp.h is frozen; a land may carry it only with an approval record and proof.lock; sessions.toml may land
++        code = ('import sys; sys.path.insert(0, "tools"); import lock, campaign\n'
++                'print("FROZEN", "proofs/contracts/memcmp.h" in lock.FROZEN)\n'
++                'print("BARE", campaign.land_paths_problems(["proofs/contracts/memcmp.h"], [])[0])\n'
++                'print("OK", campaign.land_paths_problems(["proofs/contracts/memcmp.h", "proof.lock", "evidence/approvals/x/APPROVED.md"], ["evidence/approvals/x/APPROVED.md"])[0])\n'
++                'print("TOML", campaign.land_paths_problems(["tools/sessions.toml"], [])[0])\n')
++        rc, out, res = t.run(t.fresh(), [py, '-c', code])
++        rt = os.path.join(t.base, 'toml-keys')
++        os.makedirs(rt)
++        subprocess.run(['git', 'init', '-q', rt], check=True)
++        t.write(rt, 'tools/sessions.toml', '[vendors.codex]\nusage_limit_patterns = ["a"]\n[roles.builder.high]\nmodel = "m1"\neffort = "high"\n')
++        subprocess.run(['git', 'add', '-A'], cwd=rt, check=True)
++        subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'x'], cwd=rt, check=True)
++        t.write(rt, 'tools/sessions.toml', '[vendors.codex]\nusage_limit_patterns = ["a", "b"]\n[roles.builder.high]\nmodel = "m2"\neffort = "high"\n')
++        subprocess.run(['git', 'add', 'tools/sessions.toml'], cwd=rt, check=True)
++        rc2, out2, _ = t.run(rt, [py, '-c', 'import sys; sys.path.insert(0, %r); import campaign; print("KEYS", campaign.sessions_toml_changes("."))' % os.path.join(REPO, 'tools')])
++        t.expect('b2: a land that changes tools/sessions.toml names the changed keys in its trailer',
++                 "KEYS ['roles.builder.high.model', 'vendors.codex.usage_limit_patterns']" in out2, out2)
++        t.expect('b2: memcmp.h is frozen and lands only with an approval record and proof.lock; tools/sessions.toml may land (T-007)',
++                 'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out and 'TOML []' in out, out)
++
+     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
+     if want('probe'):
+         r = t.fresh()
