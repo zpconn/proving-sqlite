@@ -1080,6 +1080,30 @@ def main():
                  and rec['provenance']['prove_summary'] == {'commit': 'bbbb', 'gate_log': 'evidence/gate/C-91-r1.log', 'gate': 'caller gate'}
                  and ',1,1,0,' in csvt and 'bbbb evidence/gate/C-91-r1.log' in csvt and 'aaaa evidence/gate/C-90-r1.log' in csvt, out + csvt)
 
+    # ---- C-11 decision (2026-11-10, evidence/approvals/C-11-f2i-exact-min/): RESULTS.md and results.csv say what is argued
+    if want('results'):
+        r = t.fresh()
+        code = ('import sys; sys.path.insert(0, "tools"); import results\n'
+                'class Pr:\n'
+                '    def __init__(s, cover, replace): s.cover, s.replace = cover, replace\n'
+                'own = results.argued_notes(Pr(["sqlite3IntFloatCompare"], ["sqlite3IsNaN/contract_sqlite3IsNaN"]))\n'
+                'user = results.argued_notes(Pr(["sqlite3VdbeRecordCompareWithSkip"], ["sqlite3IntFloatCompare/contract_sqlite3IntFloatCompare"]))\n'
+                'other = results.argued_notes(Pr(["sqlite3IsNaN"], []))\n'
+                'row = dict((c, "") for c in results.COLS); row.update(card="C-11", proof="compare", argued=own)\n'
+                'md = results.results_md([row])\n'
+                'print("OWN", own); print("USER", user); print("OTHER", repr(other))\n'
+                'print("COLS", "argued" in results.COLS); print("MDHEAD", "| Argued |" in md); print("MDROW", own in md)\n'
+                'print("MDCLAIM", "except for what its Argued column names" in md)\n')
+        rc, out, res = t.run(r, [py, '-c', code])
+        want_txt = 'proved for every other (i, r); argued and tested at r = −2^63'
+        t.expect('results: a proof of sqlite3IntFloatCompare is "proved for every other (i, r); argued and tested at r = -2^63"',
+                 ('OWN sqlite3IntFloatCompare: ' + want_txt) in out, out)
+        t.expect('results: a proof that uses contract_sqlite3IntFloatCompare says so',
+                 ('USER uses contract_sqlite3IntFloatCompare, which is ' + want_txt) in out, out)
+        t.expect('results: a proof that neither covers nor uses it argues nothing', "OTHER ''" in out, out)
+        t.expect('results: results.csv has an argued column, and RESULTS.md an Argued column and its claim',
+                 'COLS True' in out and 'MDHEAD True' in out and 'MDROW True' in out and 'MDCLAIM True' in out, out)
+
     # ---- checkpoint 1 Q2, Q4, D4 and fix 2, in tools/campaign.py itself (the selftest repeats these end to end)
     if want('campaign'):
         r = t.fresh()

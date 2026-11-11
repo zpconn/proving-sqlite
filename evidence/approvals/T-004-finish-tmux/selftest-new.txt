@@ -1,0 +1,105 @@
+selftest fixture: /var/tmp/campaign-selftest-k0faqxby
+ok   sessions.toml's codex and claude commands, start and resume, pass the session guards
+ok   session guard refuses codex without the workspace-write sandbox
+ok   session guard refuses codex with approvals on
+ok   session guard refuses codex with the sandbox bypassed
+ok   session guard refuses codex without bwrap
+ok   session guard refuses codex bwrap that leaves $HOME visible
+ok   session guard refuses codex bwrap that leaves /mnt visible (/mnt/wslg/distro is a second view of /)
+ok   session guard refuses codex bwrap that leaves $HOME writable
+ok   session guard refuses codex bwrap that shows ~/.codex/rules (Zach's allow-list: git push, ...)
+ok   session guard refuses codex bwrap that lets codex install skills into ~/.codex/skills
+ok   session guard refuses codex bwrap that binds ~/.ssh back
+ok   session guard refuses claude with skills and commands (the account's synced skills)
+ok   session guard refuses claude with MCP servers from anywhere but --mcp-config (claude.ai connectors)
+ok   session guard refuses claude bwrap that leaves $HOME visible
+ok   session guard refuses claude bwrap that leaves /mnt visible
+ok   session guard refuses claude bwrap that leaves $HOME writable
+ok   session guard refuses claude bwrap that binds all of ~/.local back
+ok   session guard refuses codex with a second sandbox_mode
+ok   session guard refuses claude without bwrap
+ok   session guard refuses claude with bypassPermissions
+ok   session guard refuses bwrap with a shared /tmp
+ok   session guard refuses bwrap that leaves ~/.codex visible
+ok   session guard refuses bwrap that leaves the other worktrees and state/ visible
+ok   session guard refuses bwrap that binds / writable afterwards
+ok   session guard refuses codex without sandbox_workspace_write.exclude_slash_tmp=true
+ok   session guard refuses codex with exclude_slash_tmp=false
+ok   session guard refuses codex with another sandbox_workspace_write key
+ok   session guard refuses bwrap that leaves /run/user/<uid> visible
+ok   session guard refuses bwrap that keeps DBUS_SESSION_BUS_ADDRESS
+ok   session guard refuses bwrap that keeps XDG_RUNTIME_DIR
+ok   session guard refuses bwrap that leaves ~/.claude visible
+ok   session guard refuses bwrap that binds ~/.claude writable
+ok   session guard refuses bwrap that leaves ~/.claude.json readable
+ok   session guard refuses bwrap with CLAUDE_CONFIG_DIR set to ~/.claude
+ok   session guard refuses a codex session while ~/.codex/AGENTS.md exists
+ok   campaign.py refuses a sessions.toml that puts builders on claude
+ok   a re-review is refused when its reviewer would share the vendor that built the card's last round
+ok   sessions.toml is refused: a codex command without --disable apps (a change the flag guard does not catch)
+ok   sessions.toml is refused: a codex command with an extra -c setting
+ok   sessions.toml is refused: a claude command whose --effort is a literal, not {effort}
+ok   a sessions.toml builder model of '--dangerously-bypass-approvals-and-sandbox' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml reviewer model of '-o' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml builder effort of 'high" -c sandbox_mode="danger-full-access' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml reviewer effort of 'high\n' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml builder model of 'a b' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml reviewer model of '' is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   a sessions.toml builder effort of 5 is refused by role_config, start_session (before filling, nothing spawned) and the start check
+ok   sessions.toml's own codex command starts; its session-start entry records sessions.toml's sha256
+ok   a codex session gets TMPDIR in its worktree (tmp/, created), not /tmp
+ok   a claude session gets its own CLAUDE_CONFIG_DIR under state/claude-config/, mode 700, seeded with the login and only the account keys of ~/.claude.json
+ok   the shipped sessions.toml has exactly campaign.py's command lines
+ok   fix 2: campaign.py builds and runs a repro with its fixed command under ASan and UBSan, in a sandbox where $HOME is unreadable and the network unreachable; a symlinked repro is not built
+ok   fix 2: the reviewer of a FINDING round is handed the output, told not to build or run repros, and told never to run make in a card directory
+ok   D4: a builder round past 6 is never started; the card goes to triage for Zach
+ok   D4: nor is a round whose report the May change line does not list (b3 here)
+ok   campaign.py writes nothing when .campaign/usage is a symlink to a file outside, and stops the session for triage
+ok   campaign.py writes nothing when .campaign/usage is a hard link to a file outside, and stops the session for triage
+ok   campaign.py writes nothing when .campaign is a symlink to a directory outside, and stops the session for triage
+ok   a report that is a FIFO or a symlink, or a review under a symlinked reviews/, is refused, not read
+ok   start: primary checkout moves to orch, main gets its own checkout
+ok   a phase whose cards are all still waiting with no session run yet is not settled (the wait would end before the daemon's first pass)
+ok   phase A settles (every card merged, in triage, or waiting)
+ok   C-01 approved and merged
+ok   C-02 a rejection whose second round answers the review
+ok   C-03 three rejections go to triage
+ok   C-04 a crash that it resumes (with the CLI's resume command) and merges
+ok   C-05 three crashes in one round go to triage
+ok   C-06 a usage limit pauses the vendor until the reset, without counting against the card
+ok   C-07 a builder that changes a file outside May change: triage, nothing committed
+ok   C-08 a builder that commits a file outside May change: triage
+ok   C-09 a reviewer that changes a tracked file, twice: discarded, rerun once, then triage
+ok   C-10 a reviewer that changes a tracked file once, then is rerun and merges
+ok   C-11 a gate failure after APPROVE: triage with the gate log, main unchanged
+ok   C-12 a session that reaches its cap: stopped at the cap, allowed changes committed, triage
+ok   C-13 a card whose dependency is not merged stays waiting and never starts
+ok   C-14 a builder that writes its own review file: triage
+ok   C-15 a reviewer on the builder's vendor: refused, triage
+ok   C-16 a card branch that gains a commit after its review: triage, not merged
+ok   C-17 a FINDING the reviewer approves goes to triage, not merge
+ok   C-18 an expired login pauses the vendor with a triage item, not counted against the card; resume-vendor refuses while logged out, then resumes it, and it merges
+ok   C-19 a builder that leaves a symlink on a May change path: triage, nothing committed
+ok   C-20 a builder that leaves an executable harness.c: triage, nothing committed
+ok   C-25 a builder that leaves .campaign/usage as a symlink to a file outside its worktree: triage, nothing committed, the outside file unchanged
+ok   C-26 a builder whose report is a FIFO: triage, nothing committed, and the daemon did not block on it
+ok   a reviewer's sandbox hides the host /tmp, state/, main's checkout, other worktrees, ~/.codex, the primary checkout, ~/.claude, ~/.claude.json, /run/user/<uid>, ~/.config/gh, ~/.aws and ~/.docker, unsets DBUS_SESSION_BUS_ADDRESS and XDG_RUNTIME_DIR; its own worktree and its own seeded CLAUDE_CONFIG_DIR are writable, and what it writes to ~/.claude never reaches the real one; and (checkpoint 1, Q4) the rest of $HOME (~/.gitconfig, ~/.ssh) and /mnt are hidden and $HOME is read-only
+ok   checkpoint 1, Q2: a builder's sandbox hides $HOME but ~/.codex (its login and session logs) and nvm, hides /mnt, ~/.ssh, ~/.gitconfig, ~/.claude, state/, other worktrees and the primary checkout, and inside ~/.codex the approval rules, skills and memories; $HOME is read-only and its worktree writable
+ok   every claude session had its own CLAUDE_CONFIG_DIR under state/ (16 sessions), and no copy of the login is left once they end
+ok   every codex session ran with TMPDIR in its own worktree (29 sessions)
+ok   every session-start entry in the journal records sessions.toml's sha256 (45 entries)
+ok   every commit campaign.py put on main carries a Campaign: trailer (12 commits)
+ok   no reviewer ran on its round's builder vendor
+ok   a land that touches proofs/ is refused
+ok   a land of PROGRESS.md is queued and lands on main with a trailer
+ok   every commit campaign.py made on any branch carries a Campaign: trailer, its merges of main into card branches (1) and orch (1) included (43 commits)
+ok   status prints every card, the triage and merge queues, pauses and the last full gate
+ok   phase B settles
+ok   kill -9 of the daemon mid-session: restart neither loses nor repeats the session (C-21 merged, one start per session)
+ok   kill -9 of a session: it is resumed in the same worktree and the card merges (C-22)
+ok   kill -9 of daemon and merge job mid-merge: the merge is redone once, never twice (C-23)
+ok   kill -9 of the daemon mid-merge: the surviving merge job's result is taken once (C-24)
+ok   finish of a campaign started with --no-tmux leaves a tmux session named campaign alone (T-004: the selftest's finish killed the live campaign's daemon)
+ok   finish: primary checkout back on main with orch merged, main's checkout removed
+ok   no session saw the API-key or CLAUDE_CODE_ variables planted in campaign.py's environment (56 sessions)
+RESULT selftest PASS 103/103

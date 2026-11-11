@@ -1,0 +1,183 @@
+{
+ "card": "C-13",
+ "coverage_summary": [
+  {
+   "card": "C-13",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeMemSetNull": {
+     "blocks": 11,
+     "blocks_failed": 2,
+     "goal_lines": [
+      86608,
+      86609,
+      86610,
+      86611,
+      86613
+     ],
+     "uncovered": [
+      86609,
+      86610
+     ],
+     "uncovered_blocks": [
+      [
+       86609,
+       86610
+      ]
+     ]
+    }
+   },
+   "proof": "setnull",
+   "seconds": 0
+  },
+  {
+   "card": "C-13",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeMemSetNull": {
+     "blocks": 11,
+     "blocks_failed": 2,
+     "goal_lines": [
+      86608,
+      86609,
+      86610,
+      86611,
+      86613
+     ],
+     "uncovered": [
+      86609,
+      86610
+     ],
+     "uncovered_blocks": [
+      [
+       86609,
+       86610
+      ]
+     ]
+    }
+   },
+   "proof": "setnull",
+   "seconds": 0
+  },
+  {
+   "card": "C-13",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeMemSetNull": {
+     "blocks": 11,
+     "blocks_failed": 2,
+     "goal_lines": [
+      86608,
+      86609,
+      86610,
+      86611,
+      86613
+     ],
+     "uncovered": [
+      86609,
+      86610
+     ],
+     "uncovered_blocks": [
+      [
+       86609,
+       86610
+      ]
+     ]
+    }
+   },
+   "proof": "setnull",
+   "seconds": 0
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-13/setnull lp64-le: 1 failed: [contract_sqlite3VdbeMemSetNull.postcondition.1] Check ensures clause of contract contract::contract_sqlite3VdbeMemSetNull for function sqlite3VdbeMemSetNull",
+   "mutant": {
+    "card": "C-13",
+    "equivalent": null,
+    "from": "MEM_Null",
+    "function": "sqlite3VdbeMemSetNull",
+    "id": "M-046",
+    "line": 86611,
+    "review": null,
+    "to": "MEM_Int"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-13/setnull lp64-le: 1 failed: [contract_sqlite3VdbeMemSetNull.postcondition.1] Check ensures clause of contract contract::contract_sqlite3VdbeMemSetNull for function sqlite3VdbeMemSetNull",
+   "mutant": {
+    "card": "C-13",
+    "equivalent": null,
+    "from": "MEM_Null",
+    "function": "sqlite3VdbeMemSetNull",
+    "id": "M-047",
+    "line": 86611,
+    "review": null,
+    "to": "MEM_Str"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-13",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "setnull",
+   "properties": 69,
+   "seconds": 23,
+   "status": "PASS"
+  },
+  {
+   "card": "C-13",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "setnull",
+   "properties": 69,
+   "seconds": 23,
+   "status": "PASS"
+  },
+  {
+   "card": "C-13",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "setnull",
+   "properties": 69,
+   "seconds": 24,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "4fc99b4c992c8133ba54c28e122ecf9f95620b1a",
+   "gate": "make gate CARD=C-13 (merge of C-13 r1)",
+   "gate_log": "evidence/gate/C-13-r1.log"
+  },
+  "mutants": {
+   "commit": "4fc99b4c992c8133ba54c28e122ecf9f95620b1a",
+   "gate": "make gate CARD=C-13 (merge of C-13 r1)",
+   "gate_log": "evidence/gate/C-13-r1.log"
+  },
+  "prove_summary": {
+   "commit": "4fc99b4c992c8133ba54c28e122ecf9f95620b1a",
+   "gate": "make gate CARD=C-13 (merge of C-13 r1)",
+   "gate_log": "evidence/gate/C-13-r1.log"
+  }
+ }
+}

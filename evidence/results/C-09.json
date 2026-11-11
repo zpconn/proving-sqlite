@@ -1,0 +1,388 @@
+{
+ "card": "C-09",
+ "coverage_summary": [
+  {
+   "card": "C-09",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "serialGet": {
+     "blocks": 11,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91950,
+      91951,
+      91952,
+      91953,
+      91956,
+      91957,
+      91959,
+      91976,
+      91977,
+      91979
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    },
+    "sqlite3VdbeSerialGet": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92002,
+      92003,
+      92005,
+      92006,
+      92007,
+      92008,
+      92011,
+      92013,
+      92014,
+      92016,
+      92019,
+      92020,
+      92022,
+      92024,
+      92027,
+      92028,
+      92030,
+      92032,
+      92035,
+      92036,
+      92038,
+      92040,
+      92043,
+      92048,
+      92050,
+      92052,
+      92055,
+      92056,
+      92058,
+      92061,
+      92064,
+      92065,
+      92068,
+      92071,
+      92072,
+      92073,
+      92081,
+      92082,
+      92083,
+      92088
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "decode",
+   "seconds": 1
+  },
+  {
+   "card": "C-09",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "serialGet": {
+     "blocks": 11,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91950,
+      91951,
+      91952,
+      91953,
+      91956,
+      91957,
+      91959,
+      91976,
+      91977,
+      91979
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    },
+    "sqlite3VdbeSerialGet": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92002,
+      92003,
+      92005,
+      92006,
+      92007,
+      92008,
+      92011,
+      92013,
+      92014,
+      92016,
+      92019,
+      92020,
+      92022,
+      92024,
+      92027,
+      92028,
+      92030,
+      92032,
+      92035,
+      92036,
+      92038,
+      92040,
+      92043,
+      92048,
+      92050,
+      92052,
+      92055,
+      92056,
+      92058,
+      92061,
+      92064,
+      92065,
+      92068,
+      92071,
+      92072,
+      92073,
+      92081,
+      92082,
+      92083,
+      92088
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "decode",
+   "seconds": 1
+  },
+  {
+   "card": "C-09",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "serialGet": {
+     "blocks": 11,
+     "blocks_failed": 0,
+     "goal_lines": [
+      91950,
+      91951,
+      91952,
+      91953,
+      91956,
+      91957,
+      91959,
+      91976,
+      91977,
+      91979
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    },
+    "sqlite3VdbeSerialGet": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92002,
+      92003,
+      92005,
+      92006,
+      92007,
+      92008,
+      92011,
+      92013,
+      92014,
+      92016,
+      92019,
+      92020,
+      92022,
+      92024,
+      92027,
+      92028,
+      92030,
+      92032,
+      92035,
+      92036,
+      92038,
+      92040,
+      92043,
+      92048,
+      92050,
+      92052,
+      92055,
+      92056,
+      92058,
+      92061,
+      92064,
+      92065,
+      92068,
+      92071,
+      92072,
+      92073,
+      92081,
+      92082,
+      92083,
+      92088
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "decode",
+   "seconds": 1
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-09/decode lp64-le: 1 failed: [harness_serial_decode.assertion.2] P3 serial value agrees with the file-format reference",
+   "mutant": {
+    "card": "C-09",
+    "equivalent": null,
+    "from": "serial_type-8",
+    "function": "sqlite3VdbeSerialGet",
+    "id": "M-033",
+    "line": 92071,
+    "review": null,
+    "to": "serial_type-7"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-09/decode lp64-le: 1 failed: [harness_serial_decode.assertion.2] P3 serial value agrees with the file-format reference",
+   "mutant": {
+    "card": "C-09",
+    "equivalent": null,
+    "from": "/2",
+    "function": "sqlite3VdbeSerialGet",
+    "id": "M-034",
+    "line": 92082,
+    "review": null,
+    "to": "/4"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-09/decode lp64-le: 1 failed: [harness_serial_decode.assertion.2] P3 serial value agrees with the file-format reference",
+   "mutant": {
+    "card": "C-09",
+    "equivalent": null,
+    "from": "MEM_Null|MEM_Zero",
+    "function": "sqlite3VdbeSerialGet",
+    "id": "M-035",
+    "line": 92005,
+    "review": null,
+    "to": "MEM_Null"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-09/decode lp64-le: 1 failed: [harness_serial_decode.assertion.2] P3 serial value agrees with the file-format reference",
+   "mutant": {
+    "card": "C-09",
+    "equivalent": null,
+    "from": "MEM_Null",
+    "function": "serialGet",
+    "id": "M-036",
+    "line": 91977,
+    "review": null,
+    "to": "MEM_Real"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-09/decode lp64-le: 1 failed: [harness_serial_decode.assertion.2] P3 serial value agrees with the file-format reference",
+   "mutant": {
+    "card": "C-09",
+    "equivalent": null,
+    "from": "serial_type==6",
+    "function": "serialGet",
+    "id": "M-037",
+    "line": 91953,
+    "review": null,
+    "to": "serial_type==7"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-09/decode lp64-le: 1 failed: [harness_serial_decode.assertion.2] P3 serial value agrees with the file-format reference",
+   "mutant": {
+    "card": "C-09",
+    "equivalent": null,
+    "from": "buf+2",
+    "function": "sqlite3VdbeSerialGet",
+    "id": "M-064",
+    "line": 92055,
+    "review": null,
+    "to": "buf+1"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-09/decode lp64-le: 1 failed: [harness_serial_decode.assertion.2] P3 serial value agrees with the file-format reference",
+   "mutant": {
+    "card": "C-09",
+    "equivalent": null,
+    "from": "pMem->n = 0",
+    "function": "sqlite3VdbeSerialGet",
+    "id": "M-065",
+    "line": 92006,
+    "review": null,
+    "to": "pMem->n = 1"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-09",
+   "cbmc_seconds": 1,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "decode",
+   "properties": 612,
+   "seconds": 12,
+   "status": "PASS"
+  },
+  {
+   "card": "C-09",
+   "cbmc_seconds": 1,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "decode",
+   "properties": 612,
+   "seconds": 12,
+   "status": "PASS"
+  },
+  {
+   "card": "C-09",
+   "cbmc_seconds": 1,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "decode",
+   "properties": 612,
+   "seconds": 12,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "104fe8630a8ad7e91cd02335bc4a63959d61866e",
+   "gate": "make gate CARD=C-08 (merge of C-08 r1)",
+   "gate_log": "evidence/gate/C-08-r1.log"
+  },
+  "mutants": {
+   "commit": "fb1215b4b2b6e72ffdc0d1a65564530c8fe6a05b",
+   "gate": "make gate CARD=C-09 (merge of C-09 r1)",
+   "gate_log": "evidence/gate/C-09-r1.log"
+  },
+  "prove_summary": {
+   "commit": "104fe8630a8ad7e91cd02335bc4a63959d61866e",
+   "gate": "make gate CARD=C-08 (merge of C-08 r1)",
+   "gate_log": "evidence/gate/C-08-r1.log"
+  }
+ }
+}
