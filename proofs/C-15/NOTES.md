@@ -1,51 +1,58 @@
-# C-15: sqlite3VdbeRecordUnpack, incomplete round 2
+# C-15: sqlite3VdbeRecordUnpack, incomplete round 3
 
-Proved: none for C-15. NEEDS-DECISION; reports/C-15-b2.md contains
-reproducers for CBMC 6.11 DFCC pointer-havoc encoding and a failed workaround.
-No card proof run occurred in round 2; the harness, contract, Makefile,
-and loop annotations remain the unsuccessful round-1 diagnostic candidate.
-Tested: diagnostic tool executions, not native SQLite behavior; see report.
-Trusted: CBMC transformations/C/models and preprocessor per TRUSTED.md.
-Assumed: A-001 remains exactly max(nKey,1)+8 readable bytes and nKey>=0.
-The retained initial contract's max(nKey,1) extent is insufficient; it was
-intended to elicit a counterexample, which encoding prevented. It is not
-an alternative to A-001 or a usable contract for another card.
+Proved: only a bounded lp64-le diagnostic, 2,017 properties, zero failures,
+128 s CBMC. It used 64 input bytes and four Mem slots; not the card's P1.
+STUCK: eight subsequent attempts obtained no full-range verdict. See b3.
+The retained full-range candidate is not approved for replacement by callers.
+Trusted: legacy contracts (T-006), CBMC/C/models and preprocessor.
+Tested: diagnostic tool executions only; no native SQLite runtime claim.
+Overlay, scan and all-config include checks pass; these do not establish P1.
+Assumed: A-001's exact max(nKey,1)+8 readable extent, with nKey>=0;
+A-002's native eight-byte allocation alignment through C-14.
 
-| Candidate requires | Counterexample evidence | Caller obligation |
+Candidate: writable record, readable KeyInfo prefix through db, positive
+capacity, writable incoming nField Mems, aligned aMem, and A-001 verbatim.
+Ensures default_rc=0 and output nField<=incoming capacity. Assigns default_rc,
+nField and the incoming Mem region. Exact member framing is unfinished.
+| Requires | Counterexample evidence | Caller justification |
 | --- | --- | --- |
-| Writable full UnpackedRecord | Not obtained. | C-14 provides this on success. |
-| Readable KeyInfo prefix through db | Not obtained. | C-14 retains its input pointer; external lifetime obligation. |
-| Writable nField Mems at aMem | Not obtained. | C-14 provides the extent; count and disjoint regions need completing. |
-| nKey>=0 and readable max(nKey,1) bytes | Initial insufficient candidate; no trace. | Assumed A-001 supplies the exact stronger extent above. |
+| w_ok(p,sizeof(UnpackedRecord)) | Deletion check unrun. | C-14 ensures writable record on success. |
+| r_ok(pKeyInfo,offsetof(KeyInfo,db)+sizeof(sqlite3*)) | Deletion check unrun. | C-14's input prefix and retained pointer; lifetime remains external. |
+| w_ok(aMem,sizeof(Mem)*nField) | Deletion check unrun. | C-14's output extent. |
+| nField>0 | No completed zero-capacity trace; loop writes before testing capacity. | C-14 ensures nKeyField+1, with nKeyField<65535. |
+| ((size_t)aMem%8)==0 | Alignment is outside CBMC's checks (UB-CLASSES.md). | Assumed A-002 and C-14's ROUND8P offset. |
+| A-001 exact clause | Full-range proof and minus-one check incomplete. | Assumed A-001; external b-tree and sorter callers. |
 
-Candidate ensures default_rc=0 and output nField<=input nField.
-Candidate assigns default_rc, nField, and the incoming whole Mem region;
-precise member framing remains unfinished. Eight-byte aMem alignment is
-an explicit completion obligation under UB-CLASSES.md and C-14/A-002.
-No footprint sufficiency or minimality claim is Proved.
+The harness now allows every nonnegative int nKey and the full u16 capacity,
+allocates exactly max(nKey,1)+8 nondet bytes and a shared record/Mem block,
+and places aMem at ((sizeof(UnpackedRecord)+7)/8)*8, C-14's layout here.
+Allocation failure is excluded before pointer arithmetic. KeyInfo has its
+own allocation. No record bytes or Mem string/blob contents are constrained.
+The contract still needs any required alias/region separation made explicit;
+the harness supplies disjoint record/Mem regions and separate input/KeyInfo.
+No claim that this harness discharges all layouts admitted by the contract.
 
-Loop at upstream 92134 uses a contract, never bounded unwinding:
-- u==0 || u<nField: count; the initial zero-capacity case remains unresolved.
-- same_object(pMem,aMem) and pMem==aMem+u: next output slot.
-- idx>=1 && szHdr<=d: header/data relationship needed for A-001.
-- u==0 || previous Mem is non-dynamic: intended MemSetNull premise.
-- decreases nField-u; assigns idx,d,u,pMem and the incoming Mem region.
-None of these obligations has a completed card verdict.
+Loop 92134 uses induction, not bounded unwinding; candidate invariants:
+- u==0 || u<nField: next slot index, with nField positive under requires.
+- same_object(pMem,aMem) and pMem==aMem+u: pointer position.
+- idx>=1 && szHdr<=d: relation supporting A-001's read bound.
+- u==0 || previous flags exclude MEM_Agg|MEM_Dyn: null-call premise.
+- decreases nField-u; assigns idx,d,u,pMem and object_from(pMem).
+The tail frame starts at initial pMem; in the exact C-14-shaped allocation
+it is exactly the Mem region. Larger allocation tails need further scrutiny.
+Using object_upto(aMem,sizeof(Mem)*nField) generated a dereference in an
+array type: SAT exhausted memory; SMT aborted. The local-pointer tail frame
+avoids that particular encoder fault (independent toy and bounded pass).
 
-The retained harness uses separate allocations for record and Mems, four
-Mem slots, and 64 nondet record bytes: diagnostics only. Completion must
-include C-14's shared allocation with disjoint regions and full input range.
-No byte constraint or SQLite-body change was introduced in either round.
-The toy isolates unconstrained typed pointer havoc followed by callee
-write-set havoc. Recomputing the pointer resolves it in the toy but would
-rewrite SQLite. A byte-slice pointer frame creates a false failure in an
-independent toy and is not adopted. Pure pointer-object/offset invariants
-do not materially shrink the SSA. Details and decision request: b2 report.
+Only unpack opts into legacy. sqlite3VdbeSerialGet keeps its body because
+its static aFlag aborts replacement under T-012. Its serialGet helper uses
+C-07's unchanged contract, as in C-08. Kept-body writes are u,flags,n,z;
+Unpack adds enc,db,szMalloc; all lie in the Mem region. Full-range frame and
+MemSetNull precondition checks have no completed positive verdict.
 
 ## Unreached lines
 
 ## Open questions
-Coverage and mutants remain unrun without a positive card proof.
-Resolve the Trusted-tool encoding blocker, then obtain initial traces,
-finish structural/layout/alignment requirements, prove the exact A-001
-footprint and one-byte-less failure, and run all configurations and checks.
+Full-range encoding; explicit alias premises; precise member framing;
+requires deletion and minus-one evidence; all configurations, coverage,
+M-050/M-051, and the orchestrator's separate pre-merge planted-bug check.

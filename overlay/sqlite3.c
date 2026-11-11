@@ -92133,7 +92133,7 @@ SQLITE_PRIVATE void sqlite3VdbeRecordUnpack(
   u = 0;
   while( idx<szHdr && d<=(u32)nKey )PROOF(
     __CPROVER_assigns(idx, d, u, pMem,
-      __CPROVER_object_upto(p->aMem, sizeof(Mem) * p->nField))
+      __CPROVER_object_from(pMem))
     __CPROVER_loop_invariant(u == 0 || u < p->nField)
     __CPROVER_loop_invariant(__CPROVER_same_object(pMem, p->aMem))
     __CPROVER_loop_invariant(pMem == p->aMem + u)
