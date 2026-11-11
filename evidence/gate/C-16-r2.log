@@ -1,0 +1,81 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 1 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 1 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 38 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-16 --base ccb6937bab94f1b95f5eda923dbd69a407d247ac
+  scan: 15 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (20s)
+gate: cards to run: C-16
+==== includes C-16: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-16
+    includes C-16 lp64-le: 152 files, 0 not allowed
+    includes C-16 ilp32-le: 152 files, 0 not allowed
+    includes C-16 lp64-be: 152 files, 0 not allowed
+  RESULT includes C-16 all PASS
+==== includes C-16 PASS (0s)
+==== prove C-16: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-16 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-16/build
+  RESULT prove C-16/find lp64-le PASS 21s 548 properties 0 failed
+  RESULT prove C-16 lp64-le PASS 21s 548 properties 0 failed
+  RESULT prove C-16/find ilp32-le PASS 20s 548 properties 0 failed
+  RESULT prove C-16 ilp32-le PASS 20s 548 properties 0 failed
+  RESULT prove C-16/find lp64-be PASS 20s 548 properties 0 failed
+  RESULT prove C-16 lp64-be PASS 20s 548 properties 0 failed
+  RESULT prove C-16 all PASS 61s 1644 properties 0 failed
+==== prove C-16 PASS (61s)
+==== coverage C-16: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-16 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-16/build
+    coverage find lp64-le sqlite3VdbeFindCompare: 21/21 lines; uncovered none
+    coverage find ilp32-le sqlite3VdbeFindCompare: 21/21 lines; uncovered none
+    coverage find lp64-be sqlite3VdbeFindCompare: 21/21 lines; uncovered none
+  RESULT coverage C-16 all PASS 63/63 lines 0 uncovered 0 unexplained
+==== coverage C-16 PASS (46s)
+==== mutants C-16: /usr/bin/python3 tools/mutate.py --card C-16 --with  --json proofs/C-16/build/mutants.json
+  MUTANT M-052 sqlite3VdbeFindCompare:93038 'aMem[0]'->'aMem[1]' KILLED by C-16/find lp64-le: 3 failed: [sqlite3VdbeFindCompare.pointer_dereference.77] dereference failure: pointer outside object bounds in (p->aMem + (signed long int)1)->u; [sqlite3VdbeFindCompare.pointer_dereference.78] dereference failure: invalid integer address in (p->aMem + (signed long int)1)->u; [contract_sqlite3VdbeFindCompare.postcondition.2] Check ensures clause of contract contract::contract_sqlite3VdbeFindCompare for function sqlite3VdbeFindCompare
+  MUTANT M-053 sqlite3VdbeFindCompare:93049 'aMem[0]'->'aMem[1]' KILLED by C-16/find lp64-le: 3 failed: [sqlite3VdbeFindCompare.pointer_dereference.125] dereference failure: pointer outside object bounds in (p->aMem + (signed long int)1)->n; [sqlite3VdbeFindCompare.pointer_dereference.126] dereference failure: invalid integer address in (p->aMem + (signed long int)1)->n; [contract_sqlite3VdbeFindCompare.postcondition.3] Check ensures clause of contract contract::contract_sqlite3VdbeFindCompare for function sqlite3VdbeFindCompare
+  RESULT mutate C-16 PASS 2/2 killed 0 equivalent
+==== mutants C-16 PASS (41s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 1 spans
+  lock                     PASS    0s  RESULT lock PASS 38 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   21s  RESULT probe all PASS
+  includes C-16            PASS    0s  RESULT includes C-16 all PASS
+  prove C-16               PASS   61s  RESULT prove C-16 all PASS 61s 1644 properties 0 failed
+  coverage C-16            PASS   47s  RESULT coverage C-16 all PASS 63/63 lines 0 uncovered 0 unexplained
+  mutants C-16             PASS   42s  RESULT mutate C-16 PASS 2/2 killed 0 equivalent
+RESULT gate C-16 PASS 172s 0 failed

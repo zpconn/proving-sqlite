@@ -1,0 +1,310 @@
+{
+ "card": "C-11",
+ "coverage_summary": [
+  {
+   "card": "C-11",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3IsNaN": {
+     "blocks": 11,
+     "blocks_failed": 0,
+     "goal_lines": [
+      36446,
+      36448,
+      36449,
+      36450,
+      36455,
+      36456
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "isnan",
+   "seconds": 0
+  },
+  {
+   "card": "C-11",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3IntFloatCompare": {
+     "blocks": 13,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92426,
+      92429,
+      92431,
+      92432,
+      92433,
+      92434,
+      92435,
+      92436,
+      92440,
+      92442
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "compare",
+   "seconds": 0
+  },
+  {
+   "card": "C-11",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3IsNaN": {
+     "blocks": 11,
+     "blocks_failed": 0,
+     "goal_lines": [
+      36446,
+      36448,
+      36449,
+      36450,
+      36455,
+      36456
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "isnan",
+   "seconds": 0
+  },
+  {
+   "card": "C-11",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3IntFloatCompare": {
+     "blocks": 13,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92426,
+      92429,
+      92431,
+      92432,
+      92433,
+      92434,
+      92435,
+      92436,
+      92440,
+      92442
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "compare",
+   "seconds": 0
+  },
+  {
+   "card": "C-11",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3IsNaN": {
+     "blocks": 11,
+     "blocks_failed": 0,
+     "goal_lines": [
+      36446,
+      36448,
+      36449,
+      36450,
+      36455,
+      36456
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "isnan",
+   "seconds": 0
+  },
+  {
+   "card": "C-11",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3IntFloatCompare": {
+     "blocks": 13,
+     "blocks_failed": 0,
+     "goal_lines": [
+      92426,
+      92429,
+      92431,
+      92432,
+      92433,
+      92434,
+      92435,
+      92436,
+      92440,
+      92442
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "compare",
+   "seconds": 0
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-11/isnan lp64-le: 2 failed: [sqlite3IsNaN.precondition_instance.2] memcpy source region readable; [contract_sqlite3IsNaN.postcondition.1] Check ensures clause of contract contract::contract_sqlite3IsNaN for function sqlite3IsNaN",
+   "mutant": {
+    "card": "C-11",
+    "equivalent": null,
+    "from": "&x",
+    "function": "sqlite3IsNaN",
+    "id": "M-040",
+    "line": 36449,
+    "review": null,
+    "to": "&rc"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-11/isnan lp64-le: 2 failed: [sqlite3IsNaN.precondition_instance.2] memcpy source region readable; [sqlite3IsNaN.precondition_instance.3] memcpy destination region writeable",
+   "mutant": {
+    "card": "C-11",
+    "equivalent": null,
+    "from": "sizeof(y)",
+    "function": "sqlite3IsNaN",
+    "id": "M-041",
+    "line": 36449,
+    "review": null,
+    "to": "9"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-11/compare lp64-le: 1 failed: [sqlite3IntFloatCompare.overflow.1] arithmetic overflow on float to signed integer type conversion in (i64)r",
+   "mutant": {
+    "card": "C-11",
+    "equivalent": null,
+    "from": ">=",
+    "function": "sqlite3IntFloatCompare",
+    "id": "M-042",
+    "line": 92433,
+    "review": null,
+    "to": ">"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-11/compare lp64-le: 1 failed: [sqlite3IntFloatCompare.overflow.1] arithmetic overflow on float to signed integer type conversion in (i64)r",
+   "mutant": {
+    "card": "C-11",
+    "equivalent": null,
+    "from": "-9223372036854775808.0",
+    "function": "sqlite3IntFloatCompare",
+    "id": "M-043",
+    "line": 92432,
+    "review": null,
+    "to": "-9223372036854777856.0"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-11",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "isnan",
+   "properties": 33,
+   "seconds": 19,
+   "status": "PASS"
+  },
+  {
+   "card": "C-11",
+   "cbmc_seconds": 1,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 1,
+   "proof": "compare",
+   "properties": 29,
+   "seconds": 18,
+   "status": "PASS"
+  },
+  {
+   "card": "C-11",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "isnan",
+   "properties": 33,
+   "seconds": 19,
+   "status": "PASS"
+  },
+  {
+   "card": "C-11",
+   "cbmc_seconds": 1,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 1,
+   "proof": "compare",
+   "properties": 29,
+   "seconds": 17,
+   "status": "PASS"
+  },
+  {
+   "card": "C-11",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "isnan",
+   "properties": 33,
+   "seconds": 20,
+   "status": "PASS"
+  },
+  {
+   "card": "C-11",
+   "cbmc_seconds": 1,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 1,
+   "proof": "compare",
+   "properties": 29,
+   "seconds": 18,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "5ef772a997f6e80fe1a308aa75a8bd7c45e1c5a1",
+   "gate": "make gate CARD=C-11 (merge of C-11 r2)",
+   "gate_log": "evidence/gate/C-11-r2.log"
+  },
+  "mutants": {
+   "commit": "5ef772a997f6e80fe1a308aa75a8bd7c45e1c5a1",
+   "gate": "make gate CARD=C-11 (merge of C-11 r2)",
+   "gate_log": "evidence/gate/C-11-r2.log"
+  },
+  "prove_summary": {
+   "commit": "5ef772a997f6e80fe1a308aa75a8bd7c45e1c5a1",
+   "gate": "make gate CARD=C-11 (merge of C-11 r2)",
+   "gate_log": "evidence/gate/C-11-r2.log"
+  }
+ }
+}
