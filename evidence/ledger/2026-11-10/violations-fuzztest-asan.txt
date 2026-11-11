@@ -1,0 +1,356 @@
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=7 pKey=0x5020001a78b8 slack=1 need=8 nField=4 nKeyField=3 bytes(record+slack,first 8)=04091309303030be
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d774ca041 in btreeMoveto /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:74463
+  #4 0x5a7d774d7107 in sqlite3BtreeInsert /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:83128
+  #5 0x5a7d7756e8eb in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:103842
+  #6 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #7 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #8 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #9 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #10 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #11 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=7 pKey=0x5020001a77d8 slack=1 need=8 nField=4 nKeyField=3 bytes(record+slack,first 8)=04091309303030be
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d774ca041 in btreeMoveto /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:74463
+  #4 0x5a7d774d7107 in sqlite3BtreeInsert /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:83128
+  #5 0x5a7d7756e8eb in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:103842
+  #6 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #7 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #8 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #9 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #10 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #11 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=11 pKey=0x51900076657a slack=3 need=8 nField=1 nKeyField=1 bytes(record+slack,first 14)=031902332e35332e3400fb0b0319
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7743d518 in vdbeSorterCompare /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:107972
+  #4 0x5a7d773aff8c in vdbeMergeEngineStep /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:108847
+  #5 0x5a7d773c29cc in sqlite3VdbeSorterNext /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:109859
+  #6 0x5a7d7756e208 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:103744
+  #7 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #8 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #9 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #10 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #11 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #12 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=5 pKey=0x519000766581 slack=2 need=8 nField=1 nKeyField=1 bytes(record+slack,first 7)=030e01a07c0503
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7743d518 in vdbeSorterCompare /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:107972
+  #4 0x5a7d773aff8c in vdbeMergeEngineStep /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:108847
+  #5 0x5a7d773c29cc in sqlite3VdbeSorterNext /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:109859
+  #6 0x5a7d7756e208 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:103744
+  #7 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #8 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #9 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #10 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #11 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #12 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=5 pKey=0x519000766581 slack=2 need=8 nField=1 nKeyField=1 bytes(record+slack,first 7)=030e01a07c0503
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7743d518 in vdbeSorterCompare /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:107972
+  #4 0x5a7d773aff8c in vdbeMergeEngineStep /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:108847
+  #5 0x5a7d773c29cc in sqlite3VdbeSorterNext /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:109859
+  #6 0x5a7d7756e208 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:103744
+  #7 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #8 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #9 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #10 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #11 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #12 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=5 pKey=0x5190009c677f slack=4 need=8 nField=1 nKeyField=1 bytes(record+slack,first 9)=03080200b305030802
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7743d518 in vdbeSorterCompare /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:107972
+  #4 0x5a7d773aff8c in vdbeMergeEngineStep /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:108847
+  #5 0x5a7d773c29cc in sqlite3VdbeSorterNext /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:109859
+  #6 0x5a7d7756e208 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:103744
+  #7 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #8 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #9 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #10 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #11 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #12 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=1992 pKey=0x51d00004e288 slack=0 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=039f16000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=1992 pKey=0x51d00004e288 slack=0 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=039f16000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4a10f656e6d1fd55053e50c4875c9930a33f6d0263bd14dfd6ab8c70521c19338b2308b95cf8d0bb7d202d2102780ea3528f1cb48560f76b20f382b942500fceac26c02c80147c34a4282b3dee6a1886ad8f4364c1fca82134d318224e
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4a9dd075f96d807b55bdfbeb1e1ad66bca10ad95040320f00753d3138085b5d62de863818b239312fd194c38ec49887bb76e1dac3621c27c42442839fc52dfe27ef118af2d0684d3f3338112633800706d173a92743d02a482c4725dec
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4aa600867be800828952e869f40136acb2251723552acfb4ed4e45231fcaebcda73aecebd5e491b779834e8023b65e0fb192389307fef58398c8b891447a6581162315ff7d7ed43b7fcbe51d3944f37b176d596b329aa9ff1f062ec115
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4aac3b029d9c4f2b5ce718c9daab72b6d61a58eb3af7bda13568478bc105aaf02a66fe91421784287e863da8cabd50e3c1a44709279f41524a543e9a581cd4177373ece36e7451a0c3fdca2de4979abdea5649fbca9c3636ac54afea8f
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4ae84de0ef6ce2fc6c7c849e12bd076172e1ba0145ee24f3ef82dfd6dddab041cc2960b5532f89b59ed297b7c573de31c139e8156aa2b1cf753f963d01a1ddedbfd4bb7623ec6ea703abbeb05bd458625895b255ac81c549c72416d9dc
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4a596991bbc8c9f4233fe88e57872e76ef61b285b207e61f589cc910d9ed68cbdbd17648f9b83b4b50b1bd84da68b6159c75f758caa9109eae97ce80982ca4211f3fcc9cc3a69a5b677a7d29071b1def442f0af0fe103af8054e7c9148
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4af08c0420607ccd6479edaa2a963a6788fec2acc5a2b77ef9abbeee7fb63e1e46c5370b6f45a8e4a7331b9efb9168dbb917336a1b826476b57c0f563d084420e25e9d019ec2059030e84baf670e7b36944cc05e15e2fc80edd88d1124
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4a4a4dfc095dc28934ebf936259a82a0fcc2b258f8f486973e466a5f6b9461c40b56e7648ff7070ea92f3ea41c43f13564daae253c1449f941231e0893b3cce9bd5b6a815e5e4242b8ce5176f1ecc32ed19fb26d6d0bc932024b41fa5f
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4afb79d8a7f9948fdd0ef5b1167f63a6193468cd0703c077fbb459365f927c70bc9f259d158bf963ea76536144efc675f013179756200543ee9c49f8fb88f1065addd258b94d9bd56610fd69179c94ea27af58af2a83780d912639d135
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4a904fc015cf7b4322064d0d9f84cc3028d7409facb7b414954c38e51d3e58b17b259eb403bbf75963c395cfda16888a6f2562d02f55066ca1ceac3deff2db48425084a0fcd2eece486d7631ad14b9d3e2ef6b5c442748d441814bffd9
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4aeeb574040b5118fa0cf0b53e58a5de781a2e38a7e196bcfd7ea8f5d4011c398e078ed848dfe70ea0bb0e4979b4956e227e0da2b52f00ac8a9fd9d1cecf98c94ef67a46c48d3b1f24aceb9e24948f46ff1503fa066f486b08bf13c884
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
+=== A-001
+pid: 134597
+exe: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck
+cwd: /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan
+cmd: ./fuzzcheck /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata1.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata2.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata3.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata4.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata5.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata6.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata7.db /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzdata8.db 
+args: site=sqlite3VdbeRecordUnpack kind=slack nKey=12003 pKey=0x52600025b108 slack=5 need=8 nField=2 nKeyField=1 bytes(record+slack,first 96)=0481bb4acdf23a4feb8a6f9c91619ea3950852bd9b37f6a7c6db2b224d20a00cd77beb37a6b04228b6e878e01bad417dbb48394d0ef0f858826a989c151d87709501d0255629f6a69dea4bfe510e1341c9237a897c3391504ea61956a8da4b48
+backtrace:
+  #0 0x7fe48e8831df in backtrace ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:4358
+  #1 0x5a7d773add3e in sqlite3LedgerViolation /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:38938
+  #2 0x5a7d773beb05 in ledgerA001 /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:92499
+  #3 0x5a7d7756a7d1 in sqlite3VdbeExec /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:102661
+  #4 0x5a7d77578449 in sqlite3Step /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/sqlite3.c:95197
+  #5 0x5a7d77655fe0 in runSql /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:1751
+  #6 0x5a7d7765d655 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/tree/sqlite-src-3530400/test/fuzzcheck.c:2681
+  #7 0x7fe48e42a1c8  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c8) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #8 0x7fe48e42a289 in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a289) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+  #9 0x5a7d77369f23 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/run-fuzztest-asan/fuzzcheck+0x4bf23) (BuildId: ff91477192ab83dc2f28a42f2ef376f142120389)
