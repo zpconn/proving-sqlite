@@ -64,7 +64,10 @@ STRIP_ENV_PREFIX = ['CLAUDE_CODE_']   # the orchestrator's own session linkage; 
 VERDICTS_BUILDER = ('DONE', 'STUCK', 'FINDING', 'NEEDS-DECISION')
 VERDICTS_REVIEWER = ('APPROVE', 'REJECT', 'NEEDS-ZACH')
 LAND_ALLOWED = ['cards/', 'tests/repro/', 'evidence/approvals/', 'evidence/orchestrator/', 'PROGRESS.md', 'LEDGER.md',
-                'FINDINGS.md']
+                'FINDINGS.md',
+                # T-007: not frozen (GOAL.md §0.3), and its command lines must equal SESSION_COMMANDS, so a land may
+                # change only its model names and patterns; without this no land could change it at all
+                'tools/sessions.toml']
 ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evidence/ledger/', 'reports/ledger-']}
 # GOAL.md §0.10, hard-coded (checkpoint 0, decision C5): sessions.toml supplies models and command lines, never vendors.
 # The spec was written by Claude, so its reviewer runs on Codex.
@@ -296,7 +299,10 @@ _BWRAP_CODEX = (_BWRAP_BASE +
                 ['--bind', '{dir}', '{dir}', '--remount-ro', '{home}', '--chdir', '{dir}'])
 # checkpoint 1, Q2: no skills or commands (the account's synced skills land in the config directory at startup), and
 # no MCP servers but --mcp-config's, which is never given (the account's claude.ai connectors included)
-_CLAUDE_TAIL = ['--disable-slash-commands', '--strict-mcp-config', '--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
+# Zach, 2026-11-10 (after T-011): tools a reviewer or the ledger agent never needs and that reach outside the machine
+# or outlive the session. --disallowedTools takes a variadic list, so it is followed by another flag here.
+CLAUDE_DENIED = 'WebFetch,WebSearch,RemoteTrigger,PushNotification,CronCreate,CronDelete,Workflow'
+_CLAUDE_TAIL = ['--disable-slash-commands', '--strict-mcp-config', '--disallowedTools', CLAUDE_DENIED, '--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
                 '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
 SESSION_COMMANDS = {
     'codex': {'start': _BWRAP_CODEX + ['codex', 'exec', '--json'] + _CODEX_SAFE,
@@ -607,6 +613,9 @@ def command_problems(vendor, argv, wt, p):
     for flag in ('--disable-slash-commands', '--strict-mcp-config'):
         if flag not in cl:
             probs.append('claude must run with %s (checkpoint 1, Q2: no skills, no MCP servers)' % flag)
+    denied = [cl[i + 1] for i, a in enumerate(cl[:-1]) if a in ('--disallowedTools', '--disallowed-tools')]
+    if len(denied) != 1 or set(denied[0].split(',')) != set(CLAUDE_DENIED.split(',')):
+        probs.append('claude must run with --disallowedTools %s, once (Zach, after T-011)' % CLAUDE_DENIED)
     return probs
 
 
@@ -2971,6 +2980,11 @@ class SelfTest:
              lambda a: [x for x in a if x != '--disable-slash-commands'], '--disable-slash-commands'),
             ('claude with MCP servers from anywhere but --mcp-config (claude.ai connectors)', 'claude',
              lambda a: [x for x in a if x != '--strict-mcp-config'], '--strict-mcp-config'),
+            ('claude without --disallowedTools (WebFetch, RemoteTrigger and the rest back)', 'claude',
+             lambda a: [x for i, x in enumerate(a) if x != '--disallowedTools' and not (i and a[i - 1] == '--disallowedTools')],
+             '--disallowedTools'),
+            ('claude that denies one tool fewer (WebFetch allowed)', 'claude',
+             lambda a: [x.replace('WebFetch,', '') for x in a], '--disallowedTools'),
             ('claude bwrap that leaves $HOME visible', 'claude', drop(('--tmpfs', home)), 'hide %s ' % home),
             ('claude bwrap that leaves /mnt visible', 'claude', drop(('--tmpfs', '/mnt')), 'hide /mnt'),
             ('claude bwrap that leaves $HOME writable', 'claude', drop(('--remount-ro', home)), 'remount %s read-only' % home),

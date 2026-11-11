@@ -79,7 +79,8 @@ auth_failure_patterns = ["(?i)sign in again", "(?i)codex login", "(?i)access tok
 #   their own tmpfs as well, ~/.claude.json covered by /dev/null (kept from checkpoint 0); {wtroot} =
 #   ../proving-sqlite-wt, so state/ (session logs) and every other worktree; {repo}, the primary checkout, except its
 #   .git, read-only, which the worktree's git needs. --disable-slash-commands and --strict-mcp-config: no skills (the
-#   account's synced ones included) and no MCP servers (the account's claude.ai connectors included).
+#   account's synced ones included) and no MCP servers (the account's claude.ai connectors included). --disallowedTools
+#   denies WebFetch, WebSearch, RemoteTrigger, PushNotification, CronCreate, CronDelete and Workflow (Zach, after T-011).
 #   Writable: the session's own worktree {dir}, and {config}, its own CLAUDE_CONFIG_DIR, which campaign.py creates
 #   under state/claude-config/ and seeds with a copy of the login only. A resumed session gets its own directory back.
 # Auto permission mode: no prompts; unsafe actions are refused. Network stays on: Claude Code needs it.
@@ -91,7 +92,8 @@ start = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--
          "{home}/.claude", "--ro-bind", "/dev/null", "{home}/.claude.json", "--tmpfs", "{wtroot}", "--tmpfs",
          "{repo}", "--ro-bind", "{repo}/.git", "{repo}/.git", "--bind", "{config}", "{config}", "--setenv",
          "CLAUDE_CONFIG_DIR", "{config}", "--bind", "{dir}", "{dir}", "--remount-ro", "{home}", "--chdir", "{dir}",
-         "claude", "-p", "--disable-slash-commands", "--strict-mcp-config", "--model", "{model}", "--effort",
+         "claude", "-p", "--disable-slash-commands", "--strict-mcp-config", "--disallowedTools",
+         "WebFetch,WebSearch,RemoteTrigger,PushNotification,CronCreate,CronDelete,Workflow", "--model", "{model}", "--effort",
          "{effort}", "--permission-mode", "auto", "--output-format", "stream-json", "--verbose",
          "--include-partial-messages"]
 resume = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--tmpfs",
@@ -102,7 +104,8 @@ resume = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "-
           "{home}/.claude", "--ro-bind", "/dev/null", "{home}/.claude.json", "--tmpfs", "{wtroot}", "--tmpfs",
           "{repo}", "--ro-bind", "{repo}/.git", "{repo}/.git", "--bind", "{config}", "{config}", "--setenv",
           "CLAUDE_CONFIG_DIR", "{config}", "--bind", "{dir}", "{dir}", "--remount-ro", "{home}", "--chdir", "{dir}",
-          "claude", "-p", "--resume", "{session}", "--disable-slash-commands", "--strict-mcp-config", "--model",
+          "claude", "-p", "--resume", "{session}", "--disable-slash-commands", "--strict-mcp-config",
+          "--disallowedTools", "WebFetch,WebSearch,RemoteTrigger,PushNotification,CronCreate,CronDelete,Workflow", "--model",
           "{model}", "--effort", "{effort}", "--permission-mode", "auto", "--output-format", "stream-json",
           "--verbose", "--include-partial-messages"]
 login_check = ["claude", "auth", "status"]
