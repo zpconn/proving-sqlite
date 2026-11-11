@@ -8,7 +8,7 @@
 **Open questions for Zach:**
 1. **T-004, campaign.py's finish kills any tmux session named campaign** (evidence/approvals/T-004-finish-tmux/; approved in principle, unapplied). It waits for the auditor's OK on patch.diff. Until then the selftest runs only under `env -u TMUX TMUX_TMPDIR=<scratch>`.
 
-Answered on 2026-11-10: C-11 (option 1 with the contract addition; the land including results.py's Argued column) and T-003 (the TRUSTED.md entry plus the exact-allocation condition). Tool issues are logged in evidence/orchestrator/tool-issues.md (T-001 to T-004).
+Answered on 2026-11-10: C-11 (option 1 with the contract addition; the land including results.py's Argued column) and T-003 (the TRUSTED.md entry plus the exact-allocation condition). Tool issues are logged in evidence/orchestrator/tool-issues.md (T-001 to T-005).
 
 The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
@@ -96,3 +96,4 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-10 Triage C-16 (NEEDS-DECISION): CBMC 6.11 bounds-checks a flexible array element only at its start (T-003; toys and native ASan in evidence/orchestrator/tool-issues/T-003/). Decision in cards C-16 and C-17: whole-entry KeyInfo footprints, minus one entry in CBMC plus minus one byte under ASan, checked by the reviewer. TRUSTED.md entry requested (evidence/approvals/T-003-flexarray-bounds/). C-16 retried.
 - 2026-11-10 16:35 The selftest's finish killed the live daemon (T-004); restarted 16:37, nothing lost. Fix written and tested (103/103; the control fails 102/103); approved in principle, waiting for the auditor's OK.
 - 2026-11-10 Zach approved the C-11 land as queued, and T-003 with the exact-allocation condition. TRUSTED.md and cards C-16 and C-17 updated, with proof.lock and APPROVED.md. C-11 and C-16 are retried once their lands reach main.
+- 2026-11-10 18:47 C-17 to triage: the Codex service's content filter ("flagged for possible cybersecurity risk") stopped round 1, and campaign.py's two resumes replayed the flagged thread (T-005). Retried once as a fresh session, prompt unchanged; if it is flagged again, C-17 is parked for Zach. The builder's lead before the flag (A-003 permits any int; RecordCompareWithSkip negates it for DESC, so INT_MIN) is left to the builder.
