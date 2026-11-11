@@ -1,4 +1,4 @@
-# C-01: varint writers (P1), round 3
+# C-01: varint writers (P1), round 4
 
 Proved: both contracts on lp64-le, ilp32-le and lp64-be, 273 properties
 per configuration, zero failures under unchanged proofs/CHECKS.
@@ -41,9 +41,7 @@ because each has at most eight iterations; no loop invariants are needed.
 - sqlite3.c:37986: copies n bytes, at most eight iterations.
 The card's "both loops" wording is a typo; all three are covered.
 
-## Unreached lines
-
-None among coverage goals: 18/18 helper and 9/9 wrapper lines per config,
+Coverage goals: 18/18 helper and 9/9 wrapper lines per config,
 81/81 total, zero uncovered or unexplained. SQLite's default NDEBUG
 (sqlite3.c:15192-15193) removes the debug assertion at 37985 before coverage.
 The contracts independently check the return bound.
@@ -55,3 +53,6 @@ LEDGER.md is unchanged. The in-scope helper call is discharged by proof.
 Tested: no new runtime claim; the earlier ledger run found zero real overflows.
 Trusted: CBMC, its C semantics/library models, preprocessor (TRUSTED.md).
 Open questions: none blocking; orchestrator updates A-005 from the report.
+
+## Unreached lines
+- none
