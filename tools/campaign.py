@@ -2186,6 +2186,7 @@ def cmd_start(a):
         if a.cards:
             st.d['scope'] = sorted(x.strip() for x in a.cards.split(',') if x.strip())
         st.d['stopping'] = False
+        st.d['tmux'] = not a.no_tmux      # finish kills the tmux session only if this campaign made it (T-004)
         st.d['full_gate_queued'] = st.d.get('full_gate_queued') and False
         cards = camp.cards()
         scope = camp.scoped(st, cards)
@@ -2267,6 +2268,7 @@ def cmd_finish(a):
     if daemon_alive(p):
         raise CampaignError('the daemon has not stopped')
     with State(p) as st:
+        own_tmux = bool(st.d.get('tmux'))
         running = [j for j in st.d['jobs'].values() if j['state'] == 'running' and job_alive(j)]
         if running:
             raise CampaignError('jobs still running: %s; wait for them or kill them first' % ', '.join(j['id'] for j in running))
@@ -2303,7 +2305,8 @@ def cmd_finish(a):
         st.d['started'] = False
         st.d['stopping'] = False
         st.journal('finish', merged_orch_paths=len(paths))
-    subprocess.run(['tmux', 'kill-session', '-t', 'campaign'], capture_output=True)
+    if own_tmux:   # never another campaign's session: the selftest's finish once killed the live campaign's (T-004)
+        subprocess.run(['tmux', 'kill-session', '-t', 'campaign'], capture_output=True)
     print('finished: the primary checkout is on main%s' % (' with orch merged' if paths else ''))
     print_status(p)
     return 0
@@ -2735,6 +2738,8 @@ class SelfTest:
         e['PATH'] = ':'.join([os.path.join(self.home, 'bin'), os.path.join(self.home, '.local', 'bin'),
                               os.path.join(self.home, '.nvm', 'bin'), e.get('PATH', '')])
         e['HOME'] = self.home
+        e.pop('TMUX', None)                                # never the caller's tmux server
+        e['TMUX_TMPDIR'] = os.path.join(self.base, 'tmux')
         e['FAKECLI_CONTROL'] = self.ctl
         e['FAKECLI_SOCKET'] = self.sock
         e['FAKECLI_OUTSIDE'] = self.outside
@@ -3447,7 +3452,13 @@ class SelfTest:
                 killed.get('k3') and cs['C-23']['state'] == 'merged' and n23 == 1, (cs['C-23'], n23))
         self.ok('kill -9 of the daemon mid-merge: the surviving merge job\'s result is taken once (C-24)',
                 killed.get('k4') and cs['C-24']['state'] == 'merged' and n24 == 1, (cs['C-24'], n24))
+        os.makedirs(os.path.join(self.base, 'tmux'), exist_ok=True)
+        tm = subprocess.run(['tmux', 'new-session', '-d', '-s', 'campaign', 'sleep 600'], env=self.env(), capture_output=True, text=True)
         p = self.camp('finish', timeout=120)
+        alive = subprocess.run(['tmux', 'has-session', '-t', 'campaign'], env=self.env(), capture_output=True).returncode == 0
+        subprocess.run(['tmux', 'kill-server'], env=self.env(), capture_output=True)
+        self.ok('finish of a campaign started with --no-tmux leaves a tmux session named campaign alone (T-004: the '
+                'selftest\'s finish killed the live campaign\'s daemon)', tm.returncode == 0 and alive, tm.stderr)
         self.ok('finish: primary checkout back on main with orch merged, main\'s checkout removed',
                 p.returncode == 0 and current_branch(self.primary) == 'main' and not os.path.isdir(os.path.join(self.wt, 'main'))
                 and 'orchestrator note' in open(os.path.join(self.primary, 'PROGRESS.md')).read(), p.stdout + p.stderr)
