@@ -10,6 +10,27 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
   - `--drop-unused-functions` and its function-pointer removal;
   - `--dfcc` with `--enforce-contract`, `--replace-call-with-contract` and `--apply-loop-contracts`: replacing a callee by its contract is sound only if DFCC checks the contract's requires at each call and assumes no more than its ensures;
   - `--slice-global-inits`;
+  - **CBMC's legacy contracts, a second contracts implementation** (T-006; Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/):
+    - **Which proofs:** only those whose Makefile sets `<name>_CONTRACTS := legacy`, and only on cards C-15 (sqlite3VdbeRecordUnpack) and C-17 (sqlite3VdbeRecordCompareWithSkip, if its proof hits T-006), the cards in tools/prove.py's LEGACY_CARDS. Every other proof uses DFCC. RESULTS.md's rows for those proofs rest on this engine.
+    - **Trusted the way DFCC is:**
+      - `--replace-call-with-contract f` checks f's requires at each call, havocs what its assigns names and assumes no more than its ensures;
+      - `--apply-loop-contracts` checks each invariant on entry and after each iteration, its decreases, and that the loop writes only what its assigns lists, callees' contracts included;
+      - `--enforce-contract f` checks f's ensures and assigns under its requires.
+    - **Pass order:** prove.py runs them in that order, replace, then loops, then enforce. With loops applied before the replacement, a replaced callee whose body is removed can write outside the loop's assigns unchecked, which the callee-frame toy shows.
+    - **Contract text:** the legacy engine reads clauses only from a function's own declaration. So each legacy contract is its proofs/contracts/<fn>.h `contract_<fn>` declaration with only the name changed, generated at every build, with no stored copy.
+    - **Static locals:** a replaced callee with a static local, called in a loop, aborts the enforce pass (T-012). Such a callee keeps its body, and prove.py says so. For C-15 that is sqlite3VdbeSerialGet.
+    - **Validated on toys** (tool tests `-k legacy`, tools/tests/legacy/), each failing by the expected check:
+      - a replaced call forgets what its contract assigns;
+      - a callee assigning outside the loop's frame;
+      - a write through an alias outside it;
+      - an invariant true at entry but not preserved;
+      - a wrong decreases;
+      - a claim after the loop that the invariant doesn't support;
+      - an out-of-bounds write in the loop;
+      - an out-of-bounds pointer to a replaced callee;
+      - T-003's flexible array, with an exact allocation;
+      - aliased arguments to an `is_fresh` contract, while separate ones prove.
+    - **The same as DFCC in two respects:** globals start unconstrained, and T-003's bounds gap is the same, because both engines share the bounds instrumentation (a one-byte-short element read in a legacy-enforced function passes; evidence/approvals/T-006-dfcc-loop-pointer/flexgap.c).
   - unwinding with `--unwinding-assertions`.
 - **A known false failure in `--conversion-check`** (C-11, evidence/approvals/C-11-f2i-exact-min/): for a conversion from a floating type to a signed integer type of width w, CBMC 6.11 reports the exact minimum −2^(w−1) as overflowing whenever the floating type cannot represent −2^(w−1)−1: double to a 64-bit type, float to a 32-bit type. Its check reads `r > -9.223372e+18 && r < 9.223372e+18` for (i64)r. On toys, the next double below −2^63 and 2^63 itself are still flagged, and double to 32-bit is exact. So this rejects one defined input and misses none. In scope it applies only at sqlite3IntFloatCompare 92434, the one float-to-integer conversion in Appendix A; that input is argued in UB-CLASSES.md.
 - **A known gap in `--bounds-check`** (C-16, evidence/orchestrator/tool-issues.md T-003; evidence/approvals/T-003-flexarray-bounds/): CBMC 6.11 checks an element of a flexible array member, read or written as `s->a[k]`, only where it starts. A read of `pKeyInfo->aColl[0]` from a KeyInfo one byte short of SZ_KEYINFO(1) passes, though it overflows, as ASan shows natively. The same element through a pointer is caught, and so are heap arrays, struct members and a flexible array with no element. `__CPROVER_r_ok` checks the whole range. A proof that touches such an array is sound only if both of these hold, and its reviewer checks both:

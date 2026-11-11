@@ -260,6 +260,65 @@ include ../Makefile.common
 '''
 
 
+# T-006 (Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/): CBMC's legacy contracts, opted into per proof.
+# The validation toys are in tools/tests/legacy/: toys.c (the "upstream"), heads/<fn>.h (contract_<fn>), harness.c.
+LEGACY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'legacy')
+# proof: (entry, enforced, replaced, loop contracts, the check its bad variant must fail by; None: no bad variant)
+LEGACY_PROOFS = [
+    ('forget', 'h_forget', 't_forget', ['keep'], False, 'Check ensures clause'),
+    ('callee_frame', 'h_callee_frame', 't_callee_frame', ['reset'], True, 'other->flags (assigned by the contract of reset) is assignable'),
+    ('alias_frame', 'h_alias_frame', 't_alias_frame', [], True, 'Check that q->flags is assignable'),
+    ('invariant', 'h_invariant', 't_invariant', [], True, 'Check that loop invariant is preserved'),
+    ('decreases', 'h_decreases', 't_decreases', [], True, 'Check decreases clause on loop iteration'),
+    ('after', 'h_after', 't_after', [], True, 'Check ensures clause'),
+    ('oob', 'h_oob', 't_oob', [], True, 'pointer outside object bounds'),
+    ('callee_requires', 'h_callee_requires', 't_callee_requires', ['reset'], False, 'Check requires clause of reset'),
+    ('flex', 'h_flex', 't_flex', [], False, 'dynamic object upper bound'),
+    ('fresh', 'h_fresh', 't_fresh', ['two'], False, 'Check requires clause of two'),
+    ('two', 'h_two', 'two', [], False, None),
+    ('carried', 'h_carried', 't_carried', ['reset'], True, None),
+]
+
+
+def legacy_text(rel):
+    with open(os.path.join(LEGACY_DIR, rel)) as f:
+        return f.read()
+
+
+def legacy_makefile(card, proofs, contracts='legacy'):
+    out = ['CARD := %s' % card, 'PROOFS := ' + ' '.join(p[0] for p in proofs)]
+    for name, entry, enf, rep, loops, _ in proofs:
+        out += ['%s_ENTRY := %s' % (name, entry), '%s_ENFORCE := %s/contract_%s' % (name, enf, enf),
+                '%s_CONTRACTS := %s' % (name, contracts)]
+        if rep:
+            out.append('%s_REPLACE := ' % name + ' '.join('%s/contract_%s' % (r, r) for r in rep))
+        if loops:
+            out.append('%s_LOOPS := contracts' % name)
+    return '\n'.join(out + ['include ../Makefile.common']) + '\n'
+
+
+def legacy_repo(t, card='C-15', proofs=None):
+    proofs = LEGACY_PROOFS if proofs is None else proofs
+    toys = legacy_text('toys.c')
+    r = t.fresh()
+    t.write(r, 'upstream/sqlite3.c', toys)
+    t.write(r, 'overlay/sqlite3.c', toys)
+    t.write(r, 'overlay-bad/sqlite3.c', ''.join('#define VARIANT_%s\n' % p[0] for p in LEGACY_PROOFS) + toys)
+    heads = sorted(n[:-2] for n in os.listdir(os.path.join(LEGACY_DIR, 'heads')))
+    for fn in heads:
+        t.write(r, 'proofs/contracts/%s.h' % fn, legacy_text('heads/%s.h' % fn))
+    inc = ''.join('#include "contracts/%s.h"\n' % fn for fn in heads)
+    t.write(r, 'proofs/%s/harness.c' % card, '#include "sqlite3.c"\n' + inc + legacy_text('harness.c'))
+    t.write(r, 'cards/%s.md' % card, card_md(card, sorted(set(p[2] for p in proofs)), src=toys))
+    t.write(r, 'proofs/%s/Makefile' % card, legacy_makefile(card, proofs))
+    return r
+
+
+def legacy_failures(r, card, name):
+    import json as _json
+    j = os.path.join(r, 'proofs', card, 'build', 'lp64-le', name + '.json')
+    return [f.get('desc', '') for f in (_json.load(open(j)).get('failures') or [])] if os.path.exists(j) else []
+
 class T:
     def __init__(self, keep):
         self.base = tempfile.mkdtemp(prefix='tooltests-')
@@ -1223,6 +1282,80 @@ def main():
             '- Depends on:', '- Unreached callees, bodies removed: toyClose (upstream/sqlite3.c:%d)\n- Depends on:' % line_of(SYSCALL_TOY, ' toyClose(')))
         rc, out, res = t.run(r, [py, 'tools/scan.py'])
         t.expect('cards: a card function listed as its own unreached callee is rejected', rc != 0 and 'both a function of the card' in out, out)
+
+    # ---- T-006: legacy contracts (Zach's conditions 1-3, evidence/approvals/T-006-dfcc-loop-pointer/)
+    if want('legacy'):
+        r = legacy_repo(t)
+        prove = lambda ov, card='C-15': t.run(r, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + card, '--config',  # noqa: E731
+                                                  'lp64-le', '--overlay', ov, '--build-dir', 'proofs/%s/build' % card])
+        rc, out, res = prove('overlay')
+        t.expect('legacy: every validation toy proves under legacy contracts, T-006\'s loop-carried pointer included',
+                 rc == 0 and 'RESULT prove C-15 lp64-le PASS' in res, out[-1500:])
+        gen = os.path.join(r, 'proofs', 'C-15', 'build', 'lp64-le', 'callee_frame.legacy.c')
+        gtext = open(gen).read() if os.path.exists(gen) else ''
+        t.expect('legacy: the generated unit redeclares the enforced and replaced functions with their headers\' clauses',
+                 'void t_callee_frame(Cell *a, Cell *other, unsigned n)' in gtext and 'void reset(Cell *p)' in gtext
+                 and '__CPROVER_ensures(p->flags == 0)' in gtext and 'contract_reset' not in gtext.split('*/', 1)[-1], gtext)
+        keep_h = legacy_text('heads/keep.h')
+        t.write(r, 'proofs/contracts/keep.h', keep_h.replace('\n  __CPROVER_ensures(p->flags == __CPROVER_old(p->flags))', ''))
+        rc, out, res = prove('overlay-bad')
+        for name, _, _, _, _, check in LEGACY_PROOFS:
+            if check is None:
+                continue
+            fails = legacy_failures(r, 'C-15', name)
+            t.expect('legacy: the %s toy\'s bad variant fails by "%s"' % (name, check), any(check in f for f in fails),
+                     str(fails) if fails else out[-1500:])
+        # no stored copy to diverge: a header edit changes the next build
+        t.write(r, 'proofs/contracts/keep.h', keep_h)
+        after_h = legacy_text('heads/t_after.h')
+        t.write(r, 'proofs/contracts/t_after.h', after_h.replace('__CPROVER_return_value == n', '__CPROVER_return_value == n + 1'))
+        rc, out, res = prove('overlay')
+        fa = legacy_failures(r, 'C-15', 'after')
+        t.expect('legacy: a header edit reaches the next build (contract_t_after\'s ensures made false fails the proof)',
+                 rc != 0 and any('Check ensures clause' in f for f in fa), str(fa) if fa else out[-800:])
+        t.write(r, 'proofs/contracts/t_after.h', after_h)
+        # globals start unconstrained under legacy, as TRUSTED.md says of DFCC
+        toys = legacy_text('toys.c')
+        t.write(r, 'cards/C-17.md', card_md('C-17', ['t_glob', 't_static'], src=toys))
+        t.write(r, 'proofs/C-17/harness.c', open(os.path.join(r, 'proofs', 'C-15', 'harness.c')).read())
+        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('glob', 'h_glob', 't_glob', [], False, None)]))
+        rc, out, res = prove('overlay', 'C-17')
+        t.expect('legacy: globals start unconstrained (a contract claiming a global\'s initial value fails), as under DFCC',
+                 rc != 0 and 'RESULT prove C-17 lp64-le FAIL' in res and any('Check ensures clause' in f for f in legacy_failures(r, 'C-17', 'glob')), out[-600:])
+        # T-012: a replaced callee with a static local aborts the legacy enforce pass; prove.py says so, and keeping its body works
+        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('st', 'h_static', 't_static', ['stat'], True, None)]))
+        rc, out, res = prove('overlay', 'C-17')
+        t.expect('legacy: a replaced callee with a static local fails the build, and prove.py names T-012',
+                 rc != 0 and 'legacy-enforce failed' in out and 'T-012' in out, out[-800:])
+        t.write(r, 'proofs/C-17/Makefile', legacy_makefile('C-17', [('st', 'h_static', 't_static', [], True, None)]))
+        rc, out, res = prove('overlay', 'C-17')
+        t.expect('legacy: the same proof with that callee\'s body kept proves (T-012\'s workaround)',
+                 rc == 0 and 'RESULT prove C-17 lp64-le PASS' in res, out[-800:])
+        # only LEGACY_CARDS may opt in
+        r2 = legacy_repo(t, card='C-96')
+        rc, out, res = t.run(r2, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-96', '--config', 'lp64-le',
+                                  '--overlay', 'overlay', '--build-dir', 'proofs/C-96/build'])
+        t.expect('legacy: a card not in LEGACY_CARDS may not use legacy contracts', rc != 0 and 'only C-15, C-17 may use' in out, out[-600:])
+        # a legacy harness may carry no function contract clauses of its own
+        h = open(os.path.join(r, 'proofs', 'C-15', 'harness.c')).read()
+        t.write(r, 'proofs/C-15/harness.c', h + 'void reset(Cell *p) __CPROVER_ensures(1);\n')
+        rc, out, res = prove('overlay')
+        t.expect('legacy: a harness with function contract clauses is refused', rc != 0 and 'no function contract clauses' in out, out[-600:])
+        t.write(r, 'proofs/C-15/harness.c', h)
+        # the generator: exactly one declaration, copied with only the name changed
+        code = ('import sys; sys.path.insert(0, "tools"); import prove\n'
+                'h = open("proofs/contracts/reset.h").read()\n'
+                'print("REDECL", repr(prove.legacy_redeclaration(h, "reset")))\n'
+                'try:\n    prove.legacy_redeclaration(h + h.replace("C_reset_H", "X"), "reset"); print("TWO ok")\n'
+                'except prove.CardError as e:\n    print("TWO refused", e)\n')
+        rc, out, res = t.run(r, [py, '-c', code])
+        t.expect('legacy: the redeclaration is the header\'s declaration with only its name changed; two declarations are refused',
+                 "REDECL 'void reset(Cell *p)\\n  __CPROVER_requires(__CPROVER_w_ok(p, sizeof(Cell)))\\n  __CPROVER_assigns(p->flags)\\n  __CPROVER_ensures(p->flags == 0);'" in out
+                 and 'TWO refused' in out, out)
+        # DFCC stays the default, and an unknown engine is refused
+        t.write(r, 'proofs/C-15/Makefile', legacy_makefile('C-15', LEGACY_PROOFS[:1]).replace('legacy', 'cbmc5'))
+        rc, out, res = prove('overlay')
+        t.expect('legacy: <name>_CONTRACTS takes only dfcc or legacy', rc != 0 and 'must be dfcc or legacy' in out, out[-400:])
 
     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
     if want('probe'):
