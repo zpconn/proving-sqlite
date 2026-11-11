@@ -55,3 +55,13 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
   - run the selftest only as `env -u TMUX TMUX_TMPDIR=<scratch dir> tools/campaign.py selftest`, so its tmux calls reach another server;
   - or don't run it while a campaign runs.
 - **Fix requested:** evidence/approvals/T-004-finish-tmux/. finish kills the session only if its own campaign was started in tmux, and the selftest uses its own tmux socket and checks that a session it didn't make survives.
+
+## T-005 Codex service (codex-cli 0.166.0, gpt-6-astra): content filter stops a builder; campaign.py's resumes replay the flagged thread
+
+- **Tool:** the Codex service behind codex-cli 0.166.0 (gpt-6-astra, xhigh), and tools/campaign.py's interruption handling.
+- **What happened:** C-17's round 1 builder (J0058, 2026-11-10 18:43) read sqlite3VdbeRecordCompareWithSkip and the boundary contracts. Its last message: "The frozen collation contract permits any `int` result. SQLite negates that result for descending order, so `INT_MIN` may cause signed overflow. I'll check this path with CBMC and, if confirmed, test it against unmodified…". The next turn failed with `{"type":"error","message":"This content was flagged for possible cybersecurity risk. If this seems wrong, try rephrasing your request. If you're doing authorized security work that requires more cyber permissive safeguards, apply for Daybreak access via https://platform.openai.com/settings/organization/status-and-access before retrying."}` and exit 1.
+  - campaign.py counted it as an interruption and resumed the same thread twice (J0059, J0060). Each was flagged at its first turn, so the card went to triage after "three interruptions".
+- **Repro:** ../proving-sqlite-wt/state/jobs/J0058-builder/out.jsonl, J0059-builder, J0060-builder.
+- **Effect:** C-17 lost round 1 (0.19M tokens). A resume of a flagged thread can never succeed, so the three-interruption rule spends the round on replays. The filter's message matches neither the usage-limit nor the auth-failure patterns.
+- **Workaround:** `tools/campaign.py retry C-17`, which starts a fresh session in a new round, with no change to the prompt. I'm not rephrasing anything to get past the filter. If it is flagged again, the card is parked for Zach, since the message's remedy (Daybreak access) is an account decision.
+- **Possible fix (not requested yet):** campaign.py could treat this message as its own outcome, sending the card straight to triage instead of resuming. That is a frozen-file change.
