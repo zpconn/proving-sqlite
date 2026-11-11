@@ -127,3 +127,44 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Effect:** C-17 has no P1 proof. C-18 to C-20 inherit the problem.
 - **Status:** unconfirmed. I haven't rerun the toys. Untested: whether CBMC's legacy contracts (T-006, option 1) handle these obligations differently.
 - **Related limitation (B2):** CBMC's memcmp model loops once per byte, so with `--unwinding-assertions` unbounded string lengths can't be unwound. That is a property of the model, not a defect.
+
+## T-011 codex-cli and Claude Code auto-updated after the 22:17 crash; startup recheck
+
+- **Tools:** codex-cli 0.166.0 → 0.167.1, installed 2026-11-10 22:22:54. Claude Code 2.1.321 → 2.1.322, installed 22:24:56. Every campaign session before then ran the old versions.
+- **What was checked** (Zach, 2026-11-10; evidence/orchestrator/cli-recheck-20261110/): checkpoint 1's startup probe (evidence/checkpoint1/07-cli-startup/probe.py) under the campaign's own bwrap command lines, which campaign.py filled and accepted with no command problems.
+  - **Codex 0.167.1** paths match checkpoint 1's "now" column:
+    - rules, skills and memories behind empty read-only mounts;
+    - no AGENTS.md, hooks.json or /etc/codex;
+    - no shell profile but /etc/profile, and no git configuration.
+  - Every `--disable` name is still a known feature (an unknown one is refused: "Unknown feature flag"), and `--disable multi_agent` turns the feature off. `--strict-config` still refuses an unknown key before any model call.
+  - Every usage-limit and auth-failure pattern matches the binary. The usage-limit text uses U+2019, so `strings` splits it, but the raw bytes match.
+  - **Claude Code 2.1.322** is the same as 2.1.321, checked against the last campaign reviewer's (J0043) init event:
+    - the same 24 tools and 5 agents;
+    - no skills (the account's skills still sync into the config dir, but `--disable-slash-commands` keeps them unloaded), no MCP servers, no slash commands, the same 4 built-in plugins;
+    - `permissionMode` auto, `apiKeySource` none;
+    - /mnt/c and ~ hidden;
+    - every pattern's match status the same as 2.1.321's.
+- **A difference from checkpoint 1's record, though not from 0.166.0:** a codex session offers 19 tools:
+  - `functions.exec` and `functions.wait`;
+  - `tools.exec_command`, `write_stdin` and `apply_patch`;
+  - `request_user_input` and `request_user_input_async`;
+  - three MCP resource readers;
+  - `view_image`;
+  - `clock.sleep` and `clock__curr_time`;
+  - six `collaboration.*` subagent tools: spawn_agent, send_message, wait_agent, list_agents, interrupt_agent, followup_task.
+
+  The record (evidence/bringup/10-cli.md, checkpoint 0) says a session sees "the shell, apply_patch and code-mode tools only". All 24 of today's 0.166.0 rollouts carry the same names, so they aren't new. No builder ever called one: all 375 codex calls today were `exec`, and no exec cell calls them.
+  - Claude reviewers likewise offer Task, WebFetch, WebSearch, RemoteTrigger, PushNotification, CronCreate, Workflow and others, under 2.1.321 too. Checkpoint 1 recorded only skills, MCP servers and plugins. 17 Claude sessions made 314 calls, all Bash, Read, Write, Monitor or ToolSearch.
+- **Effect:** none so far. Per Zach's rule, no new session starts until he has seen this difference.
+
+## T-012 CBMC 6.11.0 legacy contracts: replacing a function that has a static local aborts the enforce pass
+
+- **Tool:** CBMC 6.11.0, goto-instrument's legacy contracts: `--replace-call-with-contract`, `--apply-loop-contracts`, `--enforce-contract`.
+- **What happened:** on C-15's real function, the enforce pass aborts with signal 6, both with the passes separate and with replace and loops combined. Under a 24 GB cap it took 0.27 s and 60 MB:
+  `Invariant check failed / File: ../src/goto-instrument/contracts/instrument_spec_assigns.cpp:249 function: traverse_instructions / Condition: it->is_assign() && can_cast_expr<symbol_exprt>(it->assign_lhs()) && can_cast_expr<side_effect_expr_nondett>(it->assign_rhs()) / Reason: Expected an assignment of the form symbol_exprt := side_effect_expr_nondett`.
+  - The combined replace-and-loops pass itself takes 0.65 s and 121 MB.
+  - The 22:17 out-of-memory crash was my uncapped run of that pass on the program *before* drop-unused, so on all of sqlite3.c. It was not this engine on C-15's proof.
+- **Reduced:** the trigger is a replaced callee with a **static local** (sqlite3VdbeSerialGet's `static const u16 aFlag[]`, 92080) called inside a loop of the enforced function. The legacy replacement emits assigns-range bookkeeping for that static (`__car_lb := cast(address_of(…::aFlag))`), which the enforce pass's traversal doesn't accept. It doesn't depend on the contract's clauses: each of SerialGet's six clauses can be dropped, or all replaced by `requires(1) ensures(1) assigns()`, and it still aborts. A synthetic callee with the same signature and no static local passes. Adding `static const u16 tbl[] = {…}` to it aborts. Without the loop, it passes.
+- **Repro:** evidence/orchestrator/tool-issues/T-012/: k-static-local.c (minimal), walk.c (SerialGet's own contract), m-own-same-sig.c (the control that passes) and run.sh, every step capped at 24 GB. The C-15 probe is c15-gen.py and c15-run.sh, with results in c15-results/.
+- **Effect:** C-15's proof can't replace sqlite3VdbeSerialGet under the legacy engine.
+- **Workaround:** keep the callee's body. It changes no SQLite code and weakens no check; the body is SQLite's own code, checked in place. With SerialGet's body kept and the other three callees replaced, the legacy engine takes C-15's real function through every pass. CBMC then gave a verdict in 141 s with 5.1 GB peak, on the builder's unfinished round-2 contract. On the toy, the same workaround proves: 0 of 88 failed. There is no goto-instrument option that spares static locals.
