@@ -4,6 +4,8 @@
 
 **In progress:** §3, started 2026-11-10 15:26 with all 20 cards named, after HANDOFF.md's checks passed. As of 22:00, 15 cards are merged. C-15 and C-17 are parked for Zach (below). C-18 to C-20 wait on C-17. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** your answers, then §4 (ledger agent; tcl8.6-dev is installed), then §5.
 
+**CLI versions:** codex-cli 0.167.1 and Claude Code 2.1.322 since 22:22–22:25 on 2026-11-10; earlier sessions ran 0.166.0 and 2.1.321 (T-011). The recheck matches checkpoint 1 except that Codex offers tools the record omits (subagent `collaboration.*`, `request_user_input`), unused but also present under 0.166.0. **No new session starts until Zach has seen that.**
+
 **Open questions for Zach:**
 1. **C-15 is parked: T-006, the DFCC loop-pointer blow-up.** The auditor has reproduced it, and you approved option 1 in principle. The legacy-contracts patch is being written to your five conditions (evidence/approvals/T-006-dfcc-loop-pointer/). It lands only after the auditor's OK on the diff.
 2. **C-17 is parked: F-001, and no P1 proof.** F-001 is in FINDINGS.md: a collation returning INT_MIN overflows the DESC negation at 92793, reachable from SQL; reproduced by campaign.py, approved by the Codex reviewer. The builder also reports three proof blockers (reports/C-17-b3.md): B1, per-field pointer obligations can't be stated for unbounded nField (T-010, unconfirmed; toys now preserved); B2, memcmp's model loops per byte; B3, T-006. **Recommendation:**
@@ -12,7 +14,7 @@
    - if B1 holds, choose between a bounded P1 (needs a PROPERTIES.md change) and C-17 to C-20 *tested* only.
    C-18 to C-20 wait on C-17.
 
-Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-010).
+Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-012).
 
 **Checkpoint 1** was approved on 2026-11-10 at 8fbb0c8; proof.lock is at 4b851e7. The list, fixes and checks are in evidence/checkpoint1/README.md, and the decisions in HANDOFF.md. **Findings:** FINDINGS.md (F-001). Approval records are in evidence/approvals/.
 
@@ -81,3 +83,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-10 21:29 Land f099087 (T-004 and the C-17 exception) on main; full gate PASS 3459s. The daemon was restarted onto the new code (T-008, T-009). C-17 retried: round 3 builder J0070 on claude-opus-5-5.
 - 2026-11-10 22:00 C-17 round 3 (Claude builder, Codex reviewer, no flags): FINDING approved. F-001 numbered and landed in FINDINGS.md with tests/repro/F-001.c. No P1 proof (B1-B3); C-17 parked (Open questions 2). T-010 logged and B1's toys preserved.
 - 2026-11-10 22:17 OOM crash of the machine (WSL), caused by my uncapped hand-run goto-instrument (legacy replace and loop contracts in one pass) on C-15's real function. It took down the idle daemon, tmux and the orchestrator session. No job was running, and the last land (22:01) had finished. The daemon was restarted at 22:25. Lost: the uncommitted T-006 patch and toys, kept in /tmp scratch. Rule from Zach: every hand-made CBMC or goto-instrument job runs under a memory cap (`ulimit -v` 24 GB, or prove.py's 12 GB), and work in progress goes on a local branch.
+- 2026-11-10 22:35-22:45 CLI recheck after the auto-updates (T-011): one difference from checkpoint 1's record, Codex's extra tools; sessions held. C-15's legacy abort reduced to a toy (T-012): a replaced callee with a static local (SerialGet's aFlag). The workaround, keeping SerialGet's body, reaches a CBMC verdict; no bounded fallback needed for C-15.
