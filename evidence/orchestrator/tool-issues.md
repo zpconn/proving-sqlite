@@ -67,14 +67,22 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Outcome:** round 2's fresh session (J0061, 18:49) was flagged after about 4 minutes, and its resumes (J0063, J0064) at once. C-17 was parked for Zach at 18:55 (PROGRESS.md, Open questions 1).
 - **Possible fix (not requested yet):** campaign.py could treat this message as its own outcome, sending the card straight to triage instead of resuming. That is a frozen-file change.
 
-## T-006 CBMC 6.11.0 (DFCC loop contracts): memory exhaustion while encoding sqlite3VdbeRecordUnpack's loop (unconfirmed)
+## T-006 CBMC 6.11.0 (DFCC loop contracts): a loop-carried pointer plus replaced calls blows up the encoding (confirmed)
 
-- **Tool:** CBMC 6.11.0, goto-instrument `--dfcc` with `--apply-loop-contracts`, default SAT (MiniSat 2) and `--z3`.
-- **What happened:** C-15's round 1 builder (2026-11-10, reports/C-15-b1.md) made eight prove runs of sqlite3VdbeRecordUnpack, and none reached a verdict:
-  - five SAT runs ran out of memory during propositional reduction, after about 51–57 s;
-  - two Z3 runs hit the 600 s timeout during SSA conversion;
-  - one variant was rejected by goto-cc ("side effects in assigns targets").
-  - This held with only 64 record bytes and four Mems. `cbmc --program-only` gave 373,533 lines (about 99 MB), with each pointer write expanded across dozens of candidate objects, including DFCC's dynamic-frame bookkeeping allocations.
-- **Repro:** the builder's scratch evidence in ../proving-sqlite-wt/C-15/tmp/ (C-15-<attempt>.log, C-15-goto.txt, C-15-ssa.txt); the retained harness reproduces attempt 8. No minimal toy yet.
-- **Effect:** C-15 went to triage STUCK after round 1, having used 2.5M of its 60M cap. C-15 has no dependants.
-- **Status:** not yet isolated, so not yet a confirmed CBMC defect. Round 2 is asked to reduce it to a toy first. If CBMC is at fault, with nothing a harness, contract or allowed Makefile setting can change, the card comes back as NEEDS-DECISION for Zach.
+- **Tool:** CBMC 6.11.0, `goto-instrument --dfcc` with `--apply-loop-contracts` and `--replace-call-with-contract`; MiniSat 2 and Z3 4.8.12.
+- **What happened:** C-15's builder couldn't get a verdict on sqlite3VdbeRecordUnpack. In round 1, eight prove runs ran out of memory or timed out. In round 2 it reduced the problem to a 27-line toy with no SQLite code (reports C-15-b1.md, C-15-b2.md):
+  - a loop that carries a pointer (`p == a+k` invariant, `++p`), with the pointer in the loop's assigns;
+  - four calls to a replaced contract inside the loop;
+  - this times out with 17.6 GiB RSS.
+  - **Mechanism:** DFCC havocs the pointer through a write-set target into an unconstrained typed pointer. The invariant is assumed only afterwards, so every dereference and every replaced callee's havoc expands over all address-taken objects, DFCC's own write-set bookkeeping included.
+  - **Controls:** the same toy with the pointer derived inside the iteration (`p = a+k`) verifies in about 1 s. With one call it verifies in 8 s.
+  - **A rejected workaround:** framing the pointer as a byte slice shrinks the formula but falsely fails the callee's ensures right after the call.
+- **Orchestrator's confirmation** (evidence/orchestrator/tool-issues/T-006/results.txt):
+  - The DFCC results reproduce: control 1 s, one call 8 s, four calls no verdict in 300 s.
+  - CBMC's legacy (non-DFCC) contracts path verifies the four-call toy in under 1 s and catches a planted false assertion, a wrong invariant and a missing assigns target.
+  - A legacy contract can be attached by redeclaring an already-defined static function, and both replacement and enforcement work on that redeclaration.
+- **Repro:** evidence/orchestrator/tool-issues/T-006/ (min4.c, min4-ctl.c, min1.c, run.sh; the legacy variants; redecl.c; both builder reports).
+- **Effect:**
+  - C-15 can't be proved under the frozen pipeline: SQLite's loop carries pMem, and the body can't change. C-15 is parked for Zach.
+  - C-17's loop carries pRhs (`pRhs++`, 92803), so it will likely hit the same problem.
+- **Workaround:** none within the frozen tools. Options are in evidence/approvals/T-006-dfcc-loop-pointer/README.md.

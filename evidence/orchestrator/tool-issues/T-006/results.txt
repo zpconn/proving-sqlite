@@ -1,0 +1,13 @@
+# Orchestrator's runs, 2026-11-10, CBMC 6.11.0; every option line in proofs/CHECKS; 24 GB address-space cap (run.sh)
+# DFCC (goto-instrument --dfcc entry --replace-call-with-contract reset/reset_spec --apply-loop-contracts)
+min4-ctl.c   pointer derived inside the loop, 4 calls   0 of 93 failed, VERIFICATION SUCCESSFUL, 1 s
+min1.c       loop-carried pointer, 1 call               0 of 122 failed, VERIFICATION SUCCESSFUL, 8 s
+min4.c       loop-carried pointer, 4 calls              no verdict: timeout at 300 s (builder: 600 s, 17.6 GiB RSS)
+# Legacy contracts (no --dfcc; contract on reset's own declaration): goto-instrument --replace-call-with-contract reset --apply-loop-contracts
+min4-legacy.c              0 of 204 failed, VERIFICATION SUCCESSFUL, under 1 s
+min4-legacy-badassert.c    2 of 204 failed: the false assertion
+min4-legacy-badinv.c       24 of 222 failed: "Check loop invariant before entry: FAILURE"
+min4-legacy-badassign.c    8 of 201 failed: "Check that p->flags (assigned by the contract of reset) is assignable: FAILURE"
+# Legacy contract attached by redeclaring an already-defined static function (as a harness would for SQLite's)
+redecl.c replace   VERIFICATION SUCCESSFUL (the call is replaced by the contract, not the body that sets 7)
+redecl.c enforce   VERIFICATION FAILED: "Check ensures clause: FAILURE" (the body sets 7)
