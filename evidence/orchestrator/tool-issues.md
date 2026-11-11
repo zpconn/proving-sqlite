@@ -66,6 +66,7 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Workaround:** `tools/campaign.py retry C-17`, which starts a fresh session in a new round, with no change to the prompt. I'm not rephrasing anything to get past the filter. If it is flagged again, the card is parked for Zach, since the message's remedy (Daybreak access) is an account decision.
 - **Outcome:** round 2's fresh session (J0061, 18:49) was flagged after about 4 minutes, and its resumes (J0063, J0064) at once. C-17 was parked for Zach at 18:55 (PROGRESS.md, Open questions 1).
 - **Possible fix (not requested yet):** campaign.py could treat this message as its own outcome, sending the card straight to triage instead of resuming. That is a frozen-file change.
+- **Resolution** (Zach, 2026-11-10): for C-17 only, Claude builds and Codex reviews (evidence/approvals/C-17-vendor-exception/). If the Codex reviewer is flagged too, C-17 is parked again.
 
 ## T-006 CBMC 6.11.0 (DFCC loop contracts): a loop-carried pointer plus replaced calls blows up the encoding (confirmed)
 
@@ -86,3 +87,14 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
   - C-15 can't be proved under the frozen pipeline: SQLite's loop carries pMem, and the body can't change. C-15 is parked for Zach.
   - C-17's loop carries pRhs (`pRhs++`, 92803), so it will likely hit the same problem.
 - **Workaround:** none within the frozen tools. Options are in evidence/approvals/T-006-dfcc-loop-pointer/README.md.
+
+## T-007 tools/campaign.py (frozen at checkpoint 1): `land` can't carry tools/sessions.toml
+
+- **Tool:** tools/campaign.py's `land_paths_problems`.
+- **What happened:** on 2026-11-10 I tried to land C-17's vendor exception with two new model entries in tools/sessions.toml. The land was refused: "a land may touch only cards/, tests/repro/, evidence/approvals/, evidence/orchestrator/, PROGRESS.md, LEDGER.md, FINDINGS.md; this one touches tools/sessions.toml".
+  - GOAL.md §0.3 exempts sessions.toml from proof.lock "because CLI flags change", so lock.py's EXEMPT keeps it out of the frozen list.
+  - LAND_ALLOWED doesn't list it either. So no land can change it, with or without an approval record.
+  - The daemon reads sessions.toml from main's checkout.
+- **Repro:** change tools/sessions.toml on orch, commit, and run `tools/campaign.py land`.
+- **Effect:** none on the campaign so far. The exception's models now come from the vendor's existing roles (VENDOR_ROLE in campaign.py), so sessions.toml stays unchanged. A real CLI flag change mid-campaign would need `stop`, a change to campaign.py, or `finish`.
+- **Workaround:** keep sessions.toml unchanged during the campaign. If a CLI flag must change, ask Zach; the fix (sessions.toml in LAND_ALLOWED, or treated as frozen) is a frozen-file change.
