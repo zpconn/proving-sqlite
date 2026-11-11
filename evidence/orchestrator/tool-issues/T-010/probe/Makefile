@@ -1,0 +1,9 @@
+CARD := C-17
+PROOFS := cmp
+cmp_ENTRY := harness_cmp
+cmp_ENFORCE := sqlite3VdbeRecordCompareWithSkip/contract_sqlite3VdbeRecordCompareWithSkip
+cmp_REPLACE := sqlite3GetVarint32/contract_sqlite3GetVarint32 sqlite3VdbeSerialGet/contract_sqlite3VdbeSerialGet serialGet7/contract_serialGet7 sqlite3VdbeSerialTypeLen/contract_sqlite3VdbeSerialTypeLen sqlite3VarintLen/contract_sqlite3VarintLen vdbeRecordDecodeInt/contract_vdbeRecordDecodeInt sqlite3IntFloatCompare/contract_sqlite3IntFloatCompare isAllZero/contract_isAllZero vdbeCompareMemString/contract_vdbeCompareMemString sqlite3CorruptError/contract_sqlite3CorruptError
+cmp_LOOPS := contracts
+cmp_UNWINDSET := memcmp.0:2
+cmp_OBJECT_BITS := 16
+include ../Makefile.common

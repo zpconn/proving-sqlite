@@ -2,41 +2,19 @@
 
 ## Status (2026-11-10, campaign session: §3 running)
 
-**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named, after HANDOFF.md's checks passed. As of 20:11, 15 cards are merged. C-15 is parked for Zach (below). C-17 is building round 3 on Claude under the vendor exception, and C-18 to C-20 wait on it. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** your answers, then §4 (ledger agent; tcl8.6-dev is installed), then §5.
+**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named, after HANDOFF.md's checks passed. As of 22:00, 15 cards are merged. C-15 and C-17 are parked for Zach (below). C-18 to C-20 wait on C-17. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** your answers, then §4 (ledger agent; tcl8.6-dev is installed), then §5.
 
 **Open questions for Zach:**
-1. **C-15 is parked: CBMC 6.11's DFCC can't encode sqlite3VdbeRecordUnpack's loop** (T-006; evidence/approvals/T-006-dfcc-loop-pointer/README.md). A loop-carried pointer plus replaced calls makes the encoding explode, reproduced in a 27-line toy with no SQLite code. **Recommendation: option 1**, the legacy (non-DFCC) contracts path for the proofs that need it: it verifies the toy in under 1 s and catches planted errors. No tool changes until the auditor has reproduced min4.c and its control (evidence/orchestrator/tool-issues/T-006/run.sh). Then the patch, then your and the auditor's review.
+1. **C-15 is parked: T-006, the DFCC loop-pointer blow-up.** The auditor has reproduced it, and you approved option 1 in principle. The legacy-contracts patch is being written to your five conditions (evidence/approvals/T-006-dfcc-loop-pointer/). It lands only after the auditor's OK on the diff.
+2. **C-17 is parked: F-001, and no P1 proof.** F-001 is in FINDINGS.md: a collation returning INT_MIN overflows the DESC negation at 92793, reachable from SQL; reproduced by campaign.py, approved by the Codex reviewer. The builder also reports three proof blockers (reports/C-17-b3.md): B1, per-field pointer obligations can't be stated for unbounded nField (T-010, unconfirmed; toys now preserved); B2, memcmp's model loops per byte; B3, T-006. **Recommendation:**
+   - once the T-006 patch lands, a round 4 under legacy contracts that first re-tests B1 from the preserved toys;
+   - for B2, a memcmp boundary contract in LEDGER.md (both `r_ok`s, assigns nothing, result in [−255, 255], *assumed* from glibc and CBMC's model);
+   - if B1 holds, choose between a bounded P1 (needs a PROPERTIES.md change) and C-17 to C-20 *tested* only.
+   C-18 to C-20 wait on C-17.
 
-Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-009).
+Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-010).
 
-The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
-
-- **D1** mutant kills count only from the mutant's own card; pending only while its card has no proofs here or on main; `make gate CARD=C-NN` needs C-NN's own kills; plain `make gate` (§5) fails on any pending mutant, and `ALLOW_PENDING=1` is for mid-campaign full gates.
-- **D2** the three boundary headers are written, checked against LEDGER.md by scan.py, and frozen in proof.lock.
-- **D4** campaign.py never starts builder round 7; the card goes to triage.
-- **Q2/Q4** both CLIs now run in bubblewrap with $HOME and /mnt hidden and read-only. What each loaded before, and what they load now, is in evidence/checkpoint1/07-cli-startup/README.md. Two findings beyond the question:
-  - builders loaded Zach's codex approval allow-list (94 rules, `git push` among them);
-  - reviewers had the claude.ai "Claude Docs" connector and 32 skills.
-  Resume works in real sessions of both.
-- **Q5** A-001 is now exact: sqlite3VdbeRecordUnpack reads at most max(nKey, 1) + 8 bytes, whatever nField is.
-- **Fixes 1–7:**
-  1. DFCC body removal: all 22 functions run on 3 configurations; 71447f2 aborts on 7.
-  2. No make in card directories; campaign.py builds and runs repro files, sandboxed.
-  3. D4 departure (types 8 and 9).
-  4. A-003's omissions stated.
-  5. Depends on reasons, checked by scan.py.
-  6. Three mutants.
-  7. The 6.3.1.4p2 row.
-
-**Checks** (evidence/checkpoint1/): tool tests 228/228 (08-tool-tests.txt); the same test file against 71447f2's tools 193/228, with all 35 failures among the 36 new tests and the 36th a positive control (08-new-tests-at-71447f2.txt); selftest 102/102 (09-selftest.txt); `make gate ALLOW_PENDING=1`: `RESULT gate all PASS 639s 0 failed`, mutants 16/65 killed by their own cards, 0 equivalent, 49 pending and not run (10-full-gate.log); plain `make gate`, the §5 form: `RESULT gate all FAIL 518s failed: mutants all` on those 49 (11-full-gate-strict.log).
-
-**Decisions made at these fixes, approved by Zach on 2026-11-10 with checkpoint 1:**
-1. Codex builders now also run inside bubblewrap, not only Claude reviewers. Q2 asked to hide what sessions don't need, and for codex that is only possible from outside: ~/.codex must stay visible for its login and resume. Codex's own workspace-write sandbox runs nested inside, and works (real session).
-2. Pending mutants are not run. No result from another card could count, so running them only cost time (the 71447f2 gate spent most of its 6865 s on them).
-3. A codex start is refused while ~/.codex/AGENTS.md, AGENTS.override.md, hooks.json, agents/ or /etc/codex exists. None does today.
-4. record_format.h changed after its Codex review, in two comments only (D4): accepted without re-review.
-
-**Open questions:** none from these fixes. Q1 (keep 3.53.4) and Q3 (nothing) are settled.
+**Checkpoint 1** was approved on 2026-11-10 at 8fbb0c8; proof.lock is at 4b851e7. The list, fixes and checks are in evidence/checkpoint1/README.md, and the decisions in HANDOFF.md. **Findings:** FINDINGS.md (F-001). Approval records are in evidence/approvals/.
 
 ## What bring-up showed GOAL.md or the plan got wrong
 
@@ -101,3 +79,4 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-10 20:03 C-15 round 2 NEEDS-DECISION: DFCC loop-carried pointer blow-up isolated to a toy; confirmed by me, legacy contracts path checked on the toy (T-006). C-15 parked for Zach (Open questions 2).
 - 2026-11-10 Zach: T-004 OK (applied); C-17 option (b), so campaign.py's CARD_ROLE_VENDOR, with models from each vendor's own role; C-15 stays parked until the auditor reproduces T-006's toy. Both tool changes land together with proof.lock and approval records.
 - 2026-11-10 21:29 Land f099087 (T-004 and the C-17 exception) on main; full gate PASS 3459s. The daemon was restarted onto the new code (T-008, T-009). C-17 retried: round 3 builder J0070 on claude-opus-5-5.
+- 2026-11-10 22:00 C-17 round 3 (Claude builder, Codex reviewer, no flags): FINDING approved. F-001 numbered and landed in FINDINGS.md with tests/repro/F-001.c. No P1 proof (B1-B3); C-17 parked (Open questions 2). T-010 logged and B1's toys preserved.
