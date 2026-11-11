@@ -7,12 +7,11 @@
 **CLI versions:** codex-cli 0.167.1 and Claude Code 2.1.322 since 22:22–22:25 on 2026-11-10; earlier sessions ran 0.166.0 and 2.1.321 (T-011). The recheck matches checkpoint 1 except that Codex offers tools the record omits (subagent `collaboration.*`, `request_user_input`), unused but also present under 0.166.0. **No new session starts until Zach has seen that.**
 
 **Open questions for Zach:**
-1. **C-15 is parked: T-006.** The legacy-contracts patch is written to the five conditions (evidence/approvals/T-006-dfcc-loop-pointer/patch.diff, local branch `wip/t006-legacy`). Tool tests 252/252 (20 new), selftest 107/107. **It waits for the auditor's OK on the diff.** C-15's real function goes through it once SerialGet's body is kept (T-012). The planted bug in C-15's real proof has to come after the land, before C-15 merges (README, last section).
-2. **C-17 is parked: F-001, and no P1 proof.** F-001 is in FINDINGS.md: a collation returning INT_MIN overflows the DESC negation at 92793, reachable from SQL; reproduced by campaign.py, approved by the Codex reviewer. The builder also reports three proof blockers (reports/C-17-b3.md): B1, per-field pointer obligations can't be stated for unbounded nField (T-010, unconfirmed; toys now preserved); B2, memcmp's model loops per byte; B3, T-006. **Recommendation:**
-   - once the T-006 patch lands, a round 4 under legacy contracts that first re-tests B1 from the preserved toys;
-   - for B2, a memcmp boundary contract in LEDGER.md (both `r_ok`s, assigns nothing, result in [−255, 255], *assumed* from glibc and CBMC's model);
-   - if B1 holds, choose between a bounded P1 (needs a PROPERTIES.md change) and C-17 to C-20 *tested* only.
-   C-18 to C-20 wait on C-17.
+1. **The ledger session called TaskStop once,** an off-list tool (session-tools.log): it ended its own background wait loop. No session starts until you answer. **Recommendation:** add TaskStop, Monitor's pair, to the Claude allowlist.
+2. **B2** (evidence/approvals/B2-memcmp-contract/) waits for the auditor's OK. Its proof.lock also repairs main's: since 00:19 it lacks T-006's fixtures, so every card gate fails its lock step until B2 lands.
+3. **F-002** (ledger draft): sqlite3_preupdate_old overreads an exact-size record, A-001's slack unmet, with SQLITE_ENABLE_PREUPDATE_HOOK. It needs a reviewer to reproduce it. **Recommendation:** campaign.py's sandboxed repro run, then C-15's round-3 Codex reviewer judges it.
+4. **A-005:** callers give sqlite3PutVarint `sqlite3VarintLen(v)` bytes, not 9 (OP_MakeRecord), so C-01's requires isn't met at real calls, though the writes are safe. **Recommendation:** reopen C-01 for a value-dependent footprint.
+5. **C-15 round 3 and C-17 round 4** are ready to start once (1) is answered. C-15 can't merge before B2 repairs the lock.
 
 Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-012).
 
