@@ -1,0 +1,664 @@
+22a23,25
+> **    src/sqliteInt.h
+> **    src/util.c
+> **    src/vdbeaux.c
+472c475
+< #define SQLITE_SOURCE_ID      "2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e09459bcc"
+---
+> #define SQLITE_SOURCE_ID      "2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e0945alt1"
+22927a22931,22981
+> /*
+> ** LEDGER instrumentation (proving-sqlite validation/ledger.patch).
+> ** Not part of SQLite.  Each check logs, without aborting, when a LEDGER.md
+> ** assumption fails at its site, and counts every time the site is reached.
+> ** The runtime is at the end of util.c; the entry checks are in util.c
+> ** (A-005) and vdbeaux.c (A-001 to A-004).
+> */
+> #define LEDGER_HMAX 160   /* Histograms of addressable bytes are capped here */
+> enum {
+>   LC_A001_REACHED, LC_A001_ASAN_CHECKED, LC_A001_VIOL,
+>   LC_A001_VIOL_NKEY_NEG, LC_A001_VIOL_NULL, LC_A001_VIOL_RECORD,
+>   LC_A001_VIOL_SLACK,
+>   LC_A002_REACHED, LC_A002_NULL, LC_A002_ASAN_CHECKED, LC_A002_VIOL,
+>   LC_A002_VIOL_ALIGN, LC_A002_VIOL_SIZE, LC_A002_VIOL_POISON,
+>   LC_A003E_REACHED, LC_A003E_ASAN_CHECKED, LC_A003E_VIOL,
+>   LC_A003E_ZNULL_N0,
+>   LC_A003_REACHED, LC_A003_ASAN_CHECKED, LC_A003_VIOL_REQ,
+>   LC_A003_ASSIGNS_CHECKED, LC_A003_VIOL_ASSIGNS, LC_A003_ENCCHANGE,
+>   LC_A003_PRCERR_WRITTEN, LC_A003_ZNULL_N0,
+>   LC_A004_REACHED, LC_A004_VIOL_RC, LC_A004_ASSIGNS_CHECKED,
+>   LC_A004_VIOL_ASSIGNS, LC_A004_XLOG_SET,
+>   LC_A005_REACHED, LC_A005_ASAN_CHECKED, LC_A005_VIOL, LC_A005_VIOL_NULL,
+>   LC_A005_REAL_OVERFLOW,
+>   LC_A005P_REACHED, LC_A005P_ASAN_CHECKED, LC_A005P_VIOL,
+>   LC_CMP_WITHSKIP, LC_CMP_INT, LC_CMP_STRING,
+>   LC_LOGGED_A001, LC_LOGGED_A002, LC_LOGGED_A003, LC_LOGGED_A004,
+>   LC_LOGGED_A005,
+>   LC_NSCALAR,
+>   /* Histograms: index i counts sites with exactly i addressable bytes
+>   ** (slack after the record, or bytes at the varint output), and
+>   ** LEDGER_HMAX means LEDGER_HMAX or more. */
+>   LH_A001 = LC_NSCALAR,
+>   LH_A001_N0 = LH_A001 + LEDGER_HMAX + 1,     /* nKey==0 records only */
+>   LH_WITHSKIP = LH_A001_N0 + LEDGER_HMAX + 1,
+>   LH_INT = LH_WITHSKIP + LEDGER_HMAX + 1,
+>   LH_STRING = LH_INT + LEDGER_HMAX + 1,
+>   LH_A005 = LH_STRING + LEDGER_HMAX + 1,
+>   LH_A005P = LH_A005 + LEDGER_HMAX + 1,
+>   LC_NCOUNTER = LH_A005P + LEDGER_HMAX + 1
+> };
+> SQLITE_PRIVATE void sqlite3LedgerInc(int iCounter);
+> SQLITE_PRIVATE void sqlite3LedgerHist(int iBase, int nAvail);
+> SQLITE_PRIVATE int sqlite3LedgerAsan(void);
+> SQLITE_PRIVATE int sqlite3LedgerReadable(const void *p, u64 n);
+> SQLITE_PRIVATE int sqlite3LedgerAvail(const void *p, int nMax);
+> SQLITE_PRIVATE u64 sqlite3LedgerHash(u64 h, const void *p, u64 n);
+> SQLITE_PRIVATE void sqlite3LedgerHex(char *zOut, int nOut, const void *p, int n);
+> SQLITE_PRIVATE void sqlite3LedgerViolation(int iLogged, const char *zEntry,
+>                             const char *zFormat, ...);
+> SQLITE_PRIVATE void sqlite3LedgerA005(const unsigned char *p, u64 v, int bPut64);
+> 
+37969a38024
+>   sqlite3LedgerA005(p, v, 1);  /* LEDGER A-005 */
+37991a38047
+>   sqlite3LedgerA005(p, v, 0);  /* LEDGER A-005 */
+38644a38701,39007
+> /************************************************************************
+> ** LEDGER instrumentation runtime (proving-sqlite validation/ledger.patch).
+> ** Not part of SQLite.  It changes no SQLite state and calls no SQLite
+> ** allocator.
+> **
+> ** Counters live in a per-process file $LEDGER_DIR/c.<pid>.<ns>.bin,
+> ** mapped MAP_SHARED, so they survive a process that dies without exit
+> ** handlers.  Violations are appended, one record each, to
+> ** $LEDGER_DIR/v.<pid>.log, with the entry ID, the arguments, and a
+> ** backtrace.  If LEDGER_DIR is unset, counters stay in memory and nothing
+> ** is written.  Nothing here aborts.
+> */
+> #include <errno.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <fcntl.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <sched.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <stdio.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <string.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <time.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <unistd.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <pthread.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <sys/mman.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #include <execinfo.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #if defined(__SANITIZE_ADDRESS__)
+> # define LEDGER_ASAN 1
+> #elif defined(__has_feature)
+> # if __has_feature(address_sanitizer)
+> #  define LEDGER_ASAN 1
+> # endif
+> #endif
+> #ifdef LEDGER_ASAN
+> # include <sanitizer/asan_interface.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> # include <sanitizer/common_interface_defs.h> /* amalgamator: dontcache */ /* amalgamator: keep */
+> #endif
+> 
+> #define LEDGER_MAGIC "LEDGER2"
+> #define LEDGER_MAXLOG 20     /* Detailed records per entry per process */
+> typedef struct LedgerShm LedgerShm;
+> struct LedgerShm {
+>   char zMagic[8];
+>   int nCounter;              /* LC_NCOUNTER */
+>   int pid;
+>   int flags;                 /* 1 ASan, 2 SQLITE_DEBUG, 4 OMIT_LOOKASIDE,
+>                              ** 8 MEMDEBUG, 16 SQLITE_TEST */
+>   int nHmax;                 /* LEDGER_HMAX */
+>   char zExe[512];
+>   char zCwd[512];
+>   char zCmd[2048];           /* argv, NUL-separated, NULs shown as ' ' */
+>   long long aCounter[LC_NCOUNTER];
+> };
+> static LedgerShm ledgerLocal;
+> static LedgerShm *ledgerShm = 0;
+> static int ledgerState = 0;      /* 0 none, 1 initializing, 2 ready */
+> static int ledgerForkHandler = 0;
+> 
+> static void ledgerAtforkChild(void){
+>   ledgerShm = 0;
+>   __atomic_store_n(&ledgerState, 0, __ATOMIC_SEQ_CST);
+> }
+> static void ledgerReadFile(const char *zFile, char *zBuf, int nBuf, int bNul){
+>   int fd, n, i;
+>   memset(zBuf, 0, nBuf);
+>   fd = open(zFile, O_RDONLY|O_CLOEXEC);
+>   if( fd<0 ) return;
+>   n = (int)read(fd, zBuf, nBuf-1);
+>   close(fd);
+>   if( n<0 ) n = 0;
+>   zBuf[n] = 0;
+>   if( bNul ){ for(i=0; i<n; i++) if( zBuf[i]==0 ) zBuf[i] = ' '; }
+> }
+> static void ledgerFill(LedgerShm *p){
+>   int n;
+>   memcpy(p->zMagic, LEDGER_MAGIC, 8);
+>   p->nCounter = LC_NCOUNTER;
+>   p->nHmax = LEDGER_HMAX;
+>   p->pid = (int)getpid();
+>   p->flags = 0;
+> #ifdef LEDGER_ASAN
+>   p->flags |= 1;
+> #endif
+> #ifdef SQLITE_DEBUG
+>   p->flags |= 2;
+> #endif
+> #ifdef SQLITE_OMIT_LOOKASIDE
+>   p->flags |= 4;
+> #endif
+> #ifdef SQLITE_MEMDEBUG
+>   p->flags |= 8;
+> #endif
+> #ifdef SQLITE_TEST
+>   p->flags |= 16;
+> #endif
+>   n = (int)readlink("/proc/self/exe", p->zExe, sizeof(p->zExe)-1);
+>   if( n>=0 ) p->zExe[n] = 0;
+>   if( getcwd(p->zCwd, sizeof(p->zCwd))==0 ) p->zCwd[0] = 0;
+>   ledgerReadFile("/proc/self/cmdline", p->zCmd, sizeof(p->zCmd), 1);
+> }
+> static LedgerShm *ledgerGet(void){
+>   int expected = 0;
+>   if( __atomic_load_n(&ledgerState, __ATOMIC_ACQUIRE)==2 ) return ledgerShm;
+>   if( __atomic_compare_exchange_n(&ledgerState, &expected, 1, 0,
+>                                   __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST) ){
+>     int saved = errno;
+>     LedgerShm *p = 0;
+>     const char *zDir = getenv("LEDGER_DIR");
+>     if( !ledgerForkHandler ){
+>       ledgerForkHandler = 1;
+>       pthread_atfork(0, 0, ledgerAtforkChild);
+>     }
+>     if( zDir && zDir[0] ){
+>       char zPath[1024];
+>       struct timespec ts;
+>       int fd;
+>       clock_gettime(CLOCK_REALTIME, &ts);
+>       snprintf(zPath, sizeof(zPath), "%s/c.%d.%lld%09ld.bin", zDir,
+>                (int)getpid(), (long long)ts.tv_sec, (long)ts.tv_nsec);
+>       fd = open(zPath, O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC, 0644);
+>       if( fd>=0 ){
+>         if( ftruncate(fd, sizeof(LedgerShm))==0 ){
+>           void *m = mmap(0, sizeof(LedgerShm), PROT_READ|PROT_WRITE,
+>                          MAP_SHARED, fd, 0);
+>           if( m!=MAP_FAILED ) p = (LedgerShm*)m;
+>         }
+>         close(fd);
+>       }
+>     }
+>     if( p==0 ){
+>       p = &ledgerLocal;
+>       memset(p, 0, sizeof(*p));
+>     }
+>     ledgerFill(p);
+>     ledgerShm = p;
+>     errno = saved;
+>     __atomic_store_n(&ledgerState, 2, __ATOMIC_RELEASE);
+>   }else{
+>     while( __atomic_load_n(&ledgerState, __ATOMIC_ACQUIRE)!=2 ) sched_yield();
+>   }
+>   return ledgerShm;
+> }
+> SQLITE_PRIVATE void sqlite3LedgerInc(int iCounter){
+>   LedgerShm *p = ledgerGet();
+>   __atomic_fetch_add(&p->aCounter[iCounter], 1, __ATOMIC_RELAXED);
+> }
+> SQLITE_PRIVATE void sqlite3LedgerHist(int iBase, int nAvail){
+>   if( nAvail<0 ) return;
+>   if( nAvail>LEDGER_HMAX ) nAvail = LEDGER_HMAX;
+>   sqlite3LedgerInc(iBase + nAvail);
+> }
+> SQLITE_PRIVATE int sqlite3LedgerAsan(void){
+> #ifdef LEDGER_ASAN
+>   return 1;
+> #else
+>   return 0;
+> #endif
+> }
+> /* 1: the n bytes at p are addressable (ASan); 0: they are not, or p is
+> ** NULL; -1: this build cannot tell (no ASan).  n==0 with p!=0 is 1. */
+> SQLITE_PRIVATE int sqlite3LedgerReadable(const void *p, u64 n){
+>   if( p==0 ) return 0;
+>   if( n==0 ) return 1;
+> #ifdef LEDGER_ASAN
+>   if( (uptr)p + n < (uptr)p ) return 0;
+>   return __asan_region_is_poisoned((void*)p, (size_t)n)==0;
+> #else
+>   return -1;
+> #endif
+> }
+> /* Number of addressable bytes starting at p, at most nMax; -1 if this
+> ** build cannot tell. */
+> SQLITE_PRIVATE int sqlite3LedgerAvail(const void *p, int nMax){
+> #ifdef LEDGER_ASAN
+>   void *pBad;
+>   if( p==0 ) return 0;
+>   pBad = __asan_region_is_poisoned((void*)p, (size_t)nMax);
+>   if( pBad==0 ) return nMax;
+>   return (int)((uptr)pBad - (uptr)p);
+> #else
+>   (void)p; (void)nMax;
+>   return -1;
+> #endif
+> }
+> SQLITE_PRIVATE u64 sqlite3LedgerHash(u64 h, const void *p, u64 n){
+>   const unsigned char *a = (const unsigned char*)p;
+>   u64 i;
+>   if( h==0 ) h = 0xcbf29ce484222325ULL;
+>   for(i=0; i<n; i++){ h ^= a[i]; h *= 0x100000001b3ULL; }
+>   h ^= n; h *= 0x100000001b3ULL;
+>   return h;
+> }
+> SQLITE_PRIVATE void sqlite3LedgerHex(char *zOut, int nOut, const void *p, int n){
+>   static const char hex[] = "0123456789abcdef";
+>   const unsigned char *a = (const unsigned char*)p;
+>   int i, j = 0;
+>   for(i=0; i<n && j+3<nOut; i++){
+>     zOut[j++] = hex[a[i]>>4];
+>     zOut[j++] = hex[a[i]&15];
+>   }
+>   zOut[j] = 0;
+> }
+> static void ledgerWrite(int fd, const char *z){
+>   size_t n = strlen(z);
+>   while( n>0 ){
+>     ssize_t w = write(fd, z, n);
+>     if( w<=0 ) return;
+>     z += w; n -= (size_t)w;
+>   }
+> }
+> SQLITE_PRIVATE void sqlite3LedgerViolation(int iLogged, const char *zEntry,
+>                             const char *zFormat, ...){
+>   LedgerShm *p = ledgerGet();
+>   long long nLogged;
+>   int saved = errno;
+>   const char *zDir = getenv("LEDGER_DIR");
+>   char zPath[1024];
+>   char zMsg[8192];
+>   va_list ap;
+>   int fd, n, i, nFrame;
+>   void *aFrame[48];
+>   struct timespec ts;
+> 
+>   nLogged = __atomic_fetch_add(&p->aCounter[iLogged], 1, __ATOMIC_RELAXED);
+>   if( nLogged>=LEDGER_MAXLOG || zDir==0 || zDir[0]==0 ){ errno = saved; return; }
+>   snprintf(zPath, sizeof(zPath), "%s/v.%d.log", zDir, (int)getpid());
+>   fd = open(zPath, O_WRONLY|O_CREAT|O_APPEND|O_CLOEXEC, 0644);
+>   if( fd<0 ){ errno = saved; return; }
+>   clock_gettime(CLOCK_REALTIME, &ts);
+>   n = snprintf(zMsg, sizeof(zMsg),
+>       "=== LEDGER VIOLATION %s\npid: %d\ntime: %lld.%09ld\nflags: %d\n"
+>       "exe: %s\ncwd: %s\ncmd: %s\nargs: ",
+>       zEntry, (int)getpid(), (long long)ts.tv_sec, (long)ts.tv_nsec,
+>       p->flags, p->zExe, p->zCwd, p->zCmd);
+>   if( n>0 && n<(int)sizeof(zMsg) ){
+>     va_start(ap, zFormat);
+>     vsnprintf(zMsg+n, sizeof(zMsg)-n, zFormat, ap);
+>     va_end(ap);
+>   }
+>   ledgerWrite(fd, zMsg);
+>   ledgerWrite(fd, "\nbacktrace:\n");
+>   nFrame = backtrace(aFrame, 48);
+>   for(i=0; i<nFrame; i++){
+> #ifdef LEDGER_ASAN
+>     char zSym[512];
+>     zSym[0] = 0;
+>     __sanitizer_symbolize_pc((void*)((uptr)aFrame[i] - (i>0)), "%p %F %L",
+>                              zSym, sizeof(zSym));
+>     snprintf(zMsg, sizeof(zMsg), "  #%d %s\n", i, zSym);
+> #else
+>     snprintf(zMsg, sizeof(zMsg), "  #%d %p\n", i, aFrame[i]);
+> #endif
+>     ledgerWrite(fd, zMsg);
+>   }
+> #ifndef LEDGER_ASAN
+>   {
+>     /* Executable mappings, to symbolize the raw addresses offline. */
+>     static char zMaps[16384];
+>     char *z, *zEnd;
+>     ledgerReadFile("/proc/self/maps", zMaps, sizeof(zMaps), 0);
+>     ledgerWrite(fd, "maps:\n");
+>     for(z=zMaps; *z; z=zEnd){
+>       zEnd = strchr(z, '\n');
+>       if( zEnd==0 ) zEnd = z+strlen(z); else zEnd++;
+>       if( zEnd-z>20 && memchr(z, 'x', 25) && (size_t)(zEnd-z)<sizeof(zMsg) ){
+>         memcpy(zMsg, z, zEnd-z); zMsg[zEnd-z] = 0;
+>         if( strstr(zMsg, " r-xp ") ){ ledgerWrite(fd, "  "); ledgerWrite(fd, zMsg); }
+>       }
+>     }
+>   }
+> #endif
+>   ledgerWrite(fd, "=== END\n");
+>   close(fd);
+>   errno = saved;
+> }
+> 
+> /*
+> ** A-005: the caller provides nine writable bytes at p, whatever v is
+> ** (LEDGER.md A-005; proofs/contracts/sqlite3PutVarint.h).  bPut64 is
+> ** 0 at sqlite3PutVarint's entry and 1 at putVarint64's.
+> */
+> SQLITE_PRIVATE void sqlite3LedgerA005(const unsigned char *p, u64 v, int bPut64){
+>   int nAvail;
+>   sqlite3LedgerInc(bPut64 ? LC_A005P_REACHED : LC_A005_REACHED);
+>   if( p==0 ){
+>     sqlite3LedgerInc(bPut64 ? LC_A005P_VIOL : LC_A005_VIOL);
+>     sqlite3LedgerInc(LC_A005_VIOL_NULL);
+>     sqlite3LedgerViolation(LC_LOGGED_A005, "A-005",
+>         "site=%s p=NULL v=%llu", bPut64 ? "putVarint64" : "sqlite3PutVarint",
+>         (unsigned long long)v);
+>     return;
+>   }
+>   nAvail = sqlite3LedgerAvail(p, LEDGER_HMAX);
+>   if( nAvail<0 ) return;
+>   sqlite3LedgerInc(bPut64 ? LC_A005P_ASAN_CHECKED : LC_A005_ASAN_CHECKED);
+>   sqlite3LedgerHist(bPut64 ? LH_A005P : LH_A005, nAvail);
+>   if( nAvail<9 ){
+>     int nWrite = sqlite3VarintLen(v);
+>     char zHex[64];
+>     if( nWrite>9 ) nWrite = 9;
+>     if( nAvail<nWrite ) sqlite3LedgerInc(LC_A005_REAL_OVERFLOW);
+>     sqlite3LedgerInc(bPut64 ? LC_A005P_VIOL : LC_A005_VIOL);
+>     sqlite3LedgerHex(zHex, sizeof(zHex), p, nAvail);
+>     sqlite3LedgerViolation(LC_LOGGED_A005, "A-005",
+>         "site=%s p=%p v=%llu need=9 addressable=%d bytes_written=%d "
+>         "addressable_bytes=%s", bPut64 ? "putVarint64" : "sqlite3PutVarint",
+>         (void*)p, (unsigned long long)v, nAvail, nWrite, zHex);
+>   }
+> }
+> /* End of LEDGER instrumentation runtime */
+> 
+92088a92452,92575
+> /************************************************************************
+> ** LEDGER checks for A-001, A-002 and A-003's requires (proving-sqlite
+> ** validation/ledger.patch).  Not part of SQLite.  They log and count;
+> ** they never abort and change no SQLite state.
+> */
+> /* A-001: sqlite3VdbeRecordUnpack may read max(nKey,1)+8 bytes at pKey:
+> ** __CPROVER_requires(nKey >= 0 && __CPROVER_r_ok(pKey, max(nKey,1)+8)). */
+> static void ledgerA001(int nKey, const void *pKey, const UnpackedRecord *p){
+>   int nAvail, nNeed, nHex;
+>   char zHex[2*96+4];
+>   sqlite3LedgerInc(LC_A001_REACHED);
+>   if( nKey<0 ){
+>     sqlite3LedgerInc(LC_A001_VIOL);
+>     sqlite3LedgerInc(LC_A001_VIOL_NKEY_NEG);
+>     sqlite3LedgerViolation(LC_LOGGED_A001, "A-001",
+>         "site=sqlite3VdbeRecordUnpack kind=nKey_negative nKey=%d pKey=%p "
+>         "nField=%u", nKey, pKey, (unsigned)p->nField);
+>     return;
+>   }
+>   if( pKey==0 ){
+>     sqlite3LedgerInc(LC_A001_VIOL);
+>     sqlite3LedgerInc(LC_A001_VIOL_NULL);
+>     sqlite3LedgerViolation(LC_LOGGED_A001, "A-001",
+>         "site=sqlite3VdbeRecordUnpack kind=pKey_NULL nKey=%d nField=%u",
+>         nKey, (unsigned)p->nField);
+>     return;
+>   }
+>   if( !sqlite3LedgerAsan() ) return;
+>   sqlite3LedgerInc(LC_A001_ASAN_CHECKED);
+>   if( sqlite3LedgerReadable(pKey, (u64)nKey)!=1 ){
+>     sqlite3LedgerInc(LC_A001_VIOL);
+>     sqlite3LedgerInc(LC_A001_VIOL_RECORD);
+>     sqlite3LedgerViolation(LC_LOGGED_A001, "A-001",
+>         "site=sqlite3VdbeRecordUnpack kind=record_not_addressable nKey=%d "
+>         "pKey=%p addressable=%d nField=%u", nKey, pKey,
+>         sqlite3LedgerAvail(pKey, nKey), (unsigned)p->nField);
+>     return;
+>   }
+>   nAvail = sqlite3LedgerAvail((const u8*)pKey + nKey, LEDGER_HMAX);
+>   sqlite3LedgerHist(nKey==0 ? LH_A001_N0 : LH_A001, nAvail);
+>   nNeed = nKey>0 ? 8 : 9;
+>   if( nAvail<nNeed ){
+>     sqlite3LedgerInc(LC_A001_VIOL);
+>     sqlite3LedgerInc(LC_A001_VIOL_SLACK);
+>     nHex = nKey + nAvail;
+>     if( nHex>96 ) nHex = 96;
+>     sqlite3LedgerHex(zHex, sizeof(zHex), pKey, nHex);
+>     sqlite3LedgerViolation(LC_LOGGED_A001, "A-001",
+>         "site=sqlite3VdbeRecordUnpack kind=slack nKey=%d pKey=%p slack=%d "
+>         "need=%d nField=%u nKeyField=%u bytes(record+slack,first %d)=%s",
+>         nKey, pKey, nAvail, nNeed, (unsigned)p->nField,
+>         (unsigned)p->pKeyInfo->nKeyField, nHex, zHex);
+>   }
+> }
+> /* A-002: sqlite3DbMallocRaw returns NULL or a fresh block of at least n
+> ** bytes, aligned to 8 (at C-14's call site in AllocUnpackedRecord). */
+> static void ledgerA002(sqlite3 *db, u64 n, void *p){
+>   int bBad = 0, bAlign, nSize, rOk;
+>   sqlite3LedgerInc(LC_A002_REACHED);
+>   if( p==0 ){ sqlite3LedgerInc(LC_A002_NULL); return; }
+>   bAlign = (((uptr)p)&7)==0;
+>   if( !bAlign ){ sqlite3LedgerInc(LC_A002_VIOL_ALIGN); bBad = 1; }
+>   nSize = sqlite3DbMallocSize(db, p);
+>   if( nSize<0 || (u64)nSize<n ){ sqlite3LedgerInc(LC_A002_VIOL_SIZE); bBad = 1; }
+>   rOk = sqlite3LedgerReadable(p, n);
+>   if( rOk>=0 ) sqlite3LedgerInc(LC_A002_ASAN_CHECKED);
+>   if( rOk==0 ){ sqlite3LedgerInc(LC_A002_VIOL_POISON); bBad = 1; }
+>   if( bBad ){
+>     sqlite3LedgerInc(LC_A002_VIOL);
+>     sqlite3LedgerViolation(LC_LOGGED_A002, "A-002",
+>         "site=sqlite3VdbeAllocUnpackedRecord db=%p n=%llu p=%p aligned8=%d "
+>         "DbMallocSize=%d addressable=%d", (void*)db, (unsigned long long)n,
+>         p, bAlign, nSize, sqlite3LedgerAvail(p, (int)(n<65536 ? n : 65536)));
+>   }
+> }
+> /* A-003's requires on vdbeCompareMemString.  Returns 1 if the structs and
+> ** strings may be read (or this build cannot tell), 0 if a requires
+> ** failed.  iSite: 0 at the function's entry (every caller), 1 at C-17's
+> ** call site (92734). */
+> static int ledgerA003Req(const Mem *pMem1, const Mem *pMem2,
+>                          const CollSeq *pColl, u8 *prcErr, int iSite){
+>   int r1, r2, rC, rz1 = 1, rz2 = 1, rE, n1 = 0, n2 = 0;
+>   int bBad = 0, bZnull = 0;
+>   sqlite3LedgerInc(iSite ? LC_A003_REACHED : LC_A003E_REACHED);
+>   if( sqlite3LedgerAsan() ){
+>     sqlite3LedgerInc(iSite ? LC_A003_ASAN_CHECKED : LC_A003E_ASAN_CHECKED);
+>   }
+>   r1 = sqlite3LedgerReadable(pMem1, sizeof(Mem));
+>   r2 = sqlite3LedgerReadable(pMem2, sizeof(Mem));
+>   rC = sqlite3LedgerReadable(pColl, sizeof(CollSeq));
+>   rE = prcErr==0 ? 1 : sqlite3LedgerReadable(prcErr, 1);
+>   if( r1==0 || r2==0 || rC==0 || rE==0 ) bBad = 1;
+>   if( r1!=0 ){
+>     n1 = pMem1->n;
+>     if( n1<0 ) bBad = 1;
+>     else if( pMem1->z==0 && n1==0 ) bZnull = 1;
+>     else rz1 = sqlite3LedgerReadable(pMem1->z, (u64)n1);
+>     if( rz1==0 ) bBad = 1;
+>   }
+>   if( r2!=0 ){
+>     n2 = pMem2->n;
+>     if( n2<0 ) bBad = 1;
+>     else if( pMem2->z==0 && n2==0 ) bZnull = 1;
+>     else rz2 = sqlite3LedgerReadable(pMem2->z, (u64)n2);
+>     if( rz2==0 ) bBad = 1;
+>   }
+>   if( bZnull ){
+>     sqlite3LedgerInc(iSite ? LC_A003_ZNULL_N0 : LC_A003E_ZNULL_N0);
+>   }
+>   if( bBad ){
+>     sqlite3LedgerInc(iSite ? LC_A003_VIOL_REQ : LC_A003E_VIOL);
+>     sqlite3LedgerViolation(LC_LOGGED_A003, "A-003",
+>         "site=%s kind=requires pMem1=%p(r=%d n=%d z=%p rz=%d) "
+>         "pMem2=%p(r=%d n=%d z=%p rz=%d) pColl=%p(r=%d) prcErr=%p(w=%d)",
+>         iSite ? "vdbeCompareMemString@C-17-call" : "vdbeCompareMemString@entry",
+>         (void*)pMem1, r1, n1, r1!=0 ? (void*)pMem1->z : 0, rz1,
+>         (void*)pMem2, r2, n2, r2!=0 ? (void*)pMem2->z : 0, rz2,
+>         (void*)pColl, rC, (void*)prcErr, rE);
+>     return 0;
+>   }
+>   return 1;
+> }
+> /* End of LEDGER checks for A-001, A-002, A-003 requires */
+> 
+92103a92591
+>   ledgerA002(pKeyInfo->db, nByte, p);  /* LEDGER A-002 */
+92128a92617
+>   ledgerA001(nKey, pKey, p);  /* LEDGER A-001 */
+92355a92845
+>   ledgerA003Req(pMem1, pMem2, pColl, prcErr, 0);  /* LEDGER A-003 */
+92606a93097,93245
+> /************************************************************************
+> ** LEDGER wrappers for A-003 and A-004 at the comparators' call sites, and
+> ** slack measurements at the comparators' entries (proving-sqlite
+> ** validation/ledger.patch).  Not part of SQLite.  Between here and the end
+> ** of vdbeRecordCompareString, the macros below route the existing calls
+> ** "vdbeCompareMemString(...)" (92734) and "SQLITE_CORRUPT_BKPT" (92646,
+> ** 92727, 92757, 92808, 92971) through these wrappers; no SQLite line in
+> ** that range is changed.
+> */
+> #define LEDGER_NSNAP 9
+> /* Hash each piece of state the comparator's caller can see: the
+> ** UnpackedRecord (errCode masked if bMaskErr), its aMem[], the KeyInfo
+> ** with aColl[] and aSortFlags[], and the nKey1 bytes of the left key. */
+> static void ledgerSnapRecord(u64 *aH, int nKey1, const void *pKey1,
+>                              const UnpackedRecord *pPKey2, int bMaskErr){
+>   UnpackedRecord r;
+>   const KeyInfo *pKI;
+>   memset(aH, 0, 4*sizeof(u64));
+>   if( sqlite3LedgerReadable(pPKey2, sizeof(*pPKey2))==0 ) return;
+>   memcpy(&r, pPKey2, sizeof(r));
+>   if( bMaskErr ) r.errCode = 0;
+>   aH[0] = sqlite3LedgerHash(0, &r, sizeof(r));
+>   if( pPKey2->aMem
+>    && sqlite3LedgerReadable(pPKey2->aMem, sizeof(Mem)*pPKey2->nField)!=0 ){
+>     aH[1] = sqlite3LedgerHash(0, pPKey2->aMem, sizeof(Mem)*pPKey2->nField);
+>   }
+>   pKI = pPKey2->pKeyInfo;
+>   if( pKI && sqlite3LedgerReadable(pKI, SZ_KEYINFO_0)!=0 ){
+>     u64 nKI = SZ_KEYINFO(pKI->nAllField);
+>     if( sqlite3LedgerReadable(pKI, nKI)!=0 ){
+>       aH[2] = sqlite3LedgerHash(0, pKI, nKI);
+>     }
+>     if( pKI->aSortFlags
+>      && sqlite3LedgerReadable(pKI->aSortFlags, pKI->nAllField)!=0 ){
+>       aH[2] = sqlite3LedgerHash(aH[2], pKI->aSortFlags, pKI->nAllField);
+>     }
+>   }
+>   if( nKey1>0 && sqlite3LedgerReadable(pKey1, (u64)nKey1)!=0 ){
+>     aH[3] = sqlite3LedgerHash(0, pKey1, (u64)nKey1);
+>   }
+> }
+> static void ledgerSnapA003(u64 *aH, const Mem *pMem1, const Mem *pMem2,
+>                            const CollSeq *pColl, int nKey1,
+>                            const void *pKey1, const UnpackedRecord *pPKey2){
+>   aH[0] = sqlite3LedgerHash(0, pMem1, sizeof(Mem));
+>   aH[1] = pMem1->n>0 ? sqlite3LedgerHash(0, pMem1->z, pMem1->n) : 0;
+>   aH[2] = sqlite3LedgerHash(0, pMem2, sizeof(Mem));
+>   aH[3] = pMem2->n>0 ? sqlite3LedgerHash(0, pMem2->z, pMem2->n) : 0;
+>   aH[4] = sqlite3LedgerHash(0, pColl, sizeof(CollSeq));
+>   ledgerSnapRecord(&aH[5], nKey1, pKey1, pPKey2, 1);
+> }
+> static const char *ledgerSnapNames[LEDGER_NSNAP] = {
+>   "*pMem1", "pMem1->z[0..n)", "*pMem2", "pMem2->z[0..n)", "*pColl",
+>   "*pPKey2(errCode masked)", "pPKey2->aMem[0..nField)",
+>   "*pKeyInfo,aColl,aSortFlags", "pKey1[0..nKey1)"
+> };
+> /* A-003: vdbeCompareMemString, called from sqlite3VdbeRecordCompareWithSkip
+> ** (C-17), assigns at most *prcErr. */
+> static int ledgerCompareMemStringA003(
+>   const Mem *pMem1, const Mem *pMem2, const CollSeq *pColl, u8 *prcErr,
+>   int nKey1, const void *pKey1, UnpackedRecord *pPKey2
+> ){
+>   u64 aH0[LEDGER_NSNAP], aH1[LEDGER_NSNAP];
+>   int bOk, rc, i;
+>   u8 errBefore = 0;
+>   bOk = ledgerA003Req(pMem1, pMem2, pColl, prcErr, 1);
+>   if( bOk && pMem1->enc!=pColl->enc ) sqlite3LedgerInc(LC_A003_ENCCHANGE);
+>   if( bOk ) ledgerSnapA003(aH0, pMem1, pMem2, pColl, nKey1, pKey1, pPKey2);
+>   if( prcErr ) errBefore = *prcErr;
+>   rc = vdbeCompareMemString(pMem1, pMem2, pColl, prcErr);
+>   if( prcErr && *prcErr!=errBefore ) sqlite3LedgerInc(LC_A003_PRCERR_WRITTEN);
+>   if( bOk ){
+>     char zWhich[512];
+>     int n = 0;
+>     sqlite3LedgerInc(LC_A003_ASSIGNS_CHECKED);
+>     ledgerSnapA003(aH1, pMem1, pMem2, pColl, nKey1, pKey1, pPKey2);
+>     zWhich[0] = 0;
+>     for(i=0; i<LEDGER_NSNAP; i++){
+>       if( aH0[i]!=aH1[i] && n<(int)sizeof(zWhich)-64 ){
+>         n += snprintf(zWhich+n, sizeof(zWhich)-n, "%s;", ledgerSnapNames[i]);
+>       }
+>     }
+>     if( n>0 ){
+>       sqlite3LedgerInc(LC_A003_VIOL_ASSIGNS);
+>       sqlite3LedgerViolation(LC_LOGGED_A003, "A-003",
+>           "site=vdbeCompareMemString@C-17-call kind=assigns changed=%s "
+>           "pMem1=%p pMem2=%p pColl=%p(%s) prcErr=%p rc=%d", zWhich,
+>           (void*)pMem1, (void*)pMem2, (void*)pColl,
+>           pColl->zName ? pColl->zName : "?", (void*)prcErr, rc);
+>     }
+>   }
+>   return rc;
+> }
+> /* A-004: sqlite3CorruptError returns SQLITE_CORRUPT and changes nothing the
+> ** comparator's caller sees (C-17, C-19 call sites). */
+> /* The callee, through a pointer only so that validation/demo can show the
+> ** return-value check fire; it is always sqlite3CorruptError otherwise. */
+> static int (*ledgerCorruptErrorFn)(int) = sqlite3CorruptError;
+> static int ledgerCorruptA004(int lineno, int nKey1, const void *pKey1,
+>                              UnpackedRecord *pPKey2){
+>   u64 aH0[4], aH1[4];
+>   int rc, i, n = 0;
+>   char zWhich[256];
+>   static const char *azName[4] = {
+>     "*pPKey2", "pPKey2->aMem[0..nField)", "*pKeyInfo,aColl,aSortFlags",
+>     "pKey1[0..nKey1)"
+>   };
+>   sqlite3LedgerInc(LC_A004_REACHED);
+>   if( sqlite3GlobalConfig.xLog ) sqlite3LedgerInc(LC_A004_XLOG_SET);
+>   ledgerSnapRecord(aH0, nKey1, pKey1, pPKey2, 0);
+>   rc = ledgerCorruptErrorFn(lineno);
+>   if( rc!=SQLITE_CORRUPT ){
+>     sqlite3LedgerInc(LC_A004_VIOL_RC);
+>     sqlite3LedgerViolation(LC_LOGGED_A004, "A-004",
+>         "site=sqlite3CorruptError@comparator line=%d kind=return rc=%d",
+>         lineno, rc);
+>   }
+>   sqlite3LedgerInc(LC_A004_ASSIGNS_CHECKED);
+>   ledgerSnapRecord(aH1, nKey1, pKey1, pPKey2, 0);
+>   zWhich[0] = 0;
+>   for(i=0; i<4; i++){
+>     if( aH0[i]!=aH1[i] ){
+>       n += snprintf(zWhich+n, sizeof(zWhich)-n, "%s;", azName[i]);
+>     }
+>   }
+>   if( n>0 ){
+>     sqlite3LedgerInc(LC_A004_VIOL_ASSIGNS);
+>     sqlite3LedgerViolation(LC_LOGGED_A004, "A-004",
+>         "site=sqlite3CorruptError@comparator line=%d kind=assigns changed=%s "
+>         "xLog=%p", lineno, zWhich, (void*)sqlite3GlobalConfig.xLog);
+>   }
+>   return rc;
+> }
+> /* Comparators' slack (for the comparator S values A-001 leaves open; this
+> ** is a measurement, not a ledger check). */
+> static void ledgerCmpSlack(int iCounter, int iHist, int nKey1,
+>                            const void *pKey1){
+>   sqlite3LedgerInc(iCounter);
+>   if( nKey1<0 || pKey1==0 || !sqlite3LedgerAsan() ) return;
+>   if( sqlite3LedgerReadable(pKey1, (u64)nKey1)!=1 ) return;
+>   sqlite3LedgerHist(iHist,
+>       sqlite3LedgerAvail((const u8*)pKey1 + nKey1, LEDGER_HMAX));
+> }
+> #undef SQLITE_CORRUPT_BKPT
+> #define SQLITE_CORRUPT_BKPT ledgerCorruptA004(__LINE__,nKey1,pKey1,pPKey2)
+> #define vdbeCompareMemString(A,B,C,D) \
+>         ledgerCompareMemStringA003(A,B,C,D,nKey1,pKey1,pPKey2)
+> /* End of LEDGER wrappers; the comparators follow */
+> 
+92621a93261
+>   ledgerCmpSlack(LC_CMP_WITHSKIP, LH_WITHSKIP, nKey1, pKey1);  /* LEDGER */
+92857a93498
+>   ledgerCmpSlack(LC_CMP_INT, LH_INT, nKey1, pKey1);  /* LEDGER */
+92947a93589
+>   ledgerCmpSlack(LC_CMP_STRING, LH_STRING, nKey1, pKey1);  /* LEDGER */
+93003a93646,93649
+> /* LEDGER: end of the wrapped range */
+> #undef vdbeCompareMemString
+> #undef SQLITE_CORRUPT_BKPT
+> #define SQLITE_CORRUPT_BKPT sqlite3CorruptError(__LINE__)

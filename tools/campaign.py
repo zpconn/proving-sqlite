@@ -69,6 +69,19 @@ ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evide
 # GOAL.md §0.10, hard-coded (checkpoint 0, decision C5): sessions.toml supplies models and command lines, never vendors.
 # The spec was written by Claude, so its reviewer runs on Codex.
 ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'spec-review': 'codex'}
+# The one exception (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): C-17's builder runs on Claude and
+# its reviewer on Codex, because the Codex service's content filter stops a Codex builder on it (T-005). A reviewer is
+# still never on its round's builder vendor. The models are those sessions.toml gives the vendor's own role at the
+# card's tier (VENDOR_ROLE), so Opus 5.5 builds and gpt-6-astra at xhigh reviews a high-tier card, as GOAL.md §0.10
+# gives each vendor; a land may not touch tools/sessions.toml (T-007).
+CARD_ROLE_VENDOR = {'C-17': {'builder': 'claude', 'reviewer': 'codex'}}
+VENDOR_ROLE = {'claude': 'reviewer', 'codex': 'builder'}
+
+
+def role_vendor(role, cid=None):
+    return (CARD_ROLE_VENDOR.get(cid) or {}).get(role) or ROLE_VENDOR.get(role)
+
+
 AUTH_RECHECK = 15 * 60          # an auth pause is lifted only by `resume-vendor`; status reminds every 15 min
 TICK = float(os.environ.get('CAMPAIGN_TICK', '10'))
 
@@ -372,20 +385,22 @@ class SessionRefused(CampaignError):
     pass
 
 
-def role_config(sess, role, tier):
-    """(vendor, model, effort, vendor config). The vendor is ROLE_VENDOR's; a sessions.toml that names another for
-    the role is refused rather than followed."""
-    try:
-        rc = sess['roles'][role][tier]
-    except KeyError:
-        raise CampaignError('sessions.toml has no roles.%s.%s' % (role, tier))
-    vendor = ROLE_VENDOR.get(role)
+def role_config(sess, role, tier, cid=None):
+    """(vendor, model, effort, vendor config). The vendor is ROLE_VENDOR's, or CARD_ROLE_VENDOR's for the card cid;
+    a sessions.toml that names another for the role is refused rather than followed. A card's exception takes its
+    model and effort from the vendor's own role at that tier, roles.<VENDOR_ROLE[vendor]>.<tier>."""
+    vendor = role_vendor(role, cid)
     if vendor is None:
         raise SessionRefused('no vendor is fixed for role %s' % role)
+    key = role if vendor == ROLE_VENDOR.get(role) else VENDOR_ROLE[vendor]
+    try:
+        rc = sess['roles'][key][tier]
+    except KeyError:
+        raise CampaignError('sessions.toml has no roles.%s.%s' % (key, tier))
     if rc.get('vendor', vendor) != vendor:
-        raise SessionRefused('sessions.toml puts roles.%s.%s on %s, but campaign.py runs %s sessions on %s only '
-                             '(GOAL.md §0.10)' % (role, tier, rc.get('vendor'), role, vendor))
-    probs = role_value_problems('sessions.toml roles.%s.%s' % (role, tier), rc.get('model'), rc.get('effort'))
+        raise SessionRefused('sessions.toml puts roles.%s.%s on %s, but campaign.py runs %s sessions%s on %s only '
+                             '(GOAL.md §0.10)' % (key, tier, rc.get('vendor'), role, ' of ' + cid if cid else '', vendor))
+    probs = role_value_problems('sessions.toml roles.%s.%s' % (key, tier), rc.get('model'), rc.get('effort'))
     if probs:
         raise SessionRefused('; '.join(probs))
     vcfg = dict(sess['vendors'][vendor])
@@ -1124,7 +1139,12 @@ LONG_RUN_CODEX = (
     'background children are killed when it returns. Trust only output that ends with its RESULT line.')
 
 
-def prompt_builder(cid, rnd, reviews, notes, wt):
+# How a Claude session waits for a long command: its shell may background a run (the reviewer's text, kept).
+LONG_RUN_CLAUDE = ('CBMC runs can take 10 minutes per configuration: run them in the background with output in a file, or '
+                   'with a timeout longer than the run, and trust only output that ends with its RESULT line.')
+
+
+def prompt_builder(cid, rnd, reviews, notes, wt, vendor='codex'):
     lines = [
         'You are a builder session in the proving-sqlite project. Your instructions are agents/builder/GOAL.md; '
         'read it first and follow it. The rules every role obeys are in AGENTS.md.',
@@ -1138,16 +1158,21 @@ def prompt_builder(cid, rnd, reviews, notes, wt):
     lines += [
         'Write your report to reports/%s-b%d.md; its first line is DONE, STUCK, FINDING or NEEDS-DECISION.' % (cid, rnd),
         'Your token usage so far, against the card\'s cap, is in .campaign/usage; check it after each run.',
-        'Work only in this directory (%s). /tmp is not writable: put scratch files in $TMPDIR, which is tmp/ here '
-        '(git ignores it). Do not commit, branch or merge: campaign.py commits what you '
-        'leave when you exit, and only the paths on your card\'s May change line.' % wt,
-        LONG_RUN_CODEX + ' proofs/HOWTO.md records how proofs are built here: run them with tools/prove.py, never make '
-        'in a card directory.',
+        'Work only in this directory (%s). Put scratch files in $TMPDIR, which is tmp/ here (git ignores it)%s. '
+        'Do not commit, branch or merge: campaign.py commits what you '
+        'leave when you exit, and only the paths on your card\'s May change line.' % (
+            wt, '; /tmp is not writable' if vendor == 'codex' else ''),
+        (LONG_RUN_CODEX if vendor == 'codex' else LONG_RUN_CLAUDE) + ' proofs/HOWTO.md records how proofs are built '
+        'here: run them with tools/prove.py, never make in a card directory.',
     ]
+    if vendor != 'codex':
+        lines.append('This card\'s builder runs on Claude Code by Zach\'s exception (CARD_ROLE_VENDOR in tools/campaign.py), '
+                     'so agents/builder/GOAL.md\'s Codex-only advice on waiting for long runs does not apply: follow the '
+                     'line above.')
     return '\n\n'.join(lines) + '\n'
 
 
-def prompt_reviewer(cid, rnd, commit, builder_report, rereview=None, repros=None):
+def prompt_reviewer(cid, rnd, commit, builder_report, rereview=None, repros=None, vendor='claude'):
     lines = [
         'You are a reviewer session in the proving-sqlite project. Your instructions are agents/reviewer/GOAL.md; '
         'read it first and follow it. The rules every role obeys are in AGENTS.md.',
@@ -1160,13 +1185,17 @@ def prompt_reviewer(cid, rnd, commit, builder_report, rereview=None, repros=None
                      'The builder\'s report is %s.' % (cid, rnd, commit, builder_report))
     lines += [
         'Write your verdict to reviews/%s-r%d.md; its first line is APPROVE, REJECT or NEEDS-ZACH.' % (cid, rnd),
-        'Do not modify any tracked file and do not run git commands that write; make scratch copies under /tmp. '
-        'If you change a tracked file your review is discarded.',
-        'CBMC runs can take 10 minutes per configuration: run them in the background with output in a file, or '
-        'with a timeout longer than the run, and trust only output that ends with its RESULT line.',
+        'Do not modify any tracked file and do not run git commands that write; make scratch copies under %s. '
+        'If you change a tracked file your review is discarded.' % (
+            '/tmp' if vendor == 'claude' else '$TMPDIR, which is tmp/ in your worktree (git ignores it; /tmp is not writable)'),
+        LONG_RUN_CLAUDE if vendor == 'claude' else LONG_RUN_CODEX,
         'Run proofs with tools/prove.py (proofs/HOWTO.md), never make in a card directory: make would run the '
         'builder\'s Makefile.',
     ]
+    if vendor != 'claude':
+        lines.append('This card\'s reviewer runs on Codex by Zach\'s exception (CARD_ROLE_VENDOR in tools/campaign.py), so '
+                     'agents/reviewer/GOAL.md\'s advice to background long runs and to use /tmp does not apply: follow '
+                     'the lines above.')
     if repros:
         lines.append('campaign.py built and ran the round\'s repro files with its fixed command, against unmodified '
                      'upstream, under ASan and UBSan, in a sandbox with no network and no $HOME. Their output is in '
@@ -1401,9 +1430,10 @@ class Campaign:
             release_claude_config(job)
             st.journal('session-refused', job=job['id'], card=job.get('card'), vendor=vendor, why='; '.join(probs))
             raise SessionRefused('refused to start a %s session: %s' % (vendor, '; '.join(probs)))
-        if vendor == 'codex':
-            # its own scratch space (checkpoint 0 follow-up 8): /tmp is not writable, TMPDIR is tmp/ in the worktree,
-            # which .gitignore ignores; a new round starts with it empty
+        if vendor == 'codex' or job.get('role') == 'builder':
+            # its own scratch space (checkpoint 0 follow-up 8): TMPDIR is tmp/ in the worktree, which .gitignore
+            # ignores; a new round starts with it empty. Codex can't write /tmp; a builder on Claude (C-17's
+            # exception) gets the same TMPDIR
             tmpd = os.path.join(wt, 'tmp')
             if not resume_of and os.path.isdir(tmpd) and not os.path.islink(tmpd):
                 shutil.rmtree(tmpd, ignore_errors=True)
@@ -1453,7 +1483,7 @@ class Campaign:
                                'the May change line (decision D4); Zach decides whether to extend the card' % (
                                    nxt, MAX_BUILDER_ROUNDS, report, 'listed' if card.allows(report) else 'not'))
                 return
-        vendor, model, effort, vcfg = role_config(sess, 'builder', card.tier)
+        vendor, model, effort, vcfg = role_config(sess, 'builder', card.tier, cid)
         wt = self.ensure_card_wt(cid)
         if resume_job is None:
             # a new round: merge main into the card branch
@@ -1478,7 +1508,7 @@ class Campaign:
         if resume_job and resume_job.get('cli_session'):
             prompt = prompt_resume('builder')
         else:
-            prompt = prompt_builder(cid, c['round'], reviews, c.get('notes', []), wt)
+            prompt = prompt_builder(cid, c['round'], reviews, c.get('notes', []), wt, vendor)
         self.start_session(st, job, vendor, model, effort, vcfg, wt, prompt, resume_of=resume_job)
         c['job'] = job['id']
         if c['state'] != 'building':
@@ -1493,7 +1523,7 @@ class Campaign:
 
     def _start_reviewer(self, st, c, card, sess, resume_job=None, rereview=None):
         cid = c['id']
-        vendor, model, effort, vcfg = role_config(sess, 'reviewer', card.tier)
+        vendor, model, effort, vcfg = role_config(sess, 'reviewer', card.tier, cid)
         bvendor = c.get('builder_vendor')
         # re-reviews too (checkpoint 0, decision C5): the reviewer is never on the vendor that built the card's last round
         if not bvendor or bvendor == vendor:
@@ -1527,7 +1557,8 @@ class Campaign:
         if resume_job and resume_job.get('cli_session'):
             prompt = prompt_resume('reviewer')
         else:
-            prompt = prompt_reviewer(cid, c['round'], commit, 'reports/%s-b%d.md' % (cid, c['round']), rereview, repros)
+            prompt = prompt_reviewer(cid, c['round'], commit, 'reports/%s-b%d.md' % (cid, c['round']), rereview, repros,
+                                     vendor)
         self.start_session(st, job, vendor, model, effort, vcfg, wt, prompt, resume_of=resume_job)
         c['job'] = job['id']
         if c['state'] != 'reviewing':
@@ -1567,12 +1598,12 @@ class Campaign:
         for cid in scope:
             c = self.card(st, cid)
             if c['state'] == 'reviewing' and c.get('job') is None:
-                if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, ROLE_VENDOR['reviewer']):
+                if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, role_vendor('reviewer', cid)):
                     self.start_reviewer(st, c, cards[cid], sess, rereview=c.get('rereview'))
         for cid in scope:
             c = self.card(st, cid)
             if c['state'] == 'ready':
-                if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, ROLE_VENDOR['builder']):
+                if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, role_vendor('builder', cid)):
                     self.start_builder_round(st, c, cards[cid], sess)
         # one merge at a time
         if not any(j['kind'] in ('merge', 'land') and j['state'] == 'running' for j in st.d['jobs'].values()):
@@ -1707,7 +1738,9 @@ class Campaign:
             c['review_attempt'] = 0
             c['rereview'] = None
             self.set_state(st, c, 'reviewing', 'builder %s; reviewer to judge %s' % (verdict, commit[:12]))
-            if len(self.running_sessions(st)) < MAX_SESSIONS:
+            # a reviewer on a paused vendor (C-17's is on codex) waits for the tick that follows the pause
+            c['job'] = None
+            if len(self.running_sessions(st)) < MAX_SESSIONS and not self.vendor_paused(st, role_vendor('reviewer', cid)):
                 self.start_reviewer(st, c, card, sess)
         else:
             self.set_state(st, c, 'triage', 'builder reported %s (reports/%s-b%d.md)' % (verdict, cid, c['round']))
@@ -1759,6 +1792,8 @@ class Campaign:
             self.remove_wt(wt)
             if c['review_attempt'] >= 2:
                 self.set_state(st, c, 'triage', 'reviewer changed a tracked file twice (%s); reviews discarded' % job['outcome'])
+            elif self.vendor_paused(st, role_vendor('reviewer', cid)):
+                c['job'] = None     # the tick starts it once the vendor's pause ends
             else:
                 self.start_reviewer(st, c, card, sess, rereview=job.get('rereview'))
             return
@@ -2186,6 +2221,7 @@ def cmd_start(a):
         if a.cards:
             st.d['scope'] = sorted(x.strip() for x in a.cards.split(',') if x.strip())
         st.d['stopping'] = False
+        st.d['tmux'] = not a.no_tmux      # finish kills the tmux session only if this campaign made it (T-004)
         st.d['full_gate_queued'] = st.d.get('full_gate_queued') and False
         cards = camp.cards()
         scope = camp.scoped(st, cards)
@@ -2267,6 +2303,7 @@ def cmd_finish(a):
     if daemon_alive(p):
         raise CampaignError('the daemon has not stopped')
     with State(p) as st:
+        own_tmux = bool(st.d.get('tmux'))
         running = [j for j in st.d['jobs'].values() if j['state'] == 'running' and job_alive(j)]
         if running:
             raise CampaignError('jobs still running: %s; wait for them or kill them first' % ', '.join(j['id'] for j in running))
@@ -2303,7 +2340,8 @@ def cmd_finish(a):
         st.d['started'] = False
         st.d['stopping'] = False
         st.journal('finish', merged_orch_paths=len(paths))
-    subprocess.run(['tmux', 'kill-session', '-t', 'campaign'], capture_output=True)
+    if own_tmux:   # never another campaign's session: the selftest's finish once killed the live campaign's (T-004)
+        subprocess.run(['tmux', 'kill-session', '-t', 'campaign'], capture_output=True)
     print('finished: the primary checkout is on main%s' % (' with orch merged' if paths else ''))
     print_status(p)
     return 0
@@ -2735,6 +2773,8 @@ class SelfTest:
         e['PATH'] = ':'.join([os.path.join(self.home, 'bin'), os.path.join(self.home, '.local', 'bin'),
                               os.path.join(self.home, '.nvm', 'bin'), e.get('PATH', '')])
         e['HOME'] = self.home
+        e.pop('TMUX', None)                                # never the caller's tmux server
+        e['TMUX_TMPDIR'] = os.path.join(self.base, 'tmux')
         e['FAKECLI_CONTROL'] = self.ctl
         e['FAKECLI_SOCKET'] = self.sock
         e['FAKECLI_OUTSIDE'] = self.outside
@@ -3005,6 +3045,37 @@ class SelfTest:
         """Checkpoint 0 follow-ups 5, 7 and 8, in process: no daemon; sessions are not spawned."""
         p = P(self.primary)
         sess = load_sessions(self.primary)
+        # Zach's C-17 exception (evidence/approvals/C-17-vendor-exception/): only C-17 changes vendors
+        got = {}
+        for role in ('builder', 'reviewer'):
+            for cid in ('C-17', 'C-16', None):
+                try:
+                    got[(role, cid)] = role_config(sess, role, 'standard', cid)[:2]   # the fixture's roles.reviewer.high is on codex on purpose
+                except CampaignError as ex:
+                    got[(role, cid)] = ('error', str(ex))
+        self.ok('C-17 only: its builder runs on claude and its reviewer on codex; every other card keeps codex builders '
+                'and claude reviewers', got[('builder', 'C-17')][0] == 'claude' and got[('reviewer', 'C-17')][0] == 'codex'
+                and all(got[('builder', k)][0] == 'codex' and got[('reviewer', k)][0] == 'claude' for k in ('C-16', None)), got)
+        bad = json.loads(json.dumps(sess))
+        bad['roles']['reviewer']['standard']['vendor'] = 'codex'
+        try:
+            role_config(bad, 'builder', 'standard', 'C-17')
+            why = None
+        except SessionRefused as ex:
+            why = str(ex)
+        models = (role_config(sess, 'builder', 'standard', 'C-17')[1:3], role_config(sess, 'reviewer', 'standard', 'C-17')[1:3])
+        want = ((sess['roles']['reviewer']['standard']['model'], sess['roles']['reviewer']['standard']['effort']),
+                (sess['roles']['builder']['standard']['model'], sess['roles']['builder']['standard']['effort']))
+        self.ok('C-17\'s exception is campaign.py\'s, not sessions.toml\'s: its models are the vendor\'s own role\'s at the tier, and '
+                'a sessions.toml that puts that role on the other vendor is refused', bool(why) and 'C-17' in why
+                and models == want, (why, models, want))
+        pb = prompt_builder('C-17', 1, [], [], '/w', 'claude')
+        pr = prompt_reviewer('C-17', 1, 'abc', 'reports/C-17-b1.md', vendor='codex')
+        self.ok('C-17\'s prompts fit their vendors: the Claude builder may background runs, the Codex reviewer waits once '
+                'and uses $TMPDIR', LONG_RUN_CLAUDE in pb and LONG_RUN_CODEX not in pb and 'exception' in pb
+                and LONG_RUN_CODEX in pr and '$TMPDIR' in pr and 'exception' in pr
+                and LONG_RUN_CODEX in prompt_builder('C-16', 1, [], [], '/w') and 'exception' not in prompt_reviewer('C-16', 1, 'abc', 'r'),
+                (pb, pr))
         g = globals()
         uwt = os.path.join(self.base, 'unit-wt')
         os.makedirs(uwt, exist_ok=True)
@@ -3285,6 +3356,10 @@ class SelfTest:
         self.ok('C-16 %s: triage, not merged' % self.PHASE_A['C-16'][0],
                 meddled.get('C-16') and S('C-16') == 'triage' and 'moved or changed' in R('C-16') and 'Campaign-Merge: C-16' not in log_main, R('C-16'))
         self.ok('C-17 %s' % self.PHASE_A['C-17'][0], S('C-17') == 'triage' and 'FINDING approved' in R('C-17'), R('C-17'))
+        j17 = [(j.get('role'), j.get('vendor')) for j in st['jobs'].values() if j.get('card') == 'C-17' and j.get('role') in ('builder', 'reviewer')]
+        self.ok('C-17 ran under Zach\'s exception: its builder on claude, its reviewer on codex, end to end',
+                j17 and all(v == ('claude' if r == 'builder' else 'codex') for r, v in j17)
+                and {'builder', 'reviewer'} <= set(r for r, _ in j17), j17)
         au = meddled.get('auth') or {}
         ap = [e for e in jr if e['kind'] == 'vendor-auth-pause' and e.get('vendor') == 'codex']
         ar = [e for e in jr if e['kind'] == 'vendor-auth-resume' and e.get('vendor') == 'codex']
@@ -3447,7 +3522,13 @@ class SelfTest:
                 killed.get('k3') and cs['C-23']['state'] == 'merged' and n23 == 1, (cs['C-23'], n23))
         self.ok('kill -9 of the daemon mid-merge: the surviving merge job\'s result is taken once (C-24)',
                 killed.get('k4') and cs['C-24']['state'] == 'merged' and n24 == 1, (cs['C-24'], n24))
+        os.makedirs(os.path.join(self.base, 'tmux'), exist_ok=True)
+        tm = subprocess.run(['tmux', 'new-session', '-d', '-s', 'campaign', 'sleep 600'], env=self.env(), capture_output=True, text=True)
         p = self.camp('finish', timeout=120)
+        alive = subprocess.run(['tmux', 'has-session', '-t', 'campaign'], env=self.env(), capture_output=True).returncode == 0
+        subprocess.run(['tmux', 'kill-server'], env=self.env(), capture_output=True)
+        self.ok('finish of a campaign started with --no-tmux leaves a tmux session named campaign alone (T-004: the '
+                'selftest\'s finish killed the live campaign\'s daemon)', tm.returncode == 0 and alive, tm.stderr)
         self.ok('finish: primary checkout back on main with orch merged, main\'s checkout removed',
                 p.returncode == 0 and current_branch(self.primary) == 'main' and not os.path.isdir(os.path.join(self.wt, 'main'))
                 and 'orchestrator note' in open(os.path.join(self.primary, 'PROGRESS.md')).read(), p.stdout + p.stderr)

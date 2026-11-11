@@ -66,3 +66,105 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Workaround:** `tools/campaign.py retry C-17`, which starts a fresh session in a new round, with no change to the prompt. I'm not rephrasing anything to get past the filter. If it is flagged again, the card is parked for Zach, since the message's remedy (Daybreak access) is an account decision.
 - **Outcome:** round 2's fresh session (J0061, 18:49) was flagged after about 4 minutes, and its resumes (J0063, J0064) at once. C-17 was parked for Zach at 18:55 (PROGRESS.md, Open questions 1).
 - **Possible fix (not requested yet):** campaign.py could treat this message as its own outcome, sending the card straight to triage instead of resuming. That is a frozen-file change.
+- **Resolution** (Zach, 2026-11-10): for C-17 only, Claude builds and Codex reviews (evidence/approvals/C-17-vendor-exception/). If the Codex reviewer is flagged too, C-17 is parked again.
+
+## T-006 CBMC 6.11.0 (DFCC loop contracts): a loop-carried pointer plus replaced calls blows up the encoding (confirmed)
+
+- **Tool:** CBMC 6.11.0, `goto-instrument --dfcc` with `--apply-loop-contracts` and `--replace-call-with-contract`; MiniSat 2 and Z3 4.8.12.
+- **What happened:** C-15's builder couldn't get a verdict on sqlite3VdbeRecordUnpack. In round 1, eight prove runs ran out of memory or timed out. In round 2 it reduced the problem to a 27-line toy with no SQLite code (reports C-15-b1.md, C-15-b2.md):
+  - a loop that carries a pointer (`p == a+k` invariant, `++p`), with the pointer in the loop's assigns;
+  - four calls to a replaced contract inside the loop;
+  - this times out with 17.6 GiB RSS.
+  - **Mechanism:** DFCC havocs the pointer through a write-set target into an unconstrained typed pointer. The invariant is assumed only afterwards, so every dereference and every replaced callee's havoc expands over all address-taken objects, DFCC's own write-set bookkeeping included.
+  - **Controls:** the same toy with the pointer derived inside the iteration (`p = a+k`) verifies in about 1 s. With one call it verifies in 8 s.
+  - **A rejected workaround:** framing the pointer as a byte slice shrinks the formula but falsely fails the callee's ensures right after the call.
+- **Orchestrator's confirmation** (evidence/orchestrator/tool-issues/T-006/results.txt):
+  - The DFCC results reproduce: control 1 s, one call 8 s, four calls no verdict in 300 s.
+  - CBMC's legacy (non-DFCC) contracts path verifies the four-call toy in under 1 s and catches a planted false assertion, a wrong invariant and a missing assigns target.
+  - A legacy contract can be attached by redeclaring an already-defined static function, and both replacement and enforcement work on that redeclaration.
+- **Repro:** evidence/orchestrator/tool-issues/T-006/ (min4.c, min4-ctl.c, min1.c, run.sh; the legacy variants; redecl.c; both builder reports).
+- **Effect:**
+  - C-15 can't be proved under the frozen pipeline: SQLite's loop carries pMem, and the body can't change. C-15 is parked for Zach.
+  - C-17's loop carries pRhs (`pRhs++`, 92803), so it will likely hit the same problem.
+- **Workaround:** none within the frozen tools. Options are in evidence/approvals/T-006-dfcc-loop-pointer/README.md.
+
+## T-007 tools/campaign.py (frozen at checkpoint 1): `land` can't carry tools/sessions.toml
+
+- **Tool:** tools/campaign.py's `land_paths_problems`.
+- **What happened:** on 2026-11-10 I tried to land C-17's vendor exception with two new model entries in tools/sessions.toml. The land was refused: "a land may touch only cards/, tests/repro/, evidence/approvals/, evidence/orchestrator/, PROGRESS.md, LEDGER.md, FINDINGS.md; this one touches tools/sessions.toml".
+  - GOAL.md §0.3 exempts sessions.toml from proof.lock "because CLI flags change", so lock.py's EXEMPT keeps it out of the frozen list.
+  - LAND_ALLOWED doesn't list it either. So no land can change it, with or without an approval record.
+  - The daemon reads sessions.toml from main's checkout.
+- **Repro:** change tools/sessions.toml on orch, commit, and run `tools/campaign.py land`.
+- **Effect:** none on the campaign so far. The exception's models now come from the vendor's existing roles (VENDOR_ROLE in campaign.py), so sessions.toml stays unchanged. A real CLI flag change mid-campaign would need `stop`, a change to campaign.py, or `finish`.
+- **Workaround:** keep sessions.toml unchanged during the campaign. If a CLI flag must change, ask Zach; the fix (sessions.toml in LAND_ALLOWED, or treated as frozen) is a frozen-file change.
+
+## T-008 tools/campaign.py (frozen): the daemon keeps running old code after a land changes tools/
+
+- **Tool:** tools/campaign.py's daemon, which imports its own code once at start.
+- **What happened:** land f09908705e36 (T-004's fix and C-17's vendor exception) reached main at 21:29 on 2026-11-10, after a full gate. The daemon had been running since 16:37 and kept the old code in memory: no CARD_ROLE_VENDOR, and the old finish. Had C-17 been retried, it would have started on Codex again. Nothing in campaign.py reloads or restarts the daemon after a frozen land. The `_job` runners are new processes, so they do pick up the new code; only the daemon's scheduling, prompts and vendor choice stay old.
+- **Repro:** land any change to tools/campaign.py while the daemon runs, then compare `grep 'daemon started' state/daemon.log` with the land's time.
+- **Effect:** none, because it was caught before the retry.
+- **Workaround:** after any land that changes tools/campaign.py, run `tools/campaign.py stop` (running sessions carry on), then `tools/campaign.py start`, then check the daemon's start time in daemon.log. Done at 21:30.
+
+## T-009 tools/campaign.py `start` with tmux 3.4: reports failure when the daemon started
+
+- **Tool:** tools/campaign.py `cmd_start`, tmux 3.4.
+- **What happened:** at 21:30, right after `tools/campaign.py stop`, `start` ran `tmux kill-session -t campaign`, which removed the old window, the only session. That ended the tmux server. Its `tmux new-session -d -s campaign …` then returned exit 1, so start raised CalledProcessError and printed "no server running". The new session and daemon (pid 921140) had in fact started. A second `start` found the daemon alive. Only one daemon ran.
+- **Repro:** with a "campaign" tmux session as the server's only session, run `tools/campaign.py stop`, then `tools/campaign.py start`.
+- **Effect:** none; a confusing error message.
+- **Workaround:** after `start`, check `tmux ls`, `ps … campaign.py daemon` and daemon.log's last "daemon started" line, rather than start's exit status.
+
+## T-010 CBMC 6.11.0 (DFCC): per-element pointer obligations over an unbounded array can't be stated (reported, unconfirmed)
+
+- **Tool:** CBMC 6.11.0, goto-cc and goto-instrument `--dfcc`, `__CPROVER_forall` in requires, MiniSat 2 and Z3 4.8.12.
+- **What happened:** C-17's round 3 builder (on Claude, 2026-11-10, reports/C-17-b3.md "B1") needed, for each of up to 65535 fields, `n >= 0 && r_ok(z, n)` of a Mem and `r_ok(aColl[i], sizeof(CollSeq))`. It reports three results:
+  - `__CPROVER_forall` over `r_ok(a[q].z, a[q].n)` makes every pointer primitive fail with MiniSat, and gives "SMT2 solver returned error message: unknown constant …q!0…" with Z3 (np.c);
+  - even for one index, without a quantifier, an assumed r_ok on a pointer read from nondet heap memory doesn't make its dereference valid (np2.c, 4 of 137 failed);
+  - `__CPROVER_is_fresh` inside a forall is rejected: "quantifier must not contain function calls" (np3.c).
+  - The reviewer (reviews/C-17-r3.md, minor issue 1) found the toys missing from its worktree, and said the impossibility claim needs the preserved inputs and commands.
+- **Repro:** now preserved in evidence/orchestrator/tool-issues/T-010/, copied from the builder's tmp/: np.c, np2.c, np3.c and np1.log; mc.c and gm.c, the memcmp toys (B2); and probe/, the B3 probe's harness, Makefile and overlay diff. The commands are the ones in C-17-b3.md's B1 section.
+- **Effect:** C-17 has no P1 proof. C-18 to C-20 inherit the problem.
+- **Status:** unconfirmed. I haven't rerun the toys. Untested: whether CBMC's legacy contracts (T-006, option 1) handle these obligations differently.
+- **Related limitation (B2):** CBMC's memcmp model loops once per byte, so with `--unwinding-assertions` unbounded string lengths can't be unwound. That is a property of the model, not a defect.
+
+## T-011 codex-cli and Claude Code auto-updated after the 22:17 crash; startup recheck
+
+- **Tools:** codex-cli 0.166.0 → 0.167.1, installed 2026-11-10 22:22:54. Claude Code 2.1.321 → 2.1.322, installed 22:24:56. Every campaign session before then ran the old versions.
+- **What was checked** (Zach, 2026-11-10; evidence/orchestrator/cli-recheck-20261110/): checkpoint 1's startup probe (evidence/checkpoint1/07-cli-startup/probe.py) under the campaign's own bwrap command lines, which campaign.py filled and accepted with no command problems.
+  - **Codex 0.167.1** paths match checkpoint 1's "now" column:
+    - rules, skills and memories behind empty read-only mounts;
+    - no AGENTS.md, hooks.json or /etc/codex;
+    - no shell profile but /etc/profile, and no git configuration.
+  - Every `--disable` name is still a known feature (an unknown one is refused: "Unknown feature flag"), and `--disable multi_agent` turns the feature off. `--strict-config` still refuses an unknown key before any model call.
+  - Every usage-limit and auth-failure pattern matches the binary. The usage-limit text uses U+2019, so `strings` splits it, but the raw bytes match.
+  - **Claude Code 2.1.322** is the same as 2.1.321, checked against the last campaign reviewer's (J0043) init event:
+    - the same 24 tools and 5 agents;
+    - no skills (the account's skills still sync into the config dir, but `--disable-slash-commands` keeps them unloaded), no MCP servers, no slash commands, the same 4 built-in plugins;
+    - `permissionMode` auto, `apiKeySource` none;
+    - /mnt/c and ~ hidden;
+    - every pattern's match status the same as 2.1.321's.
+- **A difference from checkpoint 1's record, though not from 0.166.0:** a codex session offers 19 tools:
+  - `functions.exec` and `functions.wait`;
+  - `tools.exec_command`, `write_stdin` and `apply_patch`;
+  - `request_user_input` and `request_user_input_async`;
+  - three MCP resource readers;
+  - `view_image`;
+  - `clock.sleep` and `clock__curr_time`;
+  - six `collaboration.*` subagent tools: spawn_agent, send_message, wait_agent, list_agents, interrupt_agent, followup_task.
+
+  The record (evidence/bringup/10-cli.md, checkpoint 0) says a session sees "the shell, apply_patch and code-mode tools only". All 24 of today's 0.166.0 rollouts carry the same names, so they aren't new. No builder ever called one: all 375 codex calls today were `exec`, and no exec cell calls them.
+  - Claude reviewers likewise offer Task, WebFetch, WebSearch, RemoteTrigger, PushNotification, CronCreate, Workflow and others, under 2.1.321 too. Checkpoint 1 recorded only skills, MCP servers and plugins. 17 Claude sessions made 314 calls, all Bash, Read, Write, Monitor or ToolSearch.
+- **Effect:** none so far. Per Zach's rule, no new session starts until he has seen this difference.
+
+## T-012 CBMC 6.11.0 legacy contracts: replacing a function that has a static local aborts the enforce pass
+
+- **Tool:** CBMC 6.11.0, goto-instrument's legacy contracts: `--replace-call-with-contract`, `--apply-loop-contracts`, `--enforce-contract`.
+- **What happened:** on C-15's real function, the enforce pass aborts with signal 6, both with the passes separate and with replace and loops combined. Under a 24 GB cap it took 0.27 s and 60 MB:
+  `Invariant check failed / File: ../src/goto-instrument/contracts/instrument_spec_assigns.cpp:249 function: traverse_instructions / Condition: it->is_assign() && can_cast_expr<symbol_exprt>(it->assign_lhs()) && can_cast_expr<side_effect_expr_nondett>(it->assign_rhs()) / Reason: Expected an assignment of the form symbol_exprt := side_effect_expr_nondett`.
+  - The combined replace-and-loops pass itself takes 0.65 s and 121 MB.
+  - The 22:17 out-of-memory crash was my uncapped run of that pass on the program *before* drop-unused, so on all of sqlite3.c. It was not this engine on C-15's proof.
+- **Reduced:** the trigger is a replaced callee with a **static local** (sqlite3VdbeSerialGet's `static const u16 aFlag[]`, 92080) called inside a loop of the enforced function. The legacy replacement emits assigns-range bookkeeping for that static (`__car_lb := cast(address_of(…::aFlag))`), which the enforce pass's traversal doesn't accept. It doesn't depend on the contract's clauses: each of SerialGet's six clauses can be dropped, or all replaced by `requires(1) ensures(1) assigns()`, and it still aborts. A synthetic callee with the same signature and no static local passes. Adding `static const u16 tbl[] = {…}` to it aborts. Without the loop, it passes.
+- **Repro:** evidence/orchestrator/tool-issues/T-012/: k-static-local.c (minimal), walk.c (SerialGet's own contract), m-own-same-sig.c (the control that passes) and run.sh, every step capped at 24 GB. The C-15 probe is c15-gen.py and c15-run.sh, with results in c15-results/.
+- **Effect:** C-15's proof can't replace sqlite3VdbeSerialGet under the legacy engine.
+- **Workaround:** keep the callee's body. It changes no SQLite code and weakens no check; the body is SQLite's own code, checked in place. With SerialGet's body kept and the other three callees replaced, the legacy engine takes C-15's real function through every pass. CBMC then gave a verdict in 141 s with 5.1 GB peak, on the builder's unfinished round-2 contract. On the toy, the same workaround proves: 0 of 88 failed. There is no goto-instrument option that spares static locals.

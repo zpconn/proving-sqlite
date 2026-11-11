@@ -2,43 +2,19 @@
 
 ## Status (2026-11-10, campaign session: §3 running)
 
-**In progress:** §3. The campaign started 2026-11-10 15:26 with all 20 cards named (HANDOFF.md, known issue 1). HANDOFF.md's checks passed first: `make gate CARD=C-02` PASS 427s, lock included; selftest 102/102; status as HANDOFF.md says. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** triage as it comes; §4 (ledger agent) when the boundary contracts and A-001 settle; then §5. Tcl's development files (tcl8.6-dev) are already installed for §4.
+**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named, after HANDOFF.md's checks passed. As of 22:00, 15 cards are merged. C-15 and C-17 are parked for Zach (below). C-18 to C-20 wait on C-17. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** your answers, then §4 (ledger agent; tcl8.6-dev is installed), then §5.
 
+**CLI versions:** codex-cli 0.167.1 and Claude Code 2.1.322 since 22:22–22:25 on 2026-11-10; earlier sessions ran 0.166.0 and 2.1.321 (T-011). The recheck matches checkpoint 1 except that Codex offers tools the record omits (subagent `collaboration.*`, `request_user_input`), unused but also present under 0.166.0. **No new session starts until Zach has seen that.**
 
 **Open questions for Zach:**
-1. **C-17 is parked: the Codex content filter stops its builder** (T-005 in evidence/orchestrator/tool-issues.md). Fresh sessions in both rounds were flagged "for possible cybersecurity risk … apply for Daybreak access", and each resume replayed the flag. C-18 to C-20 wait on it. **Recommendation: (a)** you apply for the Daybreak access the message names, for the builders' ChatGPT account, then I retry C-17. **(b)** As an exception to §0.10, C-17 builds on Claude and is reviewed on Codex, which changes campaign.py's ROLE_VENDOR, a frozen file. I don't recommend rewording anything to get past the filter. Also open, from the builder before the flag: A-003 doesn't bound xCmp's result (92344, 92359), and RecordCompareWithSkip negates it for DESC (92793), so INT_MIN would overflow. A ledger statement or a finding; C-17's builder and reviewer settle which.
-2. **T-004:** campaign.py's finish kills any tmux session named campaign (evidence/approvals/T-004-finish-tmux/). Approved in principle and unapplied, waiting for the auditor's OK on patch.diff. Meanwhile the selftest runs only under `env -u TMUX TMUX_TMPDIR=<scratch>`.
+2. **B2** (evidence/approvals/B2-memcmp-contract/) waits for the auditor's OK. Its proof.lock also repairs main's: since 00:19 it lacks T-006's fixtures, so every card gate fails its lock step until B2 lands.
+3. **F-002** (ledger draft): sqlite3_preupdate_old overreads an exact-size record; reproduced by the auditor natively, and by campaign.py's sandboxed runner with its control clean (evidence/orchestrator/F-002/). C-17's round-4 Codex reviewer judges it, then it goes into FINDINGS.md.
+4. **A-005:** callers give sqlite3PutVarint `sqlite3VarintLen(v)` bytes, not 9 (OP_MakeRecord), so C-01's requires isn't met at real calls, though the writes are safe. **Recommendation:** reopen C-01 for a value-dependent footprint.
+5. **C-15 round 3 and C-17 round 4** are ready to start once (1) is answered. C-15 can't merge before B2 repairs the lock.
 
-Answered on 2026-11-10: C-11 (option 1 with the contract addition; the land including results.py's Argued column) and T-003 (the TRUSTED.md entry plus the exact-allocation condition). Tool issues are logged in evidence/orchestrator/tool-issues.md (T-001 to T-005).
+Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-012).
 
-The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
-
-- **D1** mutant kills count only from the mutant's own card; pending only while its card has no proofs here or on main; `make gate CARD=C-NN` needs C-NN's own kills; plain `make gate` (§5) fails on any pending mutant, and `ALLOW_PENDING=1` is for mid-campaign full gates.
-- **D2** the three boundary headers are written, checked against LEDGER.md by scan.py, and frozen in proof.lock.
-- **D4** campaign.py never starts builder round 7; the card goes to triage.
-- **Q2/Q4** both CLIs now run in bubblewrap with $HOME and /mnt hidden and read-only. What each loaded before, and what they load now, is in evidence/checkpoint1/07-cli-startup/README.md. Two findings beyond the question:
-  - builders loaded Zach's codex approval allow-list (94 rules, `git push` among them);
-  - reviewers had the claude.ai "Claude Docs" connector and 32 skills.
-  Resume works in real sessions of both.
-- **Q5** A-001 is now exact: sqlite3VdbeRecordUnpack reads at most max(nKey, 1) + 8 bytes, whatever nField is.
-- **Fixes 1–7:**
-  1. DFCC body removal: all 22 functions run on 3 configurations; 71447f2 aborts on 7.
-  2. No make in card directories; campaign.py builds and runs repro files, sandboxed.
-  3. D4 departure (types 8 and 9).
-  4. A-003's omissions stated.
-  5. Depends on reasons, checked by scan.py.
-  6. Three mutants.
-  7. The 6.3.1.4p2 row.
-
-**Checks** (evidence/checkpoint1/): tool tests 228/228 (08-tool-tests.txt); the same test file against 71447f2's tools 193/228, with all 35 failures among the 36 new tests and the 36th a positive control (08-new-tests-at-71447f2.txt); selftest 102/102 (09-selftest.txt); `make gate ALLOW_PENDING=1`: `RESULT gate all PASS 639s 0 failed`, mutants 16/65 killed by their own cards, 0 equivalent, 49 pending and not run (10-full-gate.log); plain `make gate`, the §5 form: `RESULT gate all FAIL 518s failed: mutants all` on those 49 (11-full-gate-strict.log).
-
-**Decisions made at these fixes, approved by Zach on 2026-11-10 with checkpoint 1:**
-1. Codex builders now also run inside bubblewrap, not only Claude reviewers. Q2 asked to hide what sessions don't need, and for codex that is only possible from outside: ~/.codex must stay visible for its login and resume. Codex's own workspace-write sandbox runs nested inside, and works (real session).
-2. Pending mutants are not run. No result from another card could count, so running them only cost time (the 71447f2 gate spent most of its 6865 s on them).
-3. A codex start is refused while ~/.codex/AGENTS.md, AGENTS.override.md, hooks.json, agents/ or /etc/codex exists. None does today.
-4. record_format.h changed after its Codex review, in two comments only (D4): accepted without re-review.
-
-**Open questions:** none from these fixes. Q1 (keep 3.53.4) and Q3 (nothing) are settled.
+**Checkpoint 1** was approved on 2026-11-10 at 8fbb0c8; proof.lock is at 4b851e7. The list, fixes and checks are in evidence/checkpoint1/README.md, and the decisions in HANDOFF.md. **Findings:** FINDINGS.md (F-001). Approval records are in evidence/approvals/.
 
 ## What bring-up showed GOAL.md or the plan got wrong
 
@@ -99,3 +75,14 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-10 Zach approved the C-11 land as queued, and T-003 with the exact-allocation condition. TRUSTED.md and cards C-16 and C-17 updated, with proof.lock and APPROVED.md. C-11 and C-16 are retried once their lands reach main.
 - 2026-11-10 18:47 C-17 to triage: the Codex service's content filter ("flagged for possible cybersecurity risk") stopped round 1, and campaign.py's two resumes replayed the flagged thread (T-005). Retried once as a fresh session, prompt unchanged; if it is flagged again, C-17 is parked for Zach. The builder's lead before the flag (A-003 permits any int; RecordCompareWithSkip negates it for DESC, so INT_MIN) is left to the builder.
 - 2026-11-10 18:54 C-17 round 2 (a fresh session) was flagged by the Codex content filter too; C-17 parked for Zach (Open questions 1).
+- 2026-11-10 19:17 C-15 STUCK in round 1: no CBMC verdict on any of 8 runs, from encoding memory exhaustion or timeouts under DFCC loop contracts (T-006, unconfirmed). Recommendation, done: retry with the builder's own next step first, a toy that isolates the blow-up; NEEDS-DECISION if it is CBMC's own.
+- 2026-11-10 20:03 C-15 round 2 NEEDS-DECISION: DFCC loop-carried pointer blow-up isolated to a toy; confirmed by me, legacy contracts path checked on the toy (T-006). C-15 parked for Zach (Open questions 2).
+- 2026-11-10 Zach: T-004 OK (applied); C-17 option (b), so campaign.py's CARD_ROLE_VENDOR, with models from each vendor's own role; C-15 stays parked until the auditor reproduces T-006's toy. Both tool changes land together with proof.lock and approval records.
+- 2026-11-10 21:29 Land f099087 (T-004 and the C-17 exception) on main; full gate PASS 3459s. The daemon was restarted onto the new code (T-008, T-009). C-17 retried: round 3 builder J0070 on claude-opus-5-5.
+- 2026-11-10 22:00 C-17 round 3 (Claude builder, Codex reviewer, no flags): FINDING approved. F-001 numbered and landed in FINDINGS.md with tests/repro/F-001.c. No P1 proof (B1-B3); C-17 parked (Open questions 2). T-010 logged and B1's toys preserved.
+- 2026-11-10 22:17 OOM crash of the machine (WSL), caused by my uncapped hand-run goto-instrument (legacy replace and loop contracts in one pass) on C-15's real function. It took down the idle daemon, tmux and the orchestrator session. No job was running, and the last land (22:01) had finished. The daemon was restarted at 22:25. Lost: the uncommitted T-006 patch and toys, kept in /tmp scratch. Rule from Zach: every hand-made CBMC or goto-instrument job runs under a memory cap (`ulimit -v` 24 GB, or prove.py's 12 GB), and work in progress goes on a local branch.
+- 2026-11-10 22:35-22:45 CLI recheck after the auto-updates (T-011): one difference from checkpoint 1's record, Codex's extra tools; sessions held. C-15's legacy abort reduced to a toy (T-012): a replaced callee with a static local (SerialGet's aFlag). The workaround, keeping SerialGet's body, reaches a CBMC verdict; no bounded fallback needed for C-15.
+- 2026-11-10 22:55 T-006 patch rebuilt on wip/t006-legacy (prove.py, 20 tool tests, TRUSTED.md, card notes): tool tests 252/252, selftest 107/107; patch.diff in the approval record, waiting for the auditor's OK.
+- 2026-11-10 23:25 My error: T-006's proof.lock was written before its 19 new test fixtures were staged (lock.py hashes tracked files only), so the land's gate fails its lock step. proof.lock rewritten with them; landed again.
+- 2026-11-11 00:19 The first T-006 land reached main with its full gate failing on the lock step (my error, 23:25). The corrected land was refused: "proof.lock changed without a frozen-file change". campaign.py lands a frozen change before gating it, and has no lock-only repair. Main's proof.lock lacks tools/tests/legacy/'s 19 fixtures, so every card gate fails its lock step until the next frozen land, B2, carries the full proof.lock. No card is waiting to merge. orch's proof.lock is put back to main's meanwhile, so non-frozen lands go through.
+- 2026-11-11 13:30 Auditor's interim on B2: --tools allowlist (Bash, Read, Write, Edit, Glob, Grep, Monitor, TaskStop, ToolSearch) instead of --disallowedTools; real start and resume sessions give exactly those 9 tools. TaskStop allowed (session_tools.py). F-002 reproduced by campaign.py's runner, control clean; it goes to C-17's Codex reviewer (C-15's reviewer is Claude, the ledger agent's vendor).
