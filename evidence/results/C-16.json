@@ -1,0 +1,207 @@
+{
+ "card": "C-16",
+ "coverage_summary": [
+  {
+   "card": "C-16",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeFindCompare": {
+     "blocks": 52,
+     "blocks_failed": 0,
+     "goal_lines": [
+      93025,
+      93026,
+      93027,
+      93028,
+      93029,
+      93031,
+      93032,
+      93033,
+      93034,
+      93035,
+      93037,
+      93038,
+      93039,
+      93044,
+      93045,
+      93048,
+      93049,
+      93050,
+      93052,
+      93054,
+      93055
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "find",
+   "seconds": 1
+  },
+  {
+   "card": "C-16",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeFindCompare": {
+     "blocks": 52,
+     "blocks_failed": 0,
+     "goal_lines": [
+      93025,
+      93026,
+      93027,
+      93028,
+      93029,
+      93031,
+      93032,
+      93033,
+      93034,
+      93035,
+      93037,
+      93038,
+      93039,
+      93044,
+      93045,
+      93048,
+      93049,
+      93050,
+      93052,
+      93054,
+      93055
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "find",
+   "seconds": 1
+  },
+  {
+   "card": "C-16",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeFindCompare": {
+     "blocks": 52,
+     "blocks_failed": 0,
+     "goal_lines": [
+      93025,
+      93026,
+      93027,
+      93028,
+      93029,
+      93031,
+      93032,
+      93033,
+      93034,
+      93035,
+      93037,
+      93038,
+      93039,
+      93044,
+      93045,
+      93048,
+      93049,
+      93050,
+      93052,
+      93054,
+      93055
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "find",
+   "seconds": 1
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-16/find lp64-le: 3 failed: [sqlite3VdbeFindCompare.pointer_dereference.77] dereference failure: pointer outside object bounds in (p->aMem + (signed long int)1)->u; [sqlite3VdbeFindCompare.pointer_dereference.78] dereference failure: invalid integer address in (p->aMem + (signed long int)1)->u; [contract_sqlite3VdbeFindCompare.postcondition.2] Check ensures clause of contract contract::contract_sqlite3VdbeFindCompare for function sqlite3VdbeFindCompare",
+   "mutant": {
+    "card": "C-16",
+    "equivalent": null,
+    "from": "aMem[0]",
+    "function": "sqlite3VdbeFindCompare",
+    "id": "M-052",
+    "line": 93038,
+    "review": null,
+    "to": "aMem[1]"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-16/find lp64-le: 3 failed: [sqlite3VdbeFindCompare.pointer_dereference.125] dereference failure: pointer outside object bounds in (p->aMem + (signed long int)1)->n; [sqlite3VdbeFindCompare.pointer_dereference.126] dereference failure: invalid integer address in (p->aMem + (signed long int)1)->n; [contract_sqlite3VdbeFindCompare.postcondition.3] Check ensures clause of contract contract::contract_sqlite3VdbeFindCompare for function sqlite3VdbeFindCompare",
+   "mutant": {
+    "card": "C-16",
+    "equivalent": null,
+    "from": "aMem[0]",
+    "function": "sqlite3VdbeFindCompare",
+    "id": "M-053",
+    "line": 93049,
+    "review": null,
+    "to": "aMem[1]"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-16",
+   "cbmc_seconds": 1,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "find",
+   "properties": 548,
+   "seconds": 21,
+   "status": "PASS"
+  },
+  {
+   "card": "C-16",
+   "cbmc_seconds": 1,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "find",
+   "properties": 548,
+   "seconds": 20,
+   "status": "PASS"
+  },
+  {
+   "card": "C-16",
+   "cbmc_seconds": 1,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "find",
+   "properties": 548,
+   "seconds": 20,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "eacd90e788d055efa33cd3a52e6de643d643dc67",
+   "gate": "make gate CARD=C-16 (merge of C-16 r2)",
+   "gate_log": "evidence/gate/C-16-r2.log"
+  },
+  "mutants": {
+   "commit": "eacd90e788d055efa33cd3a52e6de643d643dc67",
+   "gate": "make gate CARD=C-16 (merge of C-16 r2)",
+   "gate_log": "evidence/gate/C-16-r2.log"
+  },
+  "prove_summary": {
+   "commit": "eacd90e788d055efa33cd3a52e6de643d643dc67",
+   "gate": "make gate CARD=C-16 (merge of C-16 r2)",
+   "gate_log": "evidence/gate/C-16-r2.log"
+  }
+ }
+}

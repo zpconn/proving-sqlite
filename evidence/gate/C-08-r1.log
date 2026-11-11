@@ -1,0 +1,138 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 1 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 1 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 38 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-08 --base ae1a00033cee3d7236d61cdd4bfe2fa098def1a6
+  scan: 12 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (20s)
+gate: cards to run: C-08, C-07, C-09
+==== includes C-08: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-08
+    includes C-08 lp64-le: 153 files, 0 not allowed
+    includes C-08 ilp32-le: 153 files, 0 not allowed
+    includes C-08 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-08 all PASS
+==== includes C-08 PASS (0s)
+==== prove C-08: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-08 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-08/build
+  RESULT prove C-08/get lp64-le PASS 24s 512 properties 0 failed
+  RESULT prove C-08 lp64-le PASS 24s 512 properties 0 failed
+  RESULT prove C-08/get ilp32-le PASS 29s 512 properties 0 failed
+  RESULT prove C-08 ilp32-le PASS 29s 512 properties 0 failed
+  RESULT prove C-08/get lp64-be PASS 29s 512 properties 0 failed
+  RESULT prove C-08 lp64-be PASS 29s 512 properties 0 failed
+  RESULT prove C-08 all PASS 82s 1536 properties 0 failed
+==== prove C-08 PASS (81s)
+==== coverage C-08: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-08 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-08/build
+    coverage get lp64-le sqlite3VdbeSerialGet: 41/41 lines; uncovered none
+    coverage get ilp32-le sqlite3VdbeSerialGet: 41/41 lines; uncovered none
+    coverage get lp64-be sqlite3VdbeSerialGet: 41/41 lines; uncovered none
+  RESULT coverage C-08 all PASS 123/123 lines 0 uncovered 0 unexplained
+==== coverage C-08 PASS (70s)
+==== includes C-07: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-07
+    includes C-07 lp64-le: 153 files, 0 not allowed
+    includes C-07 ilp32-le: 153 files, 0 not allowed
+    includes C-07 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-07 all PASS
+==== includes C-07 PASS (0s)
+==== prove C-07: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-07 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-07/build
+  RESULT prove C-07/get lp64-le PASS 25s 228 properties 0 failed
+  RESULT prove C-07/get7 lp64-le PASS 16s 209 properties 0 failed
+  RESULT prove C-07 lp64-le PASS 41s 437 properties 0 failed
+  RESULT prove C-07/get ilp32-le PASS 26s 228 properties 0 failed
+  RESULT prove C-07/get7 ilp32-le PASS 21s 209 properties 0 failed
+  RESULT prove C-07 ilp32-le PASS 47s 437 properties 0 failed
+  RESULT prove C-07/get lp64-be PASS 25s 228 properties 0 failed
+  RESULT prove C-07/get7 lp64-be PASS 20s 209 properties 0 failed
+  RESULT prove C-07 lp64-be PASS 45s 437 properties 0 failed
+  RESULT prove C-07 all PASS 133s 1311 properties 0 failed
+==== prove C-07 PASS (134s)
+==== coverage C-07: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-07 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-07/build
+    coverage get lp64-le serialGet: 10/10 lines; uncovered none
+    coverage get7 lp64-le serialGet7: 10/10 lines; uncovered none
+    coverage get ilp32-le serialGet: 10/10 lines; uncovered none
+    coverage get7 ilp32-le serialGet7: 10/10 lines; uncovered none
+    coverage get lp64-be serialGet: 10/10 lines; uncovered none
+    coverage get7 lp64-be serialGet7: 10/10 lines; uncovered none
+  RESULT coverage C-07 all PASS 60/60 lines 0 uncovered 0 unexplained
+==== coverage C-07 PASS (118s)
+==== includes C-09: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-09
+    includes C-09 lp64-le: 152 files, 0 not allowed
+    includes C-09 ilp32-le: 152 files, 0 not allowed
+    includes C-09 lp64-be: 152 files, 0 not allowed
+  RESULT includes C-09 all PASS
+==== includes C-09 PASS (0s)
+==== prove C-09: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-09 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-09/build
+  RESULT prove C-09/decode lp64-le PASS 12s 612 properties 0 failed
+  RESULT prove C-09 lp64-le PASS 12s 612 properties 0 failed
+  RESULT prove C-09/decode ilp32-le PASS 12s 612 properties 0 failed
+  RESULT prove C-09 ilp32-le PASS 12s 612 properties 0 failed
+  RESULT prove C-09/decode lp64-be PASS 12s 612 properties 0 failed
+  RESULT prove C-09 lp64-be PASS 12s 612 properties 0 failed
+  RESULT prove C-09 all PASS 36s 1836 properties 0 failed
+==== prove C-09 PASS (35s)
+==== coverage C-09: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-09 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-09/build
+    coverage decode lp64-le sqlite3VdbeSerialGet: 40/40 lines; uncovered none
+    coverage decode lp64-le serialGet: 10/10 lines; uncovered none
+    coverage decode ilp32-le sqlite3VdbeSerialGet: 40/40 lines; uncovered none
+    coverage decode ilp32-le serialGet: 10/10 lines; uncovered none
+    coverage decode lp64-be sqlite3VdbeSerialGet: 40/40 lines; uncovered none
+    coverage decode lp64-be serialGet: 10/10 lines; uncovered none
+  RESULT coverage C-09 all PASS 150/150 lines 0 uncovered 0 unexplained
+==== coverage C-09 PASS (18s)
+==== mutants C-08: /usr/bin/python3 tools/mutate.py --card C-08 --with C-07,C-09 --json proofs/C-08/build/mutants.json
+  MUTANT M-031 sqlite3VdbeSerialGet:92083 'serial_type&1'->'serial_type&3' KILLED by C-08/get lp64-le: 2 failed: [sqlite3VdbeSerialGet.array_bounds.1] array 'aFlag' upper bound in aFlag[(signed long int)(serial_type & (unsigned int)3)]; [contract_sqlite3VdbeSerialGet.postcondition.1] Check ensures clause of contract contract::contract_sqlite3VdbeSerialGet for function sqlite3VdbeSerialGet
+  MUTANT M-032 sqlite3VdbeSerialGet:92055 '<<32'->'<<63' KILLED by C-08/get lp64-le: 2 failed: [sqlite3VdbeSerialGet.overflow.9] arithmetic overflow on signed shl in (i64)1 << 63; [sqlite3VdbeSerialGet.overflow.11] arithmetic overflow on signed * in ((i64)1 << 63) * (signed long int)(256 * (signed int)(i8)buf[(signed long int)0] | (signed int)buf[(signed long int)1])
+  RESULT mutate C-08 PASS 2/2 killed 0 equivalent
+==== mutants C-08 PASS (66s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 1 spans
+  lock                     PASS    0s  RESULT lock PASS 38 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   21s  RESULT probe all PASS
+  includes C-08            PASS    0s  RESULT includes C-08 all PASS
+  prove C-08               PASS   81s  RESULT prove C-08 all PASS 82s 1536 properties 0 failed
+  coverage C-08            PASS   70s  RESULT coverage C-08 all PASS 123/123 lines 0 uncovered 0 unexplained
+  includes C-07            PASS    0s  RESULT includes C-07 all PASS
+  prove C-07               PASS  134s  RESULT prove C-07 all PASS 133s 1311 properties 0 failed
+  coverage C-07            PASS  119s  RESULT coverage C-07 all PASS 60/60 lines 0 uncovered 0 unexplained
+  includes C-09            PASS    0s  RESULT includes C-09 all PASS
+  prove C-09               PASS   36s  RESULT prove C-09 all PASS 36s 1836 properties 0 failed
+  coverage C-09            PASS   19s  RESULT coverage C-09 all PASS 150/150 lines 0 uncovered 0 unexplained
+  mutants C-08             PASS   66s  RESULT mutate C-08 PASS 2/2 killed 0 equivalent
+RESULT gate C-08 PASS 549s 0 failed

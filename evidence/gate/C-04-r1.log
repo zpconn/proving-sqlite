@@ -1,0 +1,207 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 1 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 1 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 38 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-04 --base 7df309ae91c0ec3b642b7443170ca29b31bc036b
+  scan: 13 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (20s)
+gate: cards to run: C-04, C-01, C-02, C-03, C-05
+==== includes C-04: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-04
+    includes C-04 lp64-le: 153 files, 0 not allowed
+    includes C-04 ilp32-le: 153 files, 0 not allowed
+    includes C-04 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-04 all PASS
+==== includes C-04 PASS (0s)
+==== prove C-04: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-04 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-04/build
+  RESULT prove C-04/separate lp64-le PASS 22s 237 properties 0 failed
+  RESULT prove C-04/shared lp64-le PASS 18s 245 properties 0 failed
+  RESULT prove C-04 lp64-le PASS 40s 482 properties 0 failed
+  RESULT prove C-04/separate ilp32-le PASS 24s 237 properties 0 failed
+  RESULT prove C-04/shared ilp32-le PASS 20s 245 properties 0 failed
+  RESULT prove C-04 ilp32-le PASS 44s 482 properties 0 failed
+  RESULT prove C-04/separate lp64-be PASS 25s 237 properties 0 failed
+  RESULT prove C-04/shared lp64-be PASS 21s 245 properties 0 failed
+  RESULT prove C-04 lp64-be PASS 46s 482 properties 0 failed
+  RESULT prove C-04 all PASS 130s 1446 properties 0 failed
+==== prove C-04 PASS (130s)
+==== coverage C-04: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-04 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-04/build
+    coverage separate lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage shared lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage separate ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage shared ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage separate lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage shared lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+  RESULT coverage C-04 all PASS 90/90 lines 0 uncovered 0 unexplained
+==== coverage C-04 PASS (123s)
+==== includes C-01: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-01
+    includes C-01 lp64-le: 153 files, 0 not allowed
+    includes C-01 ilp32-le: 153 files, 0 not allowed
+    includes C-01 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-01 all PASS
+==== includes C-01 PASS (0s)
+==== prove C-01: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-01 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-01/build
+  RESULT prove C-01/put64 lp64-le PASS 21s 110 properties 0 failed
+  RESULT prove C-01/put lp64-le PASS 17s 115 properties 0 failed
+  RESULT prove C-01 lp64-le PASS 38s 225 properties 0 failed
+  RESULT prove C-01/put64 ilp32-le PASS 25s 110 properties 0 failed
+  RESULT prove C-01/put ilp32-le PASS 24s 115 properties 0 failed
+  RESULT prove C-01 ilp32-le PASS 49s 225 properties 0 failed
+  RESULT prove C-01/put64 lp64-be PASS 23s 110 properties 0 failed
+  RESULT prove C-01/put lp64-be PASS 22s 115 properties 0 failed
+  RESULT prove C-01 lp64-be PASS 45s 225 properties 0 failed
+  RESULT prove C-01 all PASS 132s 675 properties 0 failed
+==== prove C-01 PASS (132s)
+==== coverage C-01: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-01 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-01/build
+    coverage put64 lp64-le putVarint64: 18/18 lines; uncovered none
+    coverage put lp64-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage put64 ilp32-le putVarint64: 18/18 lines; uncovered none
+    coverage put ilp32-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage put64 lp64-be putVarint64: 18/18 lines; uncovered none
+    coverage put lp64-be sqlite3PutVarint: 9/9 lines; uncovered none
+  RESULT coverage C-01 all PASS 81/81 lines 0 uncovered 0 unexplained
+==== coverage C-01 PASS (101s)
+==== includes C-02: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-02
+    includes C-02 lp64-le: 151 files, 0 not allowed
+    includes C-02 ilp32-le: 151 files, 0 not allowed
+    includes C-02 lp64-be: 151 files, 0 not allowed
+  RESULT includes C-02 all PASS
+==== includes C-02 PASS (0s)
+==== prove C-02: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-02 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-02/build
+  RESULT prove C-02/roundtrip lp64-le PASS 10s 450 properties 0 failed
+  RESULT prove C-02 lp64-le PASS 10s 450 properties 0 failed
+  RESULT prove C-02/roundtrip ilp32-le PASS 10s 450 properties 0 failed
+  RESULT prove C-02 ilp32-le PASS 10s 450 properties 0 failed
+  RESULT prove C-02/roundtrip lp64-be PASS 10s 450 properties 0 failed
+  RESULT prove C-02 lp64-be PASS 10s 450 properties 0 failed
+  RESULT prove C-02 all PASS 30s 1350 properties 0 failed
+==== prove C-02 PASS (29s)
+==== coverage C-02: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-02 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-02/build
+    coverage roundtrip lp64-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip ilp32-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-be putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3VarintLen: 4/4 lines; uncovered none
+  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+==== coverage C-02 PASS (16s)
+==== includes C-03: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-03
+    includes C-03 lp64-le: 152 files, 0 not allowed
+    includes C-03 ilp32-le: 152 files, 0 not allowed
+    includes C-03 lp64-be: 152 files, 0 not allowed
+  RESULT includes C-03 all PASS
+==== includes C-03 PASS (0s)
+==== prove C-03: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-03 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-03/build
+  RESULT prove C-03/separate lp64-le PASS 23s 331 properties 0 failed
+  RESULT prove C-03/shared lp64-le PASS 20s 339 properties 0 failed
+  RESULT prove C-03 lp64-le PASS 43s 670 properties 0 failed
+  RESULT prove C-03/separate ilp32-le PASS 24s 331 properties 0 failed
+  RESULT prove C-03/shared ilp32-le PASS 15s 339 properties 0 failed
+  RESULT prove C-03 ilp32-le PASS 39s 670 properties 0 failed
+  RESULT prove C-03/separate lp64-be PASS 25s 331 properties 0 failed
+  RESULT prove C-03/shared lp64-be PASS 22s 339 properties 0 failed
+  RESULT prove C-03 lp64-be PASS 47s 670 properties 0 failed
+  RESULT prove C-03 all PASS 129s 2010 properties 0 failed
+==== prove C-03 PASS (129s)
+==== coverage C-03: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-03 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-03/build
+    coverage separate lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage shared lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage separate ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage shared ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage separate lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage shared lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+  RESULT coverage C-03 all PASS 522/522 lines 0 uncovered 0 unexplained
+==== coverage C-03 PASS (126s)
+==== includes C-05: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-05
+    includes C-05 lp64-le: 152 files, 0 not allowed
+    includes C-05 ilp32-le: 152 files, 0 not allowed
+    includes C-05 lp64-be: 152 files, 0 not allowed
+  RESULT includes C-05 all PASS
+==== includes C-05 PASS (0s)
+==== prove C-05: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-05 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-05/build
+  RESULT prove C-05/len lp64-le PASS 19s 16 properties 0 failed
+  RESULT prove C-05 lp64-le PASS 19s 16 properties 0 failed
+  RESULT prove C-05/len ilp32-le PASS 20s 16 properties 0 failed
+  RESULT prove C-05 ilp32-le PASS 20s 16 properties 0 failed
+  RESULT prove C-05/len lp64-be PASS 19s 16 properties 0 failed
+  RESULT prove C-05 lp64-be PASS 19s 16 properties 0 failed
+  RESULT prove C-05 all PASS 58s 48 properties 0 failed
+==== prove C-05 PASS (58s)
+==== coverage C-05: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-05 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-05/build
+    coverage len lp64-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage len ilp32-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage len lp64-be sqlite3VarintLen: 4/4 lines; uncovered none
+  RESULT coverage C-05 all PASS 12/12 lines 0 uncovered 0 unexplained
+==== coverage C-05 PASS (51s)
+==== mutants C-04: /usr/bin/python3 tools/mutate.py --card C-04 --with C-01,C-02,C-03,C-05 --json proofs/C-04/build/mutants.json
+  MUTANT M-019 sqlite3GetVarint32:38197 'p[2]'->'p[9]' KILLED by C-04/separate lp64-le: 2 failed: [sqlite3GetVarint32.pointer_dereference.53] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3GetVarint32.pointer_dereference.54] dereference failure: invalid integer address in p[(signed long int)9]
+  MUTANT M-020 sqlite3GetVarint32:38192 '<<7'->'<<25' KILLED by C-04/separate lp64-le: 1 failed: [sqlite3GetVarint32.overflow.1] arithmetic overflow on signed shl in ((signed int)p[(signed long int)0] & 0x7F) << 25
+  RESULT mutate C-04 PASS 2/2 killed 0 equivalent
+==== mutants C-04 PASS (44s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 1 spans
+  lock                     PASS    0s  RESULT lock PASS 38 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   21s  RESULT probe all PASS
+  includes C-04            PASS    0s  RESULT includes C-04 all PASS
+  prove C-04               PASS  130s  RESULT prove C-04 all PASS 130s 1446 properties 0 failed
+  coverage C-04            PASS  123s  RESULT coverage C-04 all PASS 90/90 lines 0 uncovered 0 unexplained
+  includes C-01            PASS    0s  RESULT includes C-01 all PASS
+  prove C-01               PASS  132s  RESULT prove C-01 all PASS 132s 675 properties 0 failed
+  coverage C-01            PASS  102s  RESULT coverage C-01 all PASS 81/81 lines 0 uncovered 0 unexplained
+  includes C-02            PASS    0s  RESULT includes C-02 all PASS
+  prove C-02               PASS   30s  RESULT prove C-02 all PASS 30s 1350 properties 0 failed
+  coverage C-02            PASS   17s  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+  includes C-03            PASS    0s  RESULT includes C-03 all PASS
+  prove C-03               PASS  130s  RESULT prove C-03 all PASS 129s 2010 properties 0 failed
+  coverage C-03            PASS  127s  RESULT coverage C-03 all PASS 522/522 lines 0 uncovered 0 unexplained
+  includes C-05            PASS    0s  RESULT includes C-05 all PASS
+  prove C-05               PASS   58s  RESULT prove C-05 all PASS 58s 48 properties 0 failed
+  coverage C-05            PASS   51s  RESULT coverage C-05 all PASS 12/12 lines 0 uncovered 0 unexplained
+  mutants C-04             PASS   45s  RESULT mutate C-04 PASS 2/2 killed 0 equivalent
+RESULT gate C-04 PASS 969s 0 failed
