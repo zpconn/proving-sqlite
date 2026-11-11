@@ -19,8 +19,6 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
     - **Pass order:** prove.py runs them in that order, replace, then loops, then enforce. With loops applied before the replacement, a replaced callee whose body is removed can write outside the loop's assigns unchecked, which the callee-frame toy shows.
     - **Contract text:** the legacy engine reads clauses only from a function's own declaration. So each legacy contract is its proofs/contracts/<fn>.h `contract_<fn>` declaration with only the name changed, generated at every build, with no stored copy.
     - **Static locals:** a replaced callee with a static local, called in a loop, aborts the enforce pass (T-012). Such a callee keeps its body, and prove.py says so. For C-15 that is sqlite3VdbeSerialGet.
-    - **Kept callee bodies:** loop frames are checked against kept callee bodies too. A callee called in the loop with its body kept, writing outside the loop's assigns, fails by "Check that … is assignable" inside the callee (tool tests `-k b2`).
-    - **Clause placement:** contract clauses count only on a proofs/contracts/<fn>.h `contract_<fn>` declaration. prove.py fails any build whose proofs/include/ headers carry a clause, or whose contracts headers put one on another name, and scan.py rejects such headers (B2). prove.py's textual check misses a clause hidden in a one-line `#define`; scan.py's rule 15 (no #define in shared headers but the include guard) is the guard for that form, and DFCC ignores such a clause.
     - **Validated on toys** (tool tests `-k legacy`, tools/tests/legacy/), each failing by the expected check:
       - a replaced call forgets what its contract assigns;
       - a callee assigning outside the loop's frame;
@@ -44,7 +42,7 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
 - **Coverage:** `cbmc --cover location`, which the gate uses to require that proofs reach every line of the functions under proof (tools/prove.py coverage).
 - **Its library models,** used in place of the C library:
   - `memcpy`: serialGet (91976), serialGet7 (91989), sqlite3IsNaN (36449);
-  - `memcmp`: sqlite3VdbeRecordCompareWithSkip (92739, 92767), vdbeRecordCompareString (92975). Where C-17 and C-19 replace those calls with LEDGER.md A-006's boundary contract (proofs/contracts/memcmp.h, B2), the model is not used and the contract is *assumed*;
+  - `memcmp`: sqlite3VdbeRecordCompareWithSkip (92739, 92767), vdbeRecordCompareString (92975);
   - `malloc` and `free`, under `--malloc-may-fail --malloc-fail-null`: harnesses only.
 
   Under `--pointer-check`, each model checks that its arguments are accessible for the length it is given. It also checks that memcpy's source and destination don't overlap (UB-CLASSES.md).

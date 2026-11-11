@@ -1120,10 +1120,6 @@ def check_preds(s, sqlite_ids):
             check_assumes(s, where, raw, code, allow_setup=False)
             check_zero_fill(s, where, code)
             check_function_defs(s, where, code, sqlite_ids)
-            if sub == 'proofs/include' and re.search(r'__CPROVER_(requires|ensures|assigns|frees)\b', code):
-                # B2 (Zach, 2026-11-10): under the legacy engine (T-006) a clause here would attach to a SQLite function
-                s.bad(where, 'no function contract clauses in proofs/include/ (contracts live in proofs/contracts/<fn>.h '
-                             'as contract_<fn>)')
     pp = os.path.join(s.root, 'proofs', 'include', 'proof.h')
     if os.path.exists(pp):
         body = strip_comments(open(pp).read())

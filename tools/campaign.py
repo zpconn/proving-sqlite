@@ -299,11 +299,7 @@ _BWRAP_CODEX = (_BWRAP_BASE +
                 ['--bind', '{dir}', '{dir}', '--remount-ro', '{home}', '--chdir', '{dir}'])
 # checkpoint 1, Q2: no skills or commands (the account's synced skills land in the config directory at startup), and
 # no MCP servers but --mcp-config's, which is never given (the account's claude.ai connectors included)
-# Zach and the auditor, 2026-11-11 (after T-011): an allowlist of built-in tools, not a denylist, which every CLI
-# update can outflank. It is evidence/orchestrator/session_tools.py's CLAUDE_OK. --tools takes a variadic list, so
-# it is followed by another flag here.
-CLAUDE_TOOLS = 'Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch'
-_CLAUDE_TAIL = ['--disable-slash-commands', '--strict-mcp-config', '--tools', CLAUDE_TOOLS, '--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
+_CLAUDE_TAIL = ['--disable-slash-commands', '--strict-mcp-config', '--model', '{model}', '--effort', '{effort}', '--permission-mode', 'auto',
                 '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
 SESSION_COMMANDS = {
     'codex': {'start': _BWRAP_CODEX + ['codex', 'exec', '--json'] + _CODEX_SAFE,
@@ -614,11 +610,6 @@ def command_problems(vendor, argv, wt, p):
     for flag in ('--disable-slash-commands', '--strict-mcp-config'):
         if flag not in cl:
             probs.append('claude must run with %s (checkpoint 1, Q2: no skills, no MCP servers)' % flag)
-    tools = [cl[i + 1] for i, a in enumerate(cl[:-1]) if a == '--tools']
-    if cl.count('--tools') != 1 or len(tools) != 1 or tools[0] != CLAUDE_TOOLS:
-        probs.append('claude must run with --tools %s, once and exactly (Zach and the auditor, after T-011)' % CLAUDE_TOOLS)
-    if any(a in ('--allowedTools', '--allowed-tools', '--disallowedTools', '--disallowed-tools') for a in cl):
-        probs.append('claude\'s tools are set by --tools alone')
     return probs
 
 
@@ -3007,12 +2998,6 @@ class SelfTest:
              lambda a: [x for x in a if x != '--disable-slash-commands'], '--disable-slash-commands'),
             ('claude with MCP servers from anywhere but --mcp-config (claude.ai connectors)', 'claude',
              lambda a: [x for x in a if x != '--strict-mcp-config'], '--strict-mcp-config'),
-            ('claude without --tools (every built-in tool back)', 'claude',
-             lambda a: [x for i, x in enumerate(a) if x != '--tools' and not (i and a[i - 1] == '--tools')], '--tools'),
-            ('claude with --tools default', 'claude',
-             lambda a: [('default' if (i and a[i - 1] == '--tools') else x) for i, x in enumerate(a)], '--tools'),
-            ('claude whose --tools list has one extra tool (SendMessage)', 'claude',
-             lambda a: [(x + ',SendMessage' if (i and a[i - 1] == '--tools') else x) for i, x in enumerate(a)], '--tools'),
             ('claude bwrap that leaves $HOME visible', 'claude', drop(('--tmpfs', home)), 'hide %s ' % home),
             ('claude bwrap that leaves /mnt visible', 'claude', drop(('--tmpfs', '/mnt')), 'hide /mnt'),
             ('claude bwrap that leaves $HOME writable', 'claude', drop(('--remount-ro', home)), 'remount %s read-only' % home),

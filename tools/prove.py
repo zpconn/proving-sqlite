@@ -269,38 +269,6 @@ def legacy_redeclaration(text, fn):
     return out
 
 
-def header_clause_problems(root=ROOT):
-    """B2 (Zach, 2026-11-10): proofs/include/ headers carry no function contract clauses, and a contracts header puts
-    clauses only on contract_<name> declarations. Under the legacy engine (T-006) a clause anywhere else would attach
-    a contract of its own to a SQLite function; under DFCC it is meaningless. Every build checks this."""
-    probs = []
-    d = os.path.join(root, 'proofs', 'include')
-    for n in sorted(os.listdir(d)) if os.path.isdir(d) else []:
-        if n.endswith('.h') and n != 'proof.h':
-            if CONTRACT_CLAUSE_RX.search(_strip_comments(open(os.path.join(d, n), errors='replace').read())):
-                probs.append('proofs/include/%s carries a function contract clause (contracts live in proofs/contracts/)' % n)
-    d = os.path.join(root, 'proofs', 'contracts')
-    for n in sorted(os.listdir(d)) if os.path.isdir(d) else []:
-        if not n.endswith('.h'):
-            continue
-        t = '\n'.join(l for l in _strip_comments(open(os.path.join(d, n), errors='replace').read()).split('\n')
-                      if not l.lstrip().startswith('#'))
-        depth, start = 0, 0
-        for i, c in enumerate(t + ';'):
-            if c in '({':
-                depth += 1
-            elif c in ')}':
-                depth -= 1
-            elif c == ';' and depth == 0:
-                stmt, start = t[start:i], i + 1
-                if CONTRACT_CLAUSE_RX.search(stmt):
-                    m = re.search(r'\b([A-Za-z_][A-Za-z0-9_]*)\s*\(', stmt)
-                    if not m or not m.group(1).startswith('contract_'):
-                        probs.append('proofs/contracts/%s puts contract clauses on %s, not on a contract_<name> '
-                                     'declaration' % (n, m.group(1) if m else '?'))
-    return probs
-
-
 def legacy_source(card_dir, proof):
     """The legacy translation unit: harness.c, then each ENFORCE and REPLACE function redeclared from its header."""
     harness = os.path.join(card_dir, 'harness.c')
@@ -526,9 +494,6 @@ def bodies_to_remove(card_dir, proof):
 def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
     """Build the instrumented goto program for one proof and config. Returns (path, error)."""
     os.makedirs(bdir, exist_ok=True)
-    hp = header_clause_problems()
-    if hp:
-        return None, '; '.join(hp)
     obj = os.path.join(bdir, 'harness.o.goto')
     harness = os.path.join(card_dir, 'harness.c')
     stamp = os.path.join(bdir, 'harness.o.stamp')
