@@ -106,7 +106,7 @@
    "float_to_int_properties": 0,
    "proof": "len",
    "properties": 16,
-   "seconds": 34,
+   "seconds": 19,
    "status": "PASS"
   },
   {
@@ -119,7 +119,7 @@
    "float_to_int_properties": 0,
    "proof": "len",
    "properties": 16,
-   "seconds": 32,
+   "seconds": 20,
    "status": "PASS"
   },
   {
@@ -132,15 +132,15 @@
    "float_to_int_properties": 0,
    "proof": "len",
    "properties": 16,
-   "seconds": 31,
+   "seconds": 19,
    "status": "PASS"
   }
  ],
  "provenance": {
   "coverage_summary": {
-   "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
-   "gate": "make gate CARD=C-03 (merge of C-03 r1)",
-   "gate_log": "evidence/gate/C-03-r1.log"
+   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
+   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
+   "gate_log": "evidence/gate/C-04-r1.log"
   },
   "mutants": {
    "commit": "10cf282389d3f2219fe23aa7c5f8877944d24d99",
@@ -148,9 +148,9 @@
    "gate_log": "evidence/gate/C-05-r1.log"
   },
   "prove_summary": {
-   "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
-   "gate": "make gate CARD=C-03 (merge of C-03 r1)",
-   "gate_log": "evidence/gate/C-03-r1.log"
+   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
+   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
+   "gate_log": "evidence/gate/C-04-r1.log"
   }
  }
 }

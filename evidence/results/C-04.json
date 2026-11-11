@@ -1,0 +1,324 @@
+{
+ "card": "C-04",
+ "coverage_summary": [
+  {
+   "card": "C-04",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3GetVarint32": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38183,
+      38184,
+      38190,
+      38192,
+      38193,
+      38195,
+      38197,
+      38198,
+      38201,
+      38203,
+      38204,
+      38205,
+      38206,
+      38208,
+      38209
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "separate",
+   "seconds": 0
+  },
+  {
+   "card": "C-04",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3GetVarint32": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38183,
+      38184,
+      38190,
+      38192,
+      38193,
+      38195,
+      38197,
+      38198,
+      38201,
+      38203,
+      38204,
+      38205,
+      38206,
+      38208,
+      38209
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "shared",
+   "seconds": 0
+  },
+  {
+   "card": "C-04",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3GetVarint32": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38183,
+      38184,
+      38190,
+      38192,
+      38193,
+      38195,
+      38197,
+      38198,
+      38201,
+      38203,
+      38204,
+      38205,
+      38206,
+      38208,
+      38209
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "separate",
+   "seconds": 0
+  },
+  {
+   "card": "C-04",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3GetVarint32": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38183,
+      38184,
+      38190,
+      38192,
+      38193,
+      38195,
+      38197,
+      38198,
+      38201,
+      38203,
+      38204,
+      38205,
+      38206,
+      38208,
+      38209
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "shared",
+   "seconds": 0
+  },
+  {
+   "card": "C-04",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3GetVarint32": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38183,
+      38184,
+      38190,
+      38192,
+      38193,
+      38195,
+      38197,
+      38198,
+      38201,
+      38203,
+      38204,
+      38205,
+      38206,
+      38208,
+      38209
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "separate",
+   "seconds": 0
+  },
+  {
+   "card": "C-04",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3GetVarint32": {
+     "blocks": 40,
+     "blocks_failed": 0,
+     "goal_lines": [
+      38183,
+      38184,
+      38190,
+      38192,
+      38193,
+      38195,
+      38197,
+      38198,
+      38201,
+      38203,
+      38204,
+      38205,
+      38206,
+      38208,
+      38209
+     ],
+     "uncovered": [],
+     "uncovered_blocks": []
+    }
+   },
+   "proof": "shared",
+   "seconds": 0
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-04/separate lp64-le: 2 failed: [sqlite3GetVarint32.pointer_dereference.53] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3GetVarint32.pointer_dereference.54] dereference failure: invalid integer address in p[(signed long int)9]",
+   "mutant": {
+    "card": "C-04",
+    "equivalent": null,
+    "from": "p[2]",
+    "function": "sqlite3GetVarint32",
+    "id": "M-019",
+    "line": 38197,
+    "review": null,
+    "to": "p[9]"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-04/separate lp64-le: 1 failed: [sqlite3GetVarint32.overflow.1] arithmetic overflow on signed shl in ((signed int)p[(signed long int)0] & 0x7F) << 25",
+   "mutant": {
+    "card": "C-04",
+    "equivalent": null,
+    "from": "<<7",
+    "function": "sqlite3GetVarint32",
+    "id": "M-020",
+    "line": 38192,
+    "review": null,
+    "to": "<<25"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-04",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "separate",
+   "properties": 237,
+   "seconds": 22,
+   "status": "PASS"
+  },
+  {
+   "card": "C-04",
+   "cbmc_seconds": 0,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "shared",
+   "properties": 245,
+   "seconds": 18,
+   "status": "PASS"
+  },
+  {
+   "card": "C-04",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "separate",
+   "properties": 237,
+   "seconds": 24,
+   "status": "PASS"
+  },
+  {
+   "card": "C-04",
+   "cbmc_seconds": 0,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "shared",
+   "properties": 245,
+   "seconds": 20,
+   "status": "PASS"
+  },
+  {
+   "card": "C-04",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "separate",
+   "properties": 237,
+   "seconds": 25,
+   "status": "PASS"
+  },
+  {
+   "card": "C-04",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "shared",
+   "properties": 245,
+   "seconds": 21,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
+   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
+   "gate_log": "evidence/gate/C-04-r1.log"
+  },
+  "mutants": {
+   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
+   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
+   "gate_log": "evidence/gate/C-04-r1.log"
+  },
+  "prove_summary": {
+   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
+   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
+   "gate_log": "evidence/gate/C-04-r1.log"
+  }
+ }
+}
