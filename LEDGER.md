@@ -33,8 +33,15 @@ Lines are upstream/sqlite3.c's.
   - This corrects the checkpoint 1 draft, which said idx is bounded only by szHdr and the field count. Inside the loop, idx < szHdr ≤ d ≤ nKey.
   - vdbeRecordCompareInt reads up to 8 bytes at offset `pKey1[0] & 0x3F` (92849) without comparing it to nKey1.
 - Who must make it true: callers in milestone 2: the b-tree layer, for cell payloads and overflow pages, and the sorter. sqlite3VdbeFindCompare's comment (93011–93023) states that callers guarantee "at least 74 (but not 136) bytes of padding following each buffer" passed to vdbeRecordCompareInt. That is SQLite's own statement of this obligation for the comparators, not evidence that it holds.
-- Evidence: none. The premise is *tested*: without slack, sqlite3VdbeRecordUnpack(2, {0x02, 0x81}) on an exact-size allocation is an ASan heap-buffer-overflow read at 38190, called from 92137 (evidence/bringup/08-probes.md, §1.8.2).
-- Status: draft
+  - **Callers that don't make it true** (ledger run 2026-11-10, by backtrace, reports/ledger-2026-11-10.md §3). For each, whether its record can come from the database file, and so be corrupt, or is always built by SQLite. "Source reading" means the orchestrator read the code and nothing has tested it yet.
+    1. **sqlite3_preupdate_old → vdbeUnpackRecord** (95938–95944): `aRec = sqlite3DbMallocRaw(db, nRec)` with `nRec = sqlite3BtreePayloadSize(...)`, exactly the payload's size, filled by sqlite3BtreePayload. **From the file; can be corrupt.** F-002.
+    2. **sqlite3_preupdate_new → vdbeUnpackRecord** (96086–96094). Only an INSERT unpacks; an UPDATE copies registers (96108). The ledger report calls this the UPDATE path, but the source has it on INSERT. An ordinary INSERT's record is built by OP_MakeRecord. With SQLITE_ENABLE_PREUPDATE_HOOK, though, xferOptimization (142204–142207) copies the source table's stored record with OP_RowData into the register it inserts from. So `INSERT INTO t2 SELECT * FROM t1` hands preupdate_new t1's record as stored (source reading). **From the file; can be corrupt.** F-002.
+    3. **sqlite3BtreeInsert with BTREE_SAVEPOSITION** (82916–82924): after a rebalance on an index or WITHOUT ROWID cursor, `pCur->pKey = sqlite3Malloc(pX->nKey)`, exact size. Source reading: the inserts that set SAVEPOSITION all insert a record from OP_MakeRecord: ALTER TABLE DROP COLUMN (122937–122940), and sqlite3CompleteInsertion for a one-pass multi-row UPDATE (141703–141722, from 160859). xferOptimization's inserts don't set it (142200–142207, 142260–142268). So the reading is **always built by SQLite**. **Zach's hypothesis (2026-11-11), to test, not a claim:** xferOptimization (`INSERT INTO t2 SELECT * FROM t1`, matching schemas, t1 from a corrupt file) may carry file records into this path too, and so overread like F-002. The ledger agent's second run tries a repro.
+    4. **The sorter** (vdbeSorterCompare 107326, vdbeSorterCompareTail 107299, sqlite3VdbeSorterCompare 109314). Its records come from OP_SorterInsert of OP_MakeRecord results: CREATE INDEX (130362), ORDER BY (149863) and GROUP BY (157597). They are kept in SQLite's memory or its own temporary files (source reading). **Always built by SQLite.**
+    5. **btreeMoveto ← btreeRestoreCursorPosition ← btreeNext** (74100) restores a cursor from `pCur->pKey`. That key comes from path 3, with no padding, or from saveCursorKey (73950–73957), which pads 9 + 8 bytes and zeroes them against exactly this overread. **The same source as path 3.**
+    - A record SQLite builds is well formed, so a missing slack matters only if the record is corrupt. That makes paths 1 and 2 the reachable overreads (F-002). In the suites no overread actually fired on any path.
+- Evidence: tested (ledger agent run 2026-11-10, J0079): the site was reached about 14.4M times and ASan-checked 6.85M times in sdevtest. The slack after the record was below 8 bytes in 151,429 sdevtest calls (665 in test's ASan build, 124 in fuzztest-asan, 665 in fuzzcheck-native), and 0 bytes in 4,136 of them. The nKey = 0 case was not reached. Earlier, the premise was *tested*: without slack, sqlite3VdbeRecordUnpack(2, {0x02, 0x81}) on an exact-size allocation is an ASan heap-buffer-overflow read at 38190, called from 92137 (evidence/bringup/08-probes.md, §1.8.2).
+- Status: violated at callers (Zach, 2026-11-11). The clause stays as the proof's assumption; the callers above don't make it true.
 
 ## A-002 sqlite3DbMallocRaw returns NULL or a fresh block of at least n bytes
 - Function(s): sqlite3DbMallocRaw (32113), a boundary callee of sqlite3VdbeAllocUnpackedRecord (C-14, call at 92103).
@@ -50,8 +57,8 @@ Lines are upstream/sqlite3.c's.
   - The real function also updates the connection's allocator state: lookaside, `db->mallocFailed` on failure, and statistics. The clause leaves those writes out because no milestone-1 caller reads them: sqlite3VdbeAllocUnpackedRecord reads only pKeyInfo->nKeyField after the call.
 - Why the proof needs it: the allocator and lookaside (sqlite3DbMallocRawNN, 32120; sqlite3Malloc) belong to a later milestone (GOAL.md Appendix A), so their bodies are not proved here.
 - Who must make it true: the allocator: SQLite's memory subsystem and the configured sqlite3_mem_methods, whose xMalloc must return 8-byte-aligned memory (SQLite asserts EIGHT_BYTE_ALIGNMENT on its allocations).
-- Evidence: none
-- Status: draft
+- Evidence: tested (ledger agent run 2026-11-10, J0079: 514,651 field and ASan checks, 0 violations; site reached; reports/ledger-2026-11-10.md)
+- Status: tested
 
 ## A-003 vdbeCompareMemString compares two strings and writes at most *prcErr
 - Function(s): vdbeCompareMemString (92350), a boundary callee of sqlite3VdbeRecordCompareWithSkip (C-17, call at 92734).
@@ -75,8 +82,8 @@ Lines are upstream/sqlite3.c's.
 - Who must make it true:
   - the application: a collation's xCmp reads only the n bytes it is given, and changes nothing the caller can see;
   - callers in a later milestone, for the encoding-conversion path (vdbemem.c).
-- Evidence: none
-- Status: draft
+- Evidence: tested (ledger agent run 2026-11-10, J0079: 3.22M call-site checks and 23.7M entry checks, 0 violations; the assigns clause held; reports/ledger-2026-11-10.md)
+- Status: tested
 
 ## A-004 sqlite3CorruptError returns SQLITE_CORRUPT and changes nothing the caller sees
 - Function(s): sqlite3CorruptError (191373), a boundary callee of sqlite3VdbeRecordCompareWithSkip (C-17: 92646, 92727, 92757, 92808, through SQLITE_CORRUPT_BKPT) and vdbeRecordCompareString (C-19: 92971).
@@ -89,8 +96,8 @@ Lines are upstream/sqlite3.c's.
 - Plain English: it reports the corruption through sqlite3_log and returns SQLITE_CORRUPT (11). Callers store that as `(u8)SQLITE_CORRUPT_BKPT`. It writes nothing their proofs read.
 - Why the proof needs it: it calls sqlite3_log (191369), which can call the application's log callback (SQLITE_CONFIG_LOG). That callback is application code.
 - Who must make it true: the application: a log callback returns, and changes no state of the comparison in progress.
-- Evidence: none
-- Status: draft
+- Evidence: tested (ledger agent run 2026-11-10, J0079: 945 or more checks, 0 violations; site reached; reports/ledger-2026-11-10.md). Not tested: an application log callback, which no run installed, so a callback that writes where it shouldn't is untested.
+- Status: tested
 
 ## A-005 Nine writable bytes at a varint's output
 - Function(s): sqlite3PutVarint (37991), and putVarint64 (37967) called directly (C-01's contracts).
@@ -101,8 +108,8 @@ Lines are upstream/sqlite3.c's.
   - Without it, sqlite3PutVarint stores p[0] outside an empty one (extent 8, offset 8; 37993).
   - Eight bytes are not enough, because the ninth-byte store exceeds the object. (reports/C-01-b2.md; C-01's builder proposed this entry.)
 - Who must make it true: callers in later milestones: the record and b-tree writers, and the sorter (balance_nonroot, fillInCell, sqlite3BtreeTransferRow, sqlite3VdbeExec, vdbePmaWriteVarint). One example is vdbePmaWriteVarint's `aByte[10]` (108087–108088); that one example does not establish the obligation for the others. In milestone 1, C-02's harness supplies `buffer[9]`.
-- Evidence: none
-- Status: draft
+- Evidence: tested (ledger agent run 2026-11-10, J0079): no write overflowed in about 125M calls. But callers give `sqlite3VarintLen(v)` bytes, not 9 (OP_MakeRecord), so this requires isn't met at real calls, though the writes are safe (reports/ledger-2026-11-10.md).
+- Status: draft. Zach (2026-11-11): C-01 is reopened for a footprint that depends on the value written; this entry is restated when that contract is approved.
 
 ## A-006 memcmp reads n bytes of each argument, writes nothing, and returns a value in [-255, 255]
 - Function(s): memcmp, the C library's, a boundary callee of sqlite3VdbeRecordCompareWithSkip (C-17: 92739, 92767) and vdbeRecordCompareString (C-19: 92975).

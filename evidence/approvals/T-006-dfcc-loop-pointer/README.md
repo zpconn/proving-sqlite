@@ -53,7 +53,7 @@ Written to Zach's five conditions:
 
 **C-15's real function** (T-012; evidence/orchestrator/tool-issues/T-012/c15-results/, all runs capped):
 - Replacing sqlite3VdbeSerialGet aborts the legacy enforce pass. That function has a static local, `aFlag` (92080).
-- With its body kept, the patched prove.py takes C-15's real function through every step: 2,019 properties, 138 s of CBMC, inside prove.py's 12 GB cap. The verdict fails on the builder's unfinished round-2 contract, whose pKey footprint lacks A-001's +8.
+- With its body kept, the patched prove.py takes C-15's real function through every step: 2,019 properties, 138 s of CBMC, inside prove.py's 12 GB cap. (Correction, 2026-11-11: the harness was round 1's, bounded to 64 record bytes and at most 4 fields, with separate allocations that weren't exact. The full domain gives no verdict; see T-014.) The verdict fails on the builder's unfinished round-2 contract, whose pKey footprint lacks A-001's +8.
 - C-15's card now says to keep SerialGet's body.
 
 **One part of condition 3 can't be met before landing: a planted bug in C-15's real proof.** That proof doesn't exist yet. Its builder can only write it once this patch is on main, and the current harness already fails, so a planted bug there would show nothing. Proposed instead: land the patch after the auditor's OK, then C-15's round 3. Before C-15 merges, its gate runs its own mutants M-050 and M-051 against that proof, and I also plant a bug by hand (`tools/mutate.py --adhoc` on the overlay) and show it caught. C-15 stays unmerged until both are shown.
