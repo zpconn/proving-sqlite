@@ -319,6 +319,67 @@ def legacy_failures(r, card, name):
     j = os.path.join(r, 'proofs', card, 'build', 'lp64-le', name + '.json')
     return [f.get('desc', '') for f in (_json.load(open(j)).get('failures') or [])] if os.path.exists(j) else []
 
+# B2 (Zach, 2026-11-10, evidence/approvals/B2-memcmp-contract/): memcmp's boundary contract, clause guards, kept bodies
+B2_TOY = r"""#include <stdlib.h>
+#include <string.h>
+typedef struct Cell { unsigned flags; void *payload; } Cell;
+int cmpneg(const unsigned char *a, const unsigned char *b, size_t n) {
+#ifdef BAD
+  int rc = memcmp(a, b, n + 1);
+#else
+  int rc = memcmp(a, b, n);
+#endif
+  return -rc;
+}
+void bump(Cell *p) { p->flags++; }
+void walk(Cell *a, Cell *other, unsigned n) {
+  unsigned i = 0;
+  while (i < n)
+    __CPROVER_assigns(i, __CPROVER_object_whole(a)
+#ifndef BAD
+                      , other->flags
+#endif
+                      )
+    __CPROVER_loop_invariant(i <= n)
+    __CPROVER_decreases(n - i)
+  { bump(other); i++; }
+}
+"""
+B2_MEMCMP_H = open(os.path.join(REPO, 'proofs', 'contracts', 'memcmp.h')).read()
+B2_HEADS = {
+    'cmpneg': 'int contract_cmpneg(const unsigned char *a, const unsigned char *b, size_t n)\n'
+              '  __CPROVER_requires(n <= 1000000 && __CPROVER_r_ok(a, n + 1) && __CPROVER_r_ok(b, n))\n'
+              '  __CPROVER_assigns()\n'
+              '  __CPROVER_ensures(-255 <= __CPROVER_return_value && __CPROVER_return_value <= 255);\n',
+    'walk': 'void contract_walk(Cell *a, Cell *other, unsigned n)\n'
+            '  __CPROVER_requires(n <= 4 && __CPROVER_w_ok(a, 4 * sizeof(Cell)) && __CPROVER_w_ok(other, sizeof(Cell)))\n'
+            '  __CPROVER_assigns(__CPROVER_object_whole(a), other->flags);\n',
+}
+B2_HARNESS = ('#include "sqlite3.c"\n#include "contracts/memcmp.h"\n#include "contracts/cmpneg.h"\n#include "contracts/walk.h"\n'
+              'void h_cmp(void) { size_t n; __CPROVER_assume(n <= 1000000);\n'
+              '  unsigned char *a = malloc(n + 1), *b = malloc(n); __CPROVER_assume(a && b); cmpneg(a, b, n); }\n'
+              'void h_walk(void) { unsigned n; Cell *a = malloc(4 * sizeof(Cell)), *o = malloc(sizeof(Cell));\n'
+              '  __CPROVER_assume(a && o); walk(a, o, n); }\n')
+
+
+def b2_repo(t, card, contracts):
+    r = t.fresh()
+    t.write(r, 'upstream/sqlite3.c', B2_TOY)
+    t.write(r, 'overlay/sqlite3.c', B2_TOY)
+    t.write(r, 'overlay-bad/sqlite3.c', '#define BAD\n' + B2_TOY)
+    t.write(r, 'proofs/contracts/memcmp.h', B2_MEMCMP_H)
+    for fn, text in B2_HEADS.items():
+        t.write(r, 'proofs/contracts/%s.h' % fn, text)
+    t.write(r, 'proofs/%s/harness.c' % card, B2_HARNESS)
+    t.write(r, 'cards/%s.md' % card, card_md(card, ['cmpneg', 'walk'], src=B2_TOY))
+    lines = ['CARD := %s' % card, 'PROOFS := cmp walk',
+             'cmp_ENTRY := h_cmp', 'cmp_ENFORCE := cmpneg/contract_cmpneg', 'cmp_REPLACE := memcmp/contract_memcmp',
+             'walk_ENTRY := h_walk', 'walk_ENFORCE := walk/contract_walk', 'walk_LOOPS := contracts']
+    if contracts == 'legacy':
+        lines += ['cmp_CONTRACTS := legacy', 'walk_CONTRACTS := legacy']
+    t.write(r, 'proofs/%s/Makefile' % card, '\n'.join(lines + ['include ../Makefile.common']) + '\n')
+    return r
+
 class T:
     def __init__(self, keep):
         self.base = tempfile.mkdtemp(prefix='tooltests-')
@@ -1356,6 +1417,52 @@ def main():
         t.write(r, 'proofs/C-15/Makefile', legacy_makefile('C-15', LEGACY_PROOFS[:1]).replace('legacy', 'cbmc5'))
         rc, out, res = prove('overlay')
         t.expect('legacy: <name>_CONTRACTS takes only dfcc or legacy', rc != 0 and 'must be dfcc or legacy' in out, out[-400:])
+
+    # ---- B2 (Zach, 2026-11-10): memcmp's contract, clause guards, kept bodies under legacy, land rules
+    if want('b2'):
+        for engine, card in (('dfcc', 'C-93'), ('legacy', 'C-15')):
+            r = b2_repo(t, card, engine)
+            run = lambda ov, c=card, rr=r: t.run(rr, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + c, '--config',  # noqa: E731
+                                                      'lp64-le', '--overlay', ov, '--build-dir', 'proofs/%s/build' % c])
+            rc, out, res = run('overlay')
+            t.expect('b2 (%s): memcmp replaced by A-006\'s contract proves for lengths up to 10^6, and a kept callee body '
+                     'writing only inside the loop\'s assigns proves' % engine, rc == 0 and 'PASS' in res, out[-1200:])
+            rc, out, res = run('overlay-bad')
+            fc = legacy_failures(r, card, 'cmp')
+            t.expect('b2 (%s): a memcmp call one byte past an argument fails by the contract\'s requires' % engine,
+                     any('requires clause' in f for f in fc), str(fc) if fc else out[-1000:])
+            if engine == 'legacy':
+                fw = legacy_failures(r, card, 'walk')
+                t.expect('b2 (legacy): a kept callee body writing outside the loop\'s assigns fails ("is assignable")',
+                         any('is assignable' in f for f in fw), str(fw) if fw else out[-1000:])
+            # a clause smuggled onto the ENFORCE function in preds.h, or onto a REPLACE function in a contracts header
+            for where, text, name in (
+                    ('proofs/include/preds.h', 'int cmpneg(const unsigned char *a, const unsigned char *b, size_t n)\n'
+                     '  __CPROVER_ensures(1);\n', 'preds.h, onto the ENFORCE function'),
+                    ('proofs/contracts/cmpneg.h', B2_HEADS['cmpneg'] + 'int memcmp(const void *s1, const void *s2, size_t n)\n'
+                     '  __CPROVER_ensures(__CPROVER_return_value == 0);\n', 'a contracts header, onto the REPLACE function')):
+                old = open(os.path.join(r, where)).read() if os.path.exists(os.path.join(r, where)) else None
+                t.write(r, where, (old or '') + text)
+                rc, out, res = run('overlay')
+                t.expect('b2 (%s): a contract clause smuggled into %s fails the build' % (engine, name),
+                         rc != 0 and 'contract clause' in out, out[-600:])
+                rc, out, res = t.run(r, [py, 'tools/scan.py'])
+                if where.endswith('preds.h'):
+                    t.expect('b2 (%s): scan rejects a function contract clause in proofs/include/preds.h' % engine,
+                             rc != 0 and 'no function contract clauses in proofs/include/' in out, out[-600:])
+                if old is None:
+                    os.remove(os.path.join(r, where))
+                else:
+                    t.write(r, where, old)
+        # memcmp.h is frozen; a land may carry it only with an approval record and proof.lock; sessions.toml may land
+        code = ('import sys; sys.path.insert(0, "tools"); import lock, campaign\n'
+                'print("FROZEN", "proofs/contracts/memcmp.h" in lock.FROZEN)\n'
+                'print("BARE", campaign.land_paths_problems(["proofs/contracts/memcmp.h"], [])[0])\n'
+                'print("OK", campaign.land_paths_problems(["proofs/contracts/memcmp.h", "proof.lock", "evidence/approvals/x/APPROVED.md"], ["evidence/approvals/x/APPROVED.md"])[0])\n'
+                'print("TOML", campaign.land_paths_problems(["tools/sessions.toml"], [])[0])\n')
+        rc, out, res = t.run(t.fresh(), [py, '-c', code])
+        t.expect('b2: memcmp.h is frozen and lands only with an approval record and proof.lock; tools/sessions.toml may land (T-007)',
+                 'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out and 'TOML []' in out, out)
 
     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
     if want('probe'):
