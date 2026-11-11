@@ -11,19 +11,19 @@ The Codex service's content filter stopped C-17's builder in rounds 1 and 2: "fl
 | File | Frozen | Change |
 |---|---|---|
 | tools/campaign.py | yes | See the list below. |
-| tools/sessions.toml | no (§0.3 exempts it) | `roles.builder-claude.{high,standard}` (claude-opus-5-5, high) and `roles.reviewer-codex.{high,standard}` (gpt-6-astra, xhigh on high, high on standard): models only. Vendors come from campaign.py, which refuses a mismatch. |
 | cards/C-17.md | no | The decision; the INT_MIN finding candidate, to settle by repro or ledger statement; a pointer to T-006. |
 | proof.lock | n/a | Rewritten for tools/campaign.py. |
 
 The campaign.py changes:
 - `CARD_ROLE_VENDOR = {'C-17': {'builder': 'claude', 'reviewer': 'codex'}}` beside ROLE_VENDOR, and `role_vendor(role, cid)`.
-- `role_config(sess, role, tier, cid)` uses the card's vendor and takes the model from `roles.<role>-<vendor>.<tier>`.
+- `role_config(sess, role, tier, cid)` uses the card's vendor. It takes the model and effort that sessions.toml gives the vendor's own role at the card's tier (`VENDOR_ROLE`): Claude builds C-17 with roles.reviewer.high's model (claude-opus-5-5, high), and Codex reviews it with roles.builder.high's (gpt-6-astra, xhigh). Those are §0.10's models for each vendor at the high tier.
+- **Why not new sessions.toml roles:** my first version added roles.builder-claude and roles.reviewer-codex, but `land` refused it. A land may not touch tools/sessions.toml, though proof.lock exempts it (T-007). So sessions.toml is unchanged.
 - Vendor pauses are checked per card's vendor, also where a reviewer starts directly: after a builder's DONE or FINDING, and on a rerun after a discarded review. While reviewers were always on Claude those starts couldn't hit a Codex pause. The selftest's first run of this change caught one (C-06: a codex session started during the codex pause, the C-17 fixture's reviewer). Now the card waits in reviewing with no job, and the tick starts it after the pause.
 - A builder on either vendor gets TMPDIR=tmp/ in its worktree.
 - Builder and reviewer prompts fit the vendor: Claude may background long runs; Codex waits once and uses $TMPDIR. The exception is stated in the prompt.
 - The selftest checks all of this:
   - C-17 only changes vendors;
-  - a sessions.toml that puts roles.builder-claude on codex is refused, and a missing roles.reviewer-codex is an error;
+  - its models are the vendor's own role's at the tier, and a sessions.toml that puts that role on the other vendor is refused;
   - the prompts fit their vendors;
   - the selftest's own C-17 fixture runs end to end with a claude builder and a codex reviewer.
 

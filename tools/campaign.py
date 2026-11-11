@@ -71,8 +71,11 @@ ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evide
 ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'spec-review': 'codex'}
 # The one exception (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): C-17's builder runs on Claude and
 # its reviewer on Codex, because the Codex service's content filter stops a Codex builder on it (T-005). A reviewer is
-# still never on its round's builder vendor. sessions.toml's roles.<role>-<vendor>.<tier> give the models.
+# still never on its round's builder vendor. The models are those sessions.toml gives the vendor's own role at the
+# card's tier (VENDOR_ROLE), so Opus 5.5 builds and gpt-6-astra at xhigh reviews a high-tier card, as GOAL.md §0.10
+# gives each vendor; a land may not touch tools/sessions.toml (T-007).
 CARD_ROLE_VENDOR = {'C-17': {'builder': 'claude', 'reviewer': 'codex'}}
+VENDOR_ROLE = {'claude': 'reviewer', 'codex': 'builder'}
 
 
 def role_vendor(role, cid=None):
@@ -385,11 +388,11 @@ class SessionRefused(CampaignError):
 def role_config(sess, role, tier, cid=None):
     """(vendor, model, effort, vendor config). The vendor is ROLE_VENDOR's, or CARD_ROLE_VENDOR's for the card cid;
     a sessions.toml that names another for the role is refused rather than followed. A card's exception takes its
-    model from roles.<role>-<vendor>.<tier>."""
+    model and effort from the vendor's own role at that tier, roles.<VENDOR_ROLE[vendor]>.<tier>."""
     vendor = role_vendor(role, cid)
     if vendor is None:
         raise SessionRefused('no vendor is fixed for role %s' % role)
-    key = role if vendor == ROLE_VENDOR.get(role) else '%s-%s' % (role, vendor)
+    key = role if vendor == ROLE_VENDOR.get(role) else VENDOR_ROLE[vendor]
     try:
         rc = sess['roles'][key][tier]
     except KeyError:
@@ -3054,22 +3057,18 @@ class SelfTest:
                 'and claude reviewers', got[('builder', 'C-17')][0] == 'claude' and got[('reviewer', 'C-17')][0] == 'codex'
                 and all(got[('builder', k)][0] == 'codex' and got[('reviewer', k)][0] == 'claude' for k in ('C-16', None)), got)
         bad = json.loads(json.dumps(sess))
-        bad['roles']['builder-claude']['high']['vendor'] = 'codex'
+        bad['roles']['reviewer']['standard']['vendor'] = 'codex'
         try:
-            role_config(bad, 'builder', 'high', 'C-17')
+            role_config(bad, 'builder', 'standard', 'C-17')
             why = None
         except SessionRefused as ex:
             why = str(ex)
-        missing = json.loads(json.dumps(sess))
-        del missing['roles']['reviewer-codex']
-        try:
-            role_config(missing, 'reviewer', 'high', 'C-17')
-            why2 = None
-        except CampaignError as ex:
-            why2 = str(ex)
-        self.ok('C-17\'s exception is campaign.py\'s, not sessions.toml\'s: roles.builder-claude put on codex is refused, '
-                'and a missing roles.reviewer-codex is an error', bool(why) and 'C-17' in why and bool(why2) and
-                'reviewer-codex' in why2, (why, why2))
+        models = (role_config(sess, 'builder', 'standard', 'C-17')[1:3], role_config(sess, 'reviewer', 'standard', 'C-17')[1:3])
+        want = ((sess['roles']['reviewer']['standard']['model'], sess['roles']['reviewer']['standard']['effort']),
+                (sess['roles']['builder']['standard']['model'], sess['roles']['builder']['standard']['effort']))
+        self.ok('C-17\'s exception is campaign.py\'s, not sessions.toml\'s: its models are the vendor\'s own role\'s at the tier, and '
+                'a sessions.toml that puts that role on the other vendor is refused', bool(why) and 'C-17' in why
+                and models == want, (why, models, want))
         pb = prompt_builder('C-17', 1, [], [], '/w', 'claude')
         pr = prompt_reviewer('C-17', 1, 'abc', 'reports/C-17-b1.md', vendor='codex')
         self.ok('C-17\'s prompts fit their vendors: the Claude builder may background runs, the Codex reviewer waits once '

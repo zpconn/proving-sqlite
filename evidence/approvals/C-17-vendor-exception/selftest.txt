@@ -1,4 +1,4 @@
-selftest fixture: /var/tmp/campaign-selftest-nxenuh1b
+selftest fixture: /var/tmp/campaign-selftest-9nypxrj8
 ok   sessions.toml's codex and claude commands, start and resume, pass the session guards
 ok   session guard refuses codex without the workspace-write sandbox
 ok   session guard refuses codex with approvals on
@@ -37,7 +37,7 @@ ok   session guard refuses a codex session while ~/.codex/AGENTS.md exists
 ok   campaign.py refuses a sessions.toml that puts builders on claude
 ok   a re-review is refused when its reviewer would share the vendor that built the card's last round
 ok   C-17 only: its builder runs on claude and its reviewer on codex; every other card keeps codex builders and claude reviewers
-ok   C-17's exception is campaign.py's, not sessions.toml's: roles.builder-claude put on codex is refused, and a missing roles.reviewer-codex is an error
+ok   C-17's exception is campaign.py's, not sessions.toml's: its models are the vendor's own role's at the tier, and a sessions.toml that puts that role on the other vendor is refused
 ok   C-17's prompts fit their vendors: the Claude builder may background runs, the Codex reviewer waits once and uses $TMPDIR
 ok   sessions.toml is refused: a codex command without --disable apps (a change the flag guard does not catch)
 ok   sessions.toml is refused: a codex command with an extra -c setting

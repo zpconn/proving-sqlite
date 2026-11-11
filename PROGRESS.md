@@ -7,7 +7,7 @@
 **Open questions for Zach:**
 1. **C-15 is parked: CBMC 6.11's DFCC can't encode sqlite3VdbeRecordUnpack's loop** (T-006; evidence/approvals/T-006-dfcc-loop-pointer/README.md). A loop-carried pointer plus replaced calls makes the encoding explode, reproduced in a 27-line toy with no SQLite code. **Recommendation: option 1**, the legacy (non-DFCC) contracts path for the proofs that need it: it verifies the toy in under 1 s and catches planted errors. No tool changes until the auditor has reproduced min4.c and its control (evidence/orchestrator/tool-issues/T-006/run.sh). Then the patch, then your and the auditor's review.
 
-Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-006).
+Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-007).
 
 The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
@@ -99,4 +99,4 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-10 18:54 C-17 round 2 (a fresh session) was flagged by the Codex content filter too; C-17 parked for Zach (Open questions 1).
 - 2026-11-10 19:17 C-15 STUCK in round 1: no CBMC verdict on any of 8 runs, from encoding memory exhaustion or timeouts under DFCC loop contracts (T-006, unconfirmed). Recommendation, done: retry with the builder's own next step first, a toy that isolates the blow-up; NEEDS-DECISION if it is CBMC's own.
 - 2026-11-10 20:03 C-15 round 2 NEEDS-DECISION: DFCC loop-carried pointer blow-up isolated to a toy; confirmed by me, legacy contracts path checked on the toy (T-006). C-15 parked for Zach (Open questions 2).
-- 2026-11-10 Zach: T-004 OK (applied); C-17 option (b), so campaign.py's CARD_ROLE_VENDOR and sessions.toml roles builder-claude and reviewer-codex; C-15 stays parked until the auditor reproduces T-006's toy. Both tool changes land together with proof.lock and approval records.
+- 2026-11-10 Zach: T-004 OK (applied); C-17 option (b), so campaign.py's CARD_ROLE_VENDOR, with models from each vendor's own role; C-15 stays parked until the auditor reproduces T-006's toy. Both tool changes land together with proof.lock and approval records.

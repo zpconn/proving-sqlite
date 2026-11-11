@@ -141,29 +141,6 @@ vendor = "claude"
 model = "claude-sonnet-5-5"
 effort = "high"
 
-# C-17 only (Zach, 2026-11-10; CARD_ROLE_VENDOR in tools/campaign.py, which fixes these vendors): the Codex service's
-# content filter stops a Codex builder on it (T-005), so Claude builds and Codex reviews. The models are those GOAL.md
-# §0.10 gives each vendor at the tier: Opus 5.5 for Claude, gpt-6-astra at xhigh for Codex on a high-tier card.
-[roles.builder-claude.high]
-vendor = "claude"
-model = "claude-opus-5-5"
-effort = "high"
-
-[roles.builder-claude.standard]
-vendor = "claude"
-model = "claude-opus-5-5"
-effort = "high"
-
-[roles.reviewer-codex.high]
-vendor = "codex"
-model = "gpt-6-astra"
-effort = "xhigh"
-
-[roles.reviewer-codex.standard]
-vendor = "codex"
-model = "gpt-6-astra"
-effort = "high"
-
 [roles.ledger.high]
 vendor = "claude"
 model = "claude-opus-5-5"
