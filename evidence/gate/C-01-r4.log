@@ -1,0 +1,210 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 1 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 1 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 58 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-01 --base 2dec31e54baa10e6503507b505891ab1c73e3672
+  scan: 15 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (24s)
+gate: cards to run: C-01, C-02, C-03, C-04, C-05
+==== includes C-01: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-01
+    includes C-01 lp64-le: 153 files, 0 not allowed
+    includes C-01 ilp32-le: 153 files, 0 not allowed
+    includes C-01 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-01 all PASS
+==== includes C-01 PASS (0s)
+==== prove C-01: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-01 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-01/build
+  RESULT prove C-01/put64 lp64-le PASS 37s 126 properties 0 failed
+  RESULT prove C-01/put lp64-le PASS 31s 147 properties 0 failed
+  RESULT prove C-01 lp64-le PASS 68s 273 properties 0 failed
+  RESULT prove C-01/put64 ilp32-le PASS 32s 126 properties 0 failed
+  RESULT prove C-01/put ilp32-le PASS 29s 147 properties 0 failed
+  RESULT prove C-01 ilp32-le PASS 61s 273 properties 0 failed
+  RESULT prove C-01/put64 lp64-be PASS 31s 126 properties 0 failed
+  RESULT prove C-01/put lp64-be PASS 30s 147 properties 0 failed
+  RESULT prove C-01 lp64-be PASS 61s 273 properties 0 failed
+  RESULT prove C-01 all PASS 190s 819 properties 0 failed
+==== prove C-01 PASS (188s)
+==== coverage C-01: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-01 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-01/build
+    coverage put64 lp64-le putVarint64: 18/18 lines; uncovered none
+    coverage put lp64-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage put64 ilp32-le putVarint64: 18/18 lines; uncovered none
+    coverage put ilp32-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage put64 lp64-be putVarint64: 18/18 lines; uncovered none
+    coverage put lp64-be sqlite3PutVarint: 9/9 lines; uncovered none
+  RESULT coverage C-01 all PASS 81/81 lines 0 uncovered 0 unexplained
+==== coverage C-01 PASS (170s)
+==== includes C-02: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-02
+    includes C-02 lp64-le: 151 files, 0 not allowed
+    includes C-02 ilp32-le: 151 files, 0 not allowed
+    includes C-02 lp64-be: 151 files, 0 not allowed
+  RESULT includes C-02 all PASS
+==== includes C-02 PASS (0s)
+==== prove C-02: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-02 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-02/build
+  RESULT prove C-02/roundtrip lp64-le PASS 13s 450 properties 0 failed
+  RESULT prove C-02 lp64-le PASS 13s 450 properties 0 failed
+  RESULT prove C-02/roundtrip ilp32-le PASS 13s 450 properties 0 failed
+  RESULT prove C-02 ilp32-le PASS 13s 450 properties 0 failed
+  RESULT prove C-02/roundtrip lp64-be PASS 12s 450 properties 0 failed
+  RESULT prove C-02 lp64-be PASS 12s 450 properties 0 failed
+  RESULT prove C-02 all PASS 38s 1350 properties 0 failed
+==== prove C-02 PASS (39s)
+==== coverage C-02: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-02 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-02/build
+    coverage roundtrip lp64-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip ilp32-le putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip ilp32-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3PutVarint: 9/9 lines; uncovered none
+    coverage roundtrip lp64-be putVarint64: 18/18 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage roundtrip lp64-be sqlite3VarintLen: 4/4 lines; uncovered none
+  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+==== coverage C-02 PASS (18s)
+==== includes C-03: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-03
+    includes C-03 lp64-le: 152 files, 0 not allowed
+    includes C-03 ilp32-le: 152 files, 0 not allowed
+    includes C-03 lp64-be: 152 files, 0 not allowed
+  RESULT includes C-03 all PASS
+==== includes C-03 PASS (0s)
+==== prove C-03: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-03 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-03/build
+  RESULT prove C-03/separate lp64-le PASS 28s 331 properties 0 failed
+  RESULT prove C-03/shared lp64-le PASS 22s 339 properties 0 failed
+  RESULT prove C-03 lp64-le PASS 50s 670 properties 0 failed
+  RESULT prove C-03/separate ilp32-le PASS 25s 331 properties 0 failed
+  RESULT prove C-03/shared ilp32-le PASS 21s 339 properties 0 failed
+  RESULT prove C-03 ilp32-le PASS 46s 670 properties 0 failed
+  RESULT prove C-03/separate lp64-be PASS 27s 331 properties 0 failed
+  RESULT prove C-03/shared lp64-be PASS 23s 339 properties 0 failed
+  RESULT prove C-03 lp64-be PASS 50s 670 properties 0 failed
+  RESULT prove C-03 all PASS 146s 2010 properties 0 failed
+==== prove C-03 PASS (146s)
+==== coverage C-03: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-03 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-03/build
+    coverage separate lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage shared lp64-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage separate ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage shared ilp32-le sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage separate lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+    coverage shared lp64-be sqlite3GetVarint: 87/87 lines; uncovered none
+  RESULT coverage C-03 all PASS 522/522 lines 0 uncovered 0 unexplained
+==== coverage C-03 PASS (143s)
+==== includes C-04: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-04
+    includes C-04 lp64-le: 153 files, 0 not allowed
+    includes C-04 ilp32-le: 153 files, 0 not allowed
+    includes C-04 lp64-be: 153 files, 0 not allowed
+  RESULT includes C-04 all PASS
+==== includes C-04 PASS (0s)
+==== prove C-04: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-04 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-04/build
+  RESULT prove C-04/separate lp64-le PASS 28s 237 properties 0 failed
+  RESULT prove C-04/shared lp64-le PASS 23s 245 properties 0 failed
+  RESULT prove C-04 lp64-le PASS 51s 482 properties 0 failed
+  RESULT prove C-04/separate ilp32-le PASS 26s 237 properties 0 failed
+  RESULT prove C-04/shared ilp32-le PASS 24s 245 properties 0 failed
+  RESULT prove C-04 ilp32-le PASS 50s 482 properties 0 failed
+  RESULT prove C-04/separate lp64-be PASS 27s 237 properties 0 failed
+  RESULT prove C-04/shared lp64-be PASS 23s 245 properties 0 failed
+  RESULT prove C-04 lp64-be PASS 50s 482 properties 0 failed
+  RESULT prove C-04 all PASS 151s 1446 properties 0 failed
+==== prove C-04 PASS (150s)
+==== coverage C-04: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-04 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-04/build
+    coverage separate lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage shared lp64-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage separate ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage shared ilp32-le sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage separate lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+    coverage shared lp64-be sqlite3GetVarint32: 15/15 lines; uncovered none
+  RESULT coverage C-04 all PASS 90/90 lines 0 uncovered 0 unexplained
+==== coverage C-04 PASS (135s)
+==== includes C-05: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-05
+    includes C-05 lp64-le: 152 files, 0 not allowed
+    includes C-05 ilp32-le: 152 files, 0 not allowed
+    includes C-05 lp64-be: 152 files, 0 not allowed
+  RESULT includes C-05 all PASS
+==== includes C-05 PASS (0s)
+==== prove C-05: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-05 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-05/build
+  RESULT prove C-05/len lp64-le PASS 26s 16 properties 0 failed
+  RESULT prove C-05 lp64-le PASS 26s 16 properties 0 failed
+  RESULT prove C-05/len ilp32-le PASS 36s 16 properties 0 failed
+  RESULT prove C-05 ilp32-le PASS 36s 16 properties 0 failed
+  RESULT prove C-05/len lp64-be PASS 37s 16 properties 0 failed
+  RESULT prove C-05 lp64-be PASS 37s 16 properties 0 failed
+  RESULT prove C-05 all PASS 99s 48 properties 0 failed
+==== prove C-05 PASS (99s)
+==== coverage C-05: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-05 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-05/build
+    coverage len lp64-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage len ilp32-le sqlite3VarintLen: 4/4 lines; uncovered none
+    coverage len lp64-be sqlite3VarintLen: 4/4 lines; uncovered none
+  RESULT coverage C-05 all PASS 12/12 lines 0 uncovered 0 unexplained
+==== coverage C-05 PASS (88s)
+==== mutants C-01: /usr/bin/python3 tools/mutate.py --card C-01 --with C-02,C-03,C-04,C-05 --json proofs/C-01/build/mutants.json
+  MUTANT M-001 putVarint64:37971 'p[8]'->'p[9]' KILLED by C-01/put64 lp64-le: 27 failed: [putVarint64.assigns.1] Check that p[(signed long int)9] is assignable; [putVarint64.pointer_dereference.5] dereference failure: pointer outside object bounds in p[(signed long int)9]; [putVarint64.pointer_dereference.6] dereference failure: invalid integer address in p[(signed long int)9]; [putVarint64.overflow.1] arithmetic overflow on signed - in i - 1; [putVarint64.assigns.2] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.13] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.14] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.15] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.16] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.17] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.18] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.19] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.20] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.21] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.22] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.23] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.24] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.7] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.8] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.9] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.10] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.11] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.12] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  MUTANT M-002 putVarint64:37973 'i--'->'i++' KILLED by C-01/put64 lp64-le: 25 failed: [putVarint64.overflow.1] arithmetic overflow on signed + in i + 1; [putVarint64.unwind.0] unwinding assertion loop 0; [putVarint64.assigns.2] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.13] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.14] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.15] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.16] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.17] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.18] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.19] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.20] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.21] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.22] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.23] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.24] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.7] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.8] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.9] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.10] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.11] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.12] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  MUTANT M-003 putVarint64:37982 'v >>= 7'->'v >>= 6' KILLED by C-01/put64 lp64-le: 28 failed: [putVarint64.overflow.4] arithmetic overflow on signed - in j - 1; [putVarint64.overflow.5] arithmetic overflow on signed + in i + 1; [putVarint64.unwind.2] unwinding assertion loop 2; [putVarint64.array_bounds.3] array 'buf' lower bound in buf[(signed long int)j]; [putVarint64.array_bounds.4] array 'buf' upper bound in buf[(signed long int)j]; [putVarint64.assigns.3] Check that p[(signed long int)i] is assignable; [putVarint64.pointer_arithmetic.25] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.26] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.27] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.28] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.29] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.30] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_arithmetic.31] pointer arithmetic: pointer NULL in p + (signed long int)i; [putVarint64.pointer_arithmetic.32] pointer arithmetic: pointer invalid in p + (signed long int)i; [putVarint64.pointer_arithmetic.33] pointer arithmetic: deallocated dynamic object in p + (signed long int)i; [putVarint64.pointer_arithmetic.34] pointer arithmetic: dead object in p + (signed long int)i; [putVarint64.pointer_arithmetic.35] pointer arithmetic: pointer outside object bounds in p + (signed long int)i; [putVarint64.pointer_arithmetic.36] pointer arithmetic: invalid integer address in p + (signed long int)i; [putVarint64.pointer_dereference.13] dereference failure: pointer NULL in p[(signed long int)i]; [putVarint64.pointer_dereference.14] dereference failure: pointer invalid in p[(signed long int)i]; [putVarint64.pointer_dereference.15] dereference failure: deallocated dynamic object in p[(signed long int)i]; [putVarint64.pointer_dereference.16] dereference failure: dead object in p[(signed long int)i]; [putVarint64.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)i]; [putVarint64.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)i]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  MUTANT M-006 sqlite3PutVarint:37998 'p[1]'->'p[9]' KILLED by C-01/put lp64-le: 19 failed: [sqlite3PutVarint.assigns.3] Check that p[(signed long int)9] is assignable; [sqlite3PutVarint.pointer_arithmetic.29] pointer arithmetic: pointer outside object bounds in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.30] pointer arithmetic: invalid integer address in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.31] pointer arithmetic: pointer NULL in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.32] pointer arithmetic: pointer invalid in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.33] pointer arithmetic: deallocated dynamic object in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.34] pointer arithmetic: dead object in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.35] pointer arithmetic: pointer outside object bounds in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.36] pointer arithmetic: invalid integer address in p + (signed long int)9; [sqlite3PutVarint.pointer_dereference.13] dereference failure: pointer NULL in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.14] dereference failure: pointer invalid in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.15] dereference failure: deallocated dynamic object in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.16] dereference failure: dead object in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.17] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.18] dereference failure: invalid integer address in p[(signed long int)9]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  MUTANT M-007 sqlite3PutVarint:37993 'p[0]'->'p[9]' KILLED by C-01/put lp64-le: 19 failed: [sqlite3PutVarint.assigns.1] Check that p[(signed long int)9] is assignable; [sqlite3PutVarint.pointer_arithmetic.5] pointer arithmetic: pointer outside object bounds in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.6] pointer arithmetic: invalid integer address in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.7] pointer arithmetic: pointer NULL in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.8] pointer arithmetic: pointer invalid in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.9] pointer arithmetic: deallocated dynamic object in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.10] pointer arithmetic: dead object in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.11] pointer arithmetic: pointer outside object bounds in p + (signed long int)9; [sqlite3PutVarint.pointer_arithmetic.12] pointer arithmetic: invalid integer address in p + (signed long int)9; [sqlite3PutVarint.pointer_dereference.1] dereference failure: pointer NULL in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.2] dereference failure: pointer invalid in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.3] dereference failure: deallocated dynamic object in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.4] dereference failure: dead object in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.5] dereference failure: pointer outside object bounds in p[(signed long int)9]; [sqlite3PutVarint.pointer_dereference.6] dereference failure: invalid integer address in p[(signed long int)9]; [__CPROVER_contracts_write_set_check_assignment.assertion.1] ptr NULL or writable up to size; [__CPROVER_contracts_write_set_check_assignment.assertion.2] CAR size is less than __CPROVER_max_malloc_size; [__CPROVER_contracts_write_set_check_assignment.assertion.3] no offset bits overflow on CAR upper bound computation; [__CPROVER_contracts_write_set_check_assignment.unwind.1] unwinding assertion loop 0
+  RESULT mutate C-01 PASS 5/5 killed 0 equivalent
+==== mutants C-01 PASS (269s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 1 spans
+  lock                     PASS    0s  RESULT lock PASS 58 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   24s  RESULT probe all PASS
+  includes C-01            PASS    0s  RESULT includes C-01 all PASS
+  prove C-01               PASS  188s  RESULT prove C-01 all PASS 190s 819 properties 0 failed
+  coverage C-01            PASS  170s  RESULT coverage C-01 all PASS 81/81 lines 0 uncovered 0 unexplained
+  includes C-02            PASS    0s  RESULT includes C-02 all PASS
+  prove C-02               PASS   39s  RESULT prove C-02 all PASS 38s 1350 properties 0 failed
+  coverage C-02            PASS   19s  RESULT coverage C-02 all PASS 399/399 lines 0 uncovered 0 unexplained
+  includes C-03            PASS    0s  RESULT includes C-03 all PASS
+  prove C-03               PASS  147s  RESULT prove C-03 all PASS 146s 2010 properties 0 failed
+  coverage C-03            PASS  144s  RESULT coverage C-03 all PASS 522/522 lines 0 uncovered 0 unexplained
+  includes C-04            PASS    0s  RESULT includes C-04 all PASS
+  prove C-04               PASS  150s  RESULT prove C-04 all PASS 151s 1446 properties 0 failed
+  coverage C-04            PASS  136s  RESULT coverage C-04 all PASS 90/90 lines 0 uncovered 0 unexplained
+  includes C-05            PASS    0s  RESULT includes C-05 all PASS
+  prove C-05               PASS  100s  RESULT prove C-05 all PASS 99s 48 properties 0 failed
+  coverage C-05            PASS   89s  RESULT coverage C-05 all PASS 12/12 lines 0 uncovered 0 unexplained
+  mutants C-01             PASS  270s  RESULT mutate C-01 PASS 5/5 killed 0 equivalent
+RESULT gate C-01 PASS 1480s 0 failed

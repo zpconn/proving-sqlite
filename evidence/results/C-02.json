@@ -707,7 +707,7 @@
  "prove_summary": [
   {
    "card": "C-02",
-   "cbmc_seconds": 0,
+   "cbmc_seconds": 1,
    "config": "lp64-le",
    "error": null,
    "failed": 0,
@@ -715,12 +715,12 @@
    "float_to_int_properties": 0,
    "proof": "roundtrip",
    "properties": 450,
-   "seconds": 10,
+   "seconds": 13,
    "status": "PASS"
   },
   {
    "card": "C-02",
-   "cbmc_seconds": 0,
+   "cbmc_seconds": 1,
    "config": "ilp32-le",
    "error": null,
    "failed": 0,
@@ -728,12 +728,12 @@
    "float_to_int_properties": 0,
    "proof": "roundtrip",
    "properties": 450,
-   "seconds": 10,
+   "seconds": 13,
    "status": "PASS"
   },
   {
    "card": "C-02",
-   "cbmc_seconds": 0,
+   "cbmc_seconds": 1,
    "config": "lp64-be",
    "error": null,
    "failed": 0,
@@ -741,15 +741,15 @@
    "float_to_int_properties": 0,
    "proof": "roundtrip",
    "properties": 450,
-   "seconds": 10,
+   "seconds": 12,
    "status": "PASS"
   }
  ],
  "provenance": {
   "coverage_summary": {
-   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
-   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
-   "gate_log": "evidence/gate/C-04-r1.log"
+   "commit": "eca6106c9181f032d4419019f5579fcae0773261",
+   "gate": "make gate CARD=C-01 (merge of C-01 r4)",
+   "gate_log": "evidence/gate/C-01-r4.log"
   },
   "mutants": {
    "commit": "affc94a4a51cc9701733c2891d790d21696722d5",
@@ -758,9 +758,9 @@
    "note": "backfilled at checkpoint 0 from git history: the commit that last wrote the field and its gate log"
   },
   "prove_summary": {
-   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
-   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
-   "gate_log": "evidence/gate/C-04-r1.log"
+   "commit": "eca6106c9181f032d4419019f5579fcae0773261",
+   "gate": "make gate CARD=C-01 (merge of C-01 r4)",
+   "gate_log": "evidence/gate/C-01-r4.log"
   }
  }
 }
