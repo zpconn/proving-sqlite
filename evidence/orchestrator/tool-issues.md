@@ -66,3 +66,15 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Workaround:** `tools/campaign.py retry C-17`, which starts a fresh session in a new round, with no change to the prompt. I'm not rephrasing anything to get past the filter. If it is flagged again, the card is parked for Zach, since the message's remedy (Daybreak access) is an account decision.
 - **Outcome:** round 2's fresh session (J0061, 18:49) was flagged after about 4 minutes, and its resumes (J0063, J0064) at once. C-17 was parked for Zach at 18:55 (PROGRESS.md, Open questions 1).
 - **Possible fix (not requested yet):** campaign.py could treat this message as its own outcome, sending the card straight to triage instead of resuming. That is a frozen-file change.
+
+## T-006 CBMC 6.11.0 (DFCC loop contracts): memory exhaustion while encoding sqlite3VdbeRecordUnpack's loop (unconfirmed)
+
+- **Tool:** CBMC 6.11.0, goto-instrument `--dfcc` with `--apply-loop-contracts`, default SAT (MiniSat 2) and `--z3`.
+- **What happened:** C-15's round 1 builder (2026-11-10, reports/C-15-b1.md) made eight prove runs of sqlite3VdbeRecordUnpack, and none reached a verdict:
+  - five SAT runs ran out of memory during propositional reduction, after about 51–57 s;
+  - two Z3 runs hit the 600 s timeout during SSA conversion;
+  - one variant was rejected by goto-cc ("side effects in assigns targets").
+  - This held with only 64 record bytes and four Mems. `cbmc --program-only` gave 373,533 lines (about 99 MB), with each pointer write expanded across dozens of candidate objects, including DFCC's dynamic-frame bookkeeping allocations.
+- **Repro:** the builder's scratch evidence in ../proving-sqlite-wt/C-15/tmp/ (C-15-<attempt>.log, C-15-goto.txt, C-15-ssa.txt); the retained harness reproduces attempt 8. No minimal toy yet.
+- **Effect:** C-15 went to triage STUCK after round 1, having used 2.5M of its 60M cap. C-15 has no dependants.
+- **Status:** not yet isolated, so not yet a confirmed CBMC defect. Round 2 is asked to reduce it to a toy first. If CBMC is at fault, with nothing a harness, contract or allowed Makefile setting can change, the card comes back as NEEDS-DECISION for Zach.
