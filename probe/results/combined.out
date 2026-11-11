@@ -1,0 +1,11 @@
+wrote legacy.c: 5 redeclarations
+compile: exit 0, 4.97 s wall, 608316 KiB max RSS
+link: exit 0, 2.37 s wall, 458052 KiB max RSS
+remove-bodies: exit 0, 2.51 s wall, 476060 KiB max RSS
+drop-unused: exit 0, 1.61 s wall, 324656 KiB max RSS
+comb-replace-loops: exit 0, 0.65 s wall, 121564 KiB max RSS
+Command terminated by signal 6
+comb-enforce: exit 0, 0.27 s wall, 60336 KiB max RSS
+Invariant check failed
+File: ../src/goto-instrument/contracts/instrument_spec_assigns.cpp:249 function: traverse_instructions
+Reason: Expected an assignment of the form `symbol_exprt := side_effect_expr_nondett`

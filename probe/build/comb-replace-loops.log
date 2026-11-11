@@ -1,0 +1,10 @@
+Reading GOTO program from '1.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Replacing function calls with contracts
+line 24 function __CPROVER_replace_ensures_is_fresh: function 'malloc' is not declared
+Ignored duplicate static local var target 'aFlag' at file /home/zpconn/code/proving-sqlite-wt/wip-t006-c15/overlay/sqlite3.c line 92080 function sqlite3VdbeSerialGet
+Adding nondeterministic initialization of static/global variables.
+Writing GOTO program to 'c1.goto'

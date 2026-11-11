@@ -1,0 +1,8 @@
+Reading GOTO program from '1.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Replacing function calls with contracts
+line 24 function __CPROVER_replace_ensures_is_fresh: function 'malloc' is not declared
+Writing GOTO program to 's1.goto'

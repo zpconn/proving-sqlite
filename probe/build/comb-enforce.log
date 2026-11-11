@@ -1,0 +1,31 @@
+Reading GOTO program from 'c1.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Enforcing contracts
+--- begin invariant violation report ---
+Invariant check failed
+File: ../src/goto-instrument/contracts/instrument_spec_assigns.cpp:249 function: traverse_instructions
+Condition: it->is_assign() && can_cast_expr<symbol_exprt>(it->assign_lhs()) && can_cast_expr<side_effect_expr_nondett>(it->assign_rhs())
+Reason: Expected an assignment of the form `symbol_exprt := side_effect_expr_nondett`
+Backtrace:
+goto-instrument(+0x9c04c3) [0x56e99ea6b4c3]
+goto-instrument(+0x9c15e3) [0x56e99ea6c5e3]
+goto-instrument(+0x158952) [0x56e99e203952]
+goto-instrument(+0x2ecde6) [0x56e99e397de6]
+goto-instrument(+0x2ed184) [0x56e99e398184]
+goto-instrument(+0x25069f) [0x56e99e2fb69f]
+goto-instrument(+0x256768) [0x56e99e301768]
+goto-instrument(+0x257bc9) [0x56e99e302bc9]
+goto-instrument(+0x15fcbf) [0x56e99e20acbf]
+goto-instrument(+0x163244) [0x56e99e20e244]
+goto-instrument(+0x156c6b) [0x56e99e201c6b]
+goto-instrument(+0x14ac6d) [0x56e99e1f5c6d]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca) [0x73d9eda2a1ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b) [0x73d9eda2a28b]
+goto-instrument(+0x157e75) [0x56e99e202e75]
+
+
+--- end invariant violation report ---
+timeout: the monitored command dumped core

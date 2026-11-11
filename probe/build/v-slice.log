@@ -1,0 +1,6 @@
+Reading GOTO program from 'v3.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Slicing away initializations of unused global variables
+Writing GOTO program to 'v4.goto'

@@ -1,0 +1,10 @@
+Reading GOTO program from 'v1.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Replacing function calls with contracts
+line 24 function __CPROVER_replace_ensures_is_fresh: function 'malloc' is not declared
+file /home/zpconn/code/proving-sqlite-wt/wip-t006-c15/overlay/sqlite3.c line 91976 function serialGet: no body for function 'memcpy'
+Adding nondeterministic initialization of static/global variables.
+Writing GOTO program to 'v2.goto'

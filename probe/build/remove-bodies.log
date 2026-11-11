@@ -1,0 +1,6 @@
+Reading GOTO program from '0.goto'
+Removing body of sqlite3GetVarint32
+Removing body of sqlite3VdbeSerialGet
+Removing body of sqlite3VdbeSerialTypeLen
+Removing body of sqlite3VdbeMemSetNull
+Writing GOTO program to '0b.goto'
