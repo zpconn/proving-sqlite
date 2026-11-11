@@ -114,3 +114,16 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Repro:** with a "campaign" tmux session as the server's only session, run `tools/campaign.py stop`, then `tools/campaign.py start`.
 - **Effect:** none; a confusing error message.
 - **Workaround:** after `start`, check `tmux ls`, `ps … campaign.py daemon` and daemon.log's last "daemon started" line, rather than start's exit status.
+
+## T-010 CBMC 6.11.0 (DFCC): per-element pointer obligations over an unbounded array can't be stated (reported, unconfirmed)
+
+- **Tool:** CBMC 6.11.0, goto-cc and goto-instrument `--dfcc`, `__CPROVER_forall` in requires, MiniSat 2 and Z3 4.8.12.
+- **What happened:** C-17's round 3 builder (on Claude, 2026-11-10, reports/C-17-b3.md "B1") needed, for each of up to 65535 fields, `n >= 0 && r_ok(z, n)` of a Mem and `r_ok(aColl[i], sizeof(CollSeq))`. It reports three results:
+  - `__CPROVER_forall` over `r_ok(a[q].z, a[q].n)` makes every pointer primitive fail with MiniSat, and gives "SMT2 solver returned error message: unknown constant …q!0…" with Z3 (np.c);
+  - even for one index, without a quantifier, an assumed r_ok on a pointer read from nondet heap memory doesn't make its dereference valid (np2.c, 4 of 137 failed);
+  - `__CPROVER_is_fresh` inside a forall is rejected: "quantifier must not contain function calls" (np3.c).
+  - The reviewer (reviews/C-17-r3.md, minor issue 1) found the toys missing from its worktree, and said the impossibility claim needs the preserved inputs and commands.
+- **Repro:** now preserved in evidence/orchestrator/tool-issues/T-010/, copied from the builder's tmp/: np.c, np2.c, np3.c and np1.log; mc.c and gm.c, the memcmp toys (B2); and probe/, the B3 probe's harness, Makefile and overlay diff. The commands are the ones in C-17-b3.md's B1 section.
+- **Effect:** C-17 has no P1 proof. C-18 to C-20 inherit the problem.
+- **Status:** unconfirmed. I haven't rerun the toys. Untested: whether CBMC's legacy contracts (T-006, option 1) handle these obligations differently.
+- **Related limitation (B2):** CBMC's memcmp model loops once per byte, so with `--unwinding-assertions` unbounded string lengths can't be unwound. That is a property of the model, not a defect.
