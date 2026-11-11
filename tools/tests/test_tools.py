@@ -1476,6 +1476,19 @@ def main():
         rc, out, res = prove('overlay', 'C-17')
         t.expect('legacy: the same proof with that callee\'s body kept proves (T-012\'s workaround)',
                  rc == 0 and 'RESULT prove C-17 lp64-le PASS' in res, out[-800:])
+        # T-006 follow-up (C-15 round 4): coverage under the legacy engine reads the enforced body by its legacy name,
+        # and counts only the function's own lines, not those of a kept callee inlined into it
+        rc, out, res = t.run(r, [py, 'tools/prove.py', 'coverage', '--card-dir', 'proofs/C-17', '--config', 'lp64-le',
+                                 '--build-dir', 'proofs/C-17/build'])
+        import json as _json
+        cj = os.path.join(r, 'proofs', 'C-17', 'build', 'lp64-le', 'st.cover.json')
+        fj = (_json.load(open(cj)).get('functions') or {}).get('t_static', {}) if os.path.exists(cj) else {}
+        rng = (line_of(legacy_text('toys.c'), 'void t_static('), line_of(legacy_text('toys.c'), '{ stat(p); ++p; ++k; }') + 1)
+        t.expect('legacy: coverage finds the enforced function\'s goals under the legacy engine, all within its own lines '
+                 '(the kept callee stat\'s line is not counted)',
+                 'no coverage goals found' not in out and fj.get('goal_lines') and
+                 all(rng[0] <= x <= rng[1] for x in fj['goal_lines']) and line_of(legacy_text('toys.c'), 'void stat(') not in fj['goal_lines'],
+                 out[-800:] + str(fj))
         # only LEGACY_CARDS may opt in
         r2 = legacy_repo(t, card='C-96')
         rc, out, res = t.run(r2, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-96', '--config', 'lp64-le',

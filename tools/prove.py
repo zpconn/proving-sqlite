@@ -801,8 +801,10 @@ def cmd_prove(a):
 RE_COVER = re.compile(r'^\[([^\]]+)\] file (\S+) line (\d+) function (\S+) block (\d+) \(lines (.*)\): (SATISFIED|FAILED)$')
 
 
-def parse_cover(text, overlay_path):
-    """Return list of (function, set(overlay lines), satisfied) for blocks in overlay_path."""
+def parse_cover(text, overlay_path, only_fn=None):
+    """Return list of (function, set(overlay lines), satisfied) for blocks in overlay_path. With only_fn, a block's
+    lines come only from its source locations in function only_fn: the legacy engine inlines a kept callee's body
+    into the enforced one, and those lines are the callee's (T-006 follow-up, C-15 round 4)."""
     out = []
     base = os.path.basename(overlay_path)
     for line in text.split('\n'):
@@ -817,7 +819,7 @@ def parse_cover(text, overlay_path):
             fm = re.match(r'^(.*):([^:]*):([0-9,\- ]+)$', part)
             if not fm:
                 continue
-            if os.path.basename(fm.group(1)) != base:
+            if os.path.basename(fm.group(1)) != base or (only_fn is not None and fm.group(2) != only_fn):
                 continue
             for rng in fm.group(3).split(','):
                 rng = rng.strip()
@@ -850,8 +852,14 @@ def cover_one(card, card_dir, proof, cfg_name, cfg_flags, overlay_dir, build_roo
     lm = ov.LineMap(open(ovpath, 'rb').read())
     blocks = parse_cover(text, ovpath)
     for fn in proof.cover:
-        body = fn + '_wrapped_for_contract_checking' if fn in proof.enforced else fn
-        mine = [(l, s) for f, l, s in blocks if f == body]
+        if fn in proof.enforced and proof.uses_legacy():
+            # the legacy engine keeps the enforced body as __CPROVER_contracts_original_<fn>, with kept callees inlined
+            # into it (T-006 follow-up, reports/C-15-b4.md): count only fn's own source lines
+            body = '__CPROVER_contracts_original_' + fn
+            mine = [(l, s) for f, l, s in parse_cover(text, ovpath, only_fn=fn) if f == body]
+        else:
+            body = fn + '_wrapped_for_contract_checking' if fn in proof.enforced else fn
+            mine = [(l, s) for f, l, s in blocks if f == body]
         all_lines, unc = set(), set()
         for l, s in mine:
             all_lines |= l
