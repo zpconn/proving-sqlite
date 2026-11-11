@@ -84,8 +84,28 @@ FLOAT2INT_DIRECTIVE = '%float-to-int'
 # Zach, 2026-11-10 (evidence/approvals/T-006-dfcc-loop-pointer/): CBMC's legacy contracts, opted into per proof, only
 # for the cards whose loops carry a pointer that DFCC can't encode (T-006). Every other proof stays on DFCC.
 LEGACY_CARDS = ('C-15', 'C-17')
+# Bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/): a proof named here proves its property only for
+# inputs within these bounds. {card: {proof: ((local, K, what), ...)}}: the entry function's SETUP holds exactly
+# `__CPROVER_assume(<local> <= K);` for each, where <local> is the harness variable that stands for `what`, the input
+# as the function under proof names it. tools/scan.py (rule 18) refuses any other constant upper bound on an input of
+# the call under proof, a fixed-size allocation in a bounded proof, and a card or PROPERTIES.md without the label;
+# tools/results.py prints the label in RESULTS.md and results.csv; tools/native.py builds and runs the card's native
+# tests past the bound (tests/bounded/<card>-<k>.c), a step of every gate that runs the card. Fixed here, in a frozen
+# file, so no card can add, widen or drop a bound.
+BOUNDS = {}
 CONTRACT_CLAUSE_RX = re.compile(r'__CPROVER_(requires|ensures|assigns|frees)\b')
 LEGACY_STATIC_ABORT = 'Expected an assignment of the form `symbol_exprt := side_effect_expr_nondett`'
+
+
+def bounds_label(card, proof):
+    """'bounded: <what> <= K, ...' for a proof in BOUNDS, else ''. The card file and PROPERTIES.md carry it as
+    '<card> <proof>: <label>' (scan.py rule 18)."""
+    b = BOUNDS.get(card, {}).get(proof)
+    return ('bounded: ' + ', '.join('%s <= %d' % (what, k) for _, k, what in b)) if b else ''
+
+
+def bounds_line(card, proof):
+    return '%s %s: %s' % (card, proof, bounds_label(card, proof))
 
 IDENT = r'[A-Za-z_][A-Za-z0-9_]*'
 RE_PAIR = re.compile(r'^(%s)/contract_(%s)$' % (IDENT, IDENT))

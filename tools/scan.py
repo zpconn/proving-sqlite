@@ -52,7 +52,7 @@ Rejects:
      entry function (a helper or file scope), fails too;
  12. files in proofs/C-NN/ but harness.c, Makefile, NOTES.md and the ignored build/ directory; files in
      overlay/ but sqlite3.c; files in proofs/include/ but proof.h and preds.h; symlinks anywhere under
-     proofs/, overlay/ or tests/repro/; preprocessor directives a harness or header has no use for
+     proofs/, overlay/, tests/repro/ or tests/bounded/; preprocessor directives a harness or header has no use for
      (#import, #embed, #line, any #pragma but once);
  13. with --base: a change to proofs/include/preds.h that removes or alters anything it held (it may only
      gain predicates);
@@ -61,6 +61,19 @@ Rejects:
      the include guard (`#ifndef G` first, then `#define G`, G all-caps ending in _H and unused by sqlite3.c)
      and any #undef: a macro could change an existing predicate's or SQLite name's meaning while rule 13 still
      sees every item preds.h held.
+ 16. (bounded proofs; Zach, 2026-11-11, evidence/approvals/C-15-bounded/) in an entry function's SETUP, a constant
+     upper bound on an input of the call under proof, unless tools/prove.py's BOUNDS names it. An input is a local
+     passed whole as an argument (`id` or `&id`), or assigned to a field (`p->f = ...` names it), or assigned to a
+     local that is an input; in a bounded proof, also a local in an allocation's size. A bound is a conjunct of an
+     assume, `!` aside, comparing an expression that names an input with one that names no local: `x <= K`,
+     `x < K`, `x == K`, `K >= x`, `K > x`, and their negations. A pointer's offset in `x + y` is not an input (it
+     places the pointer in its allocation). A bounded proof's SETUP holds each of its BOUNDS as exactly
+     `__CPROVER_assume(<local> <= K);`, once, on an input; it allocates no fixed size but one object
+     (`sizeof(T)`), since a fixed buffer would bound an input through a requires; cards/<card>.md and PROPERTIES.md
+     carry `<card> <proof>: bounded: <what> <= K, ...`; and tests/bounded/ holds at least one
+     `<card>-<k>.c` (k 1 to 9), regular files only, which tools/native.py builds and runs.
+     This rule is a mechanical floor, not a complete one: an input narrowed some other way (a non-constant bound,
+     arithmetic that hides the comparison) is the reviewer's to find, as before.
 
 Usage: tools/scan.py [--root DIR] [--card C-NN [--base REF]] [--overlay FILE]
   --card limits the harness rules to one card and, with --base, requires every PROOF span that
@@ -885,14 +898,14 @@ def check_card_dir_files(s, card_dir):
 
 def check_tree_files(s):
     """Rule 12: overlay/ and proofs/include/ hold their named files only; no symlink under proofs/, overlay/,
-    tests/repro/."""
+    tests/repro/, tests/bounded/."""
     for sub, names in (('overlay', {'sqlite3.c'}), ('proofs/include', {'proof.h', 'preds.h'})):
         d = os.path.join(s.root, sub)
         if os.path.isdir(d):
             for n in sorted(os.listdir(d)):
                 if n not in names or not os.path.isfile(os.path.join(d, n)):
                     s.bad('%s/%s' % (sub, n), '%s/ may hold only %s' % (sub, ', '.join(sorted(names))))
-    for sub in ('proofs', 'overlay', 'tests/repro'):
+    for sub in ('proofs', 'overlay', 'tests/repro', 'tests/bounded'):
         d = os.path.join(s.root, sub)
         if os.path.islink(d):
             s.bad(sub, 'is a symlink')
@@ -990,6 +1003,202 @@ def check_harness(s, card_dir, sqlite_ids, proofs=(), card=None):
     check_harness_text(s, where, code)
     entry_ptrs = check_entries(s, where, raw, code, proofs, card, harness_macros(s, where, code))
     check_card_calls(s, where, code, proofs, card, entry_ptrs)
+    check_bounds(s, where, raw, code, proofs, card, os.path.basename(os.path.normpath(card_dir)))
+
+
+# Rule 16: bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/)
+_NEG_OP = {'<': '>=', '<=': '>', '>': '<=', '>=': '<', '==': '!=', '!=': '=='}
+BOUND_FILE_RX = re.compile(r'^(C-[0-9]{2})-([1-9])\.c$')
+
+
+def top_split(text, sep):
+    """text split at sep outside parentheses and brackets."""
+    out, depth, start, i = [], 0, 0, 0
+    while i < len(text):
+        ch = text[i]
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth -= 1
+        elif depth == 0 and text.startswith(sep, i):
+            out.append(text[start:i])
+            i += len(sep)
+            start = i
+            continue
+        i += 1
+    out.append(text[start:])
+    return out
+
+
+def top_comparison(text):
+    """(lhs, op, rhs) if text has exactly one comparison operator outside parentheses, else None."""
+    depth, hits, i = 0, [], 0
+    while i < len(text):
+        ch, two = text[i], text[i:i + 2]
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth -= 1
+        elif depth == 0 and two in ('<<', '>>', '->'):
+            i += 2
+            continue
+        elif depth == 0 and two in ('<=', '>=', '==', '!='):
+            hits.append((i, two))
+            i += 2
+            continue
+        elif depth == 0 and ch in '<>':
+            hits.append((i, ch))
+        i += 1
+    if len(hits) != 1:
+        return None
+    i, op = hits[0]
+    return text[:i], op, text[i + len(op):]
+
+
+def bound_conjuncts(expr, inputs, local):
+    """[(input names, conjunct)] for each conjunct of an assume that bounds an input above by a constant: one side
+    names an input and the other names no local, `!` aside."""
+    out = []
+    for c in top_split(expr, '&&'):
+        t, neg = strip_parens(c), False
+        while t.startswith('!') and not t.startswith('!='):
+            t, neg = strip_parens(t[1:]), not neg
+        cmp_ = top_comparison(t)
+        if not cmp_:
+            continue
+        lhs, op, rhs = cmp_
+        op = _NEG_OP[op] if neg else op
+        ln, rn = set(re.findall(_ID, lhs)) & local, set(re.findall(_ID, rhs)) & local
+        if ln & inputs and not rn and op in ('<=', '<', '=='):
+            out.append((sorted(ln & inputs), ' '.join(c.split())))
+        elif rn & inputs and not ln and op in ('>=', '>', '=='):
+            out.append((sorted(rn & inputs), ' '.join(c.split())))
+    return out
+
+
+def malloc_sizes(text):
+    out = []
+    for m in re.finditer(r'\bmalloc\s*\(', text):
+        e = balanced(text, m.end() - 1)
+        if e > 0:
+            out.append(text[m.end():e - 1])
+    return out
+
+
+def check_bounds(s, where, raw, code, proofs, card, cid):
+    """Rule 16, for each proof's ENTRY function."""
+    defs = {name: (b, e) for name, _, b, e in top_level_functions(code)}
+    setup_rx, end_rx = re.compile(r'/\*\s*SETUP\s*\*/'), re.compile(r'/\*\s*END SETUP\s*\*/')
+    for proof in proofs:
+        if proof.entry not in defs:
+            continue                                   # rule 11 reports it
+        b, e = defs[proof.entry]
+        setups, ends = list(setup_rx.finditer(raw, b, e)), list(end_rx.finditer(raw, b, e))
+        if len(setups) != 1 or len(ends) != 1 or ends[0].start() < setups[0].end():
+            continue                                   # rule 11 reports it
+        sa, sz, sb = setups[0].start(), setups[0].end(), ends[0].start()
+        before = split_statements(code[b + 1:sa], b + 1)
+        setup = split_statements(code[sz:sb], sz)
+        local, ptrs = set(), set()
+        for _, st in before + setup:
+            local.update(declared_names(st))
+            if is_declaration(st) or top_assignment(st):
+                ptrs |= pointer_names(st)
+        bounds = prove.BOUNDS.get(cid, {}).get(proof.name)
+        inputs = set()
+        targets = proof.enforced or (card.functions if card else [])
+        m = re.compile(r'\b(%s)\s*\(' % '|'.join(re.escape(x) for x in targets)).search(code, ends[0].end(), e) if targets else None
+        if m:
+            k = balanced(code, m.end() - 1)
+            for arg in top_level_args(code[m.end():k - 1] if k > 0 else ''):
+                am = re.fullmatch(r'\s*&?\s*(%s)\s*(?:\+\s*%s\s*)?' % (_ID, _ID), arg)
+                if am:
+                    inputs.add(am.group(1))           # in `x + y`, x: y is the pointer's place, not an input
+        # What an input is assigned from is an input: a field of an input object (`p->f = ...`), or an input local. A
+        # pointer assigned from an input pointer (`q = p + k`) aliases it, so it is an input too. A pointer's offset is
+        # its place in its allocation, not an input; an allocation's size is an input only in a bounded proof.
+        flows = []
+        for _, st in setup:
+            a = top_assignment(st)
+            if not a:
+                continue
+            lhs, rhs = a[0].strip(), a[1]
+            ids = re.findall(_ID, lhs.split('->', 1)[0])
+            target = ids[-1] if ids else ''               # the local assigned, or the object whose field is
+            sizes = malloc_sizes(rhs)
+            value = re.sub(r'\bmalloc\s*\(.*', '', rhs, flags=re.S) if sizes else rhs
+            base = None
+            if '->' not in lhs and target in ptrs and not sizes:
+                pm = re.match(r'\s*(?:\(\s*[^()]*\)\s*)?(%s)' % _ID, value)
+                base = pm.group(1) if pm and pm.group(1) in local else None
+                value = base or ''
+            names = set(re.findall(_ID, value)) & local
+            if bounds:
+                names |= set(re.findall(_ID, ' '.join(sizes))) & local
+            flows.append((target, names, base))
+        changed = True
+        while changed:
+            changed = False
+            for target, names, base in flows:
+                if target in inputs and not names <= inputs:
+                    inputs |= names
+                    changed = True
+                if base in inputs and target not in inputs:
+                    inputs.add(target)
+                    changed = True
+        declared = {}
+        for local_name, kk, what in (bounds or ()):
+            rx = re.compile(r'__CPROVER_assume\s*\(\s*%s\s*<=\s*%d\s*\)' % (re.escape(local_name), kk))
+            hits = [off for off, st in setup if rx.fullmatch(st.strip())]
+            if len(hits) != 1:
+                s.bad(where, '%s: tools/prove.py BOUNDS gives %s <= %d (%s), so SETUP must hold `__CPROVER_assume(%s <= %d);` '
+                             'exactly once (found %d)' % (proof.name, local_name, kk, what, local_name, kk, len(hits)))
+            elif local_name not in inputs:
+                s.bad(where, '%s: the bounded local %s is no input of the call under proof' % (proof.name, local_name))
+            declared.update({off: local_name for off in hits})
+        for off, st in setup:
+            t = st.strip()
+            ln = code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1
+            if off in declared:
+                continue
+            if re.match(r'__CPROVER_assume\s*\(', t):
+                k = balanced(t, t.index('('))
+                for names, conj in bound_conjuncts(t[t.index('(') + 1:k - 1] if k > 0 else '', inputs, local):
+                    s.bad(where, 'line %d: a constant upper bound on %s, an input of the call under proof, that tools/prove.py '
+                                 'BOUNDS does not give (a bounded proof needs Zach\'s approval): %s' % (ln, ', '.join(names), conj[:80]))
+            if bounds:
+                for size in malloc_sizes(t):
+                    if not set(re.findall(_ID, size)) & local and not re.fullmatch(r'\s*sizeof\s*\(\s*[A-Za-z_][\w\s]*\)\s*', size):
+                        s.bad(where, 'line %d: a bounded proof allocates no fixed size but one object, sizeof(T): a fixed '
+                                     'buffer would bound an input through a requires: malloc(%s)' % (ln, ' '.join(size.split())[:60]))
+
+
+def check_bounded_cards(s, card_proofs):
+    """Rule 16, across the tree: BOUNDS names real proofs; the label is in the card and PROPERTIES.md; tests/bounded/
+    holds each bounded card's native tests and nothing else."""
+    props = os.path.join(s.root, 'PROPERTIES.md')
+    ptext = open(props, errors='replace').read() if os.path.exists(props) else ''
+    d = os.path.join(s.root, 'tests', 'bounded')
+    files = sorted(os.listdir(d)) if os.path.isdir(d) else []
+    for n in files:
+        m = BOUND_FILE_RX.match(n)
+        if not m or m.group(1) not in prove.BOUNDS or not os.path.isfile(os.path.join(d, n)) or os.path.islink(os.path.join(d, n)):
+            s.bad('tests/bounded/' + n, 'tests/bounded/ holds only <card>-<k>.c (k 1 to 9), regular files, for the cards '
+                                        'in tools/prove.py BOUNDS')
+    for cid, pm in sorted(prove.BOUNDS.items()):
+        names = [p.name for p in card_proofs.get(cid) or []]
+        cpath = os.path.join(s.root, 'cards', cid + '.md')
+        ctext = open(cpath, errors='replace').read() if os.path.exists(cpath) else ''
+        for proof in sorted(pm):
+            if proof not in names:
+                s.bad('proofs/%s/Makefile' % cid, 'tools/prove.py BOUNDS names proof %s, which the Makefile lacks' % proof)
+            line = prove.bounds_line(cid, proof)
+            for where, text in (('cards/%s.md' % cid, ctext), ('PROPERTIES.md', ptext)):
+                if line not in text:
+                    s.bad(where, 'a bounded proof is labelled here, word for word: %s' % line)
+        if not any(BOUND_FILE_RX.match(n) and BOUND_FILE_RX.match(n).group(1) == cid for n in files):
+            s.bad('tests/bounded/', '%s is bounded (tools/prove.py BOUNDS), so it needs a native test past the bound, '
+                                    'tests/bounded/%s-<k>.c' % (cid, cid))
 
 
 def check_harness_text(s, where, code):
@@ -1340,6 +1549,7 @@ def main():
     check_preds(s, sqlite_ids)
     check_overlay_spans(s, overlay_path, all_cards, a.card, a.base)
     check_tree_files(s)
+    check_bounded_cards(s, card_proofs)
     if a.base:
         check_preds_growth(s, a.base)
     for p in s.problems:

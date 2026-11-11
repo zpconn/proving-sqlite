@@ -7,7 +7,10 @@ harnesses. Each case states what the tool must say. Run: tools/tests/test_tools.
 Ends with: RESULT tool-tests PASS|FAIL <passed>/<total>
 """
 import argparse
+import csv
 import hashlib
+import io
+import json
 import os
 import re
 import shutil
@@ -378,6 +381,87 @@ def b2_repo(t, card, contracts):
     if contracts == 'legacy':
         lines += ['cmp_CONTRACTS := legacy', 'walk_CONTRACTS := legacy']
     t.write(r, 'proofs/%s/Makefile' % card, '\n'.join(lines + ['include ../Makefile.common']) + '\n')
+    return r
+
+# Bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/): prove.py BOUNDS, scan rule 16, results.py's
+# Bounds column, tools/native.py and the gate's native step
+BOUNDS_TOY = TOY + r'''typedef struct Rec { int n; u8 *z; } Rec;
+static int toyRec(Rec *r){
+  int s = 0, i;
+  for(i=0; i<r->n; i++) s += r->z[i];
+  return s;
+}
+'''
+BOUNDS_HARNESS = r'''#include "sqlite3.c"
+#include <stdlib.h>
+void harness_toySum(void) {
+  int n;
+  u8 *p;
+  /* SETUP */
+  __CPROVER_assume(n >= 0);
+  __CPROVER_assume(n <= 64);
+  p = malloc(n);
+  __CPROVER_assume(p != 0);
+  /* END SETUP */
+  toySum(p, n);
+}
+void harness_toyRec(void) {
+  int m;
+  Rec *r;
+  u8 *z;
+  /* SETUP */
+  __CPROVER_assume(m >= 0);
+  r = malloc(sizeof(Rec));
+  z = malloc(m);
+  __CPROVER_assume(r != 0 && z != 0);
+  r->n = m;
+  r->z = z;
+  /* END SETUP */
+  toyRec(r);
+}
+'''
+BOUNDS_MK = '''CARD := C-92
+PROOFS := sum rec
+sum_ENTRY := harness_toySum
+sum_LOOPS := unwind
+sum_UNWINDSET := toySum.0:65
+sum_COVER := toySum
+rec_ENTRY := harness_toyRec
+rec_LOOPS := none
+rec_COVER := toyRec
+include ../Makefile.common
+'''
+BOUNDS_LINE = 'C-92 sum: bounded: n <= 64'
+BOUNDS_NATIVE = r'''#include "sqlite3.c"
+#include <stdlib.h>
+int main(void) {
+  int n, i;
+  for (n = 65; n < 2048; n++) {
+    u8 *p = malloc(n);
+    for (i = 0; i < n; i++) p[i] = (u8)i;
+    if (toySum(p, n) < 0) return 3;
+    free(p);
+  }
+  return 0;
+}
+'''
+
+
+def bounds_repo(t, bounds="{'C-92': {'sum': (('n', 64, 'n'),)}}"):
+    r = t.fresh()
+    t.write(r, 'upstream/sqlite3.c', BOUNDS_TOY)
+    t.write(r, 'overlay/sqlite3.c', BOUNDS_TOY)
+    t.write(r, 'pin.txt', 'upstream/sqlite3.c: %s\n' % hashlib.sha256(BOUNDS_TOY.encode()).hexdigest())
+    pp = os.path.join(r, 'tools', 'prove.py')
+    text = open(pp).read()
+    assert '\nBOUNDS = {}\n' in text
+    t.write(r, 'tools/prove.py', text.replace('\nBOUNDS = {}\n', '\nBOUNDS = %s\n' % bounds))
+    t.write(r, 'cards/C-92.md', card_md('C-92', ['toySum', 'toyRec'], src=BOUNDS_TOY).replace(
+        '- Notes: toy\n', '- Notes: toy. %s\n' % BOUNDS_LINE))
+    t.write(r, 'PROPERTIES.md', '# PROPERTIES\n\n## Bounded proofs\n\n- %s\n' % BOUNDS_LINE)
+    t.write(r, 'proofs/C-92/harness.c', BOUNDS_HARNESS)
+    t.write(r, 'proofs/C-92/Makefile', BOUNDS_MK)
+    t.write(r, 'tests/bounded/C-92-1.c', BOUNDS_NATIVE)
     return r
 
 class T:
@@ -1474,6 +1558,139 @@ def main():
                  "KEYS ['roles.builder.high.model', 'vendors.codex.usage_limit_patterns']" in out2, out2)
         t.expect('b2: memcmp.h is frozen and lands only with an approval record and proof.lock; tools/sessions.toml may land (T-007)',
                  'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out and 'TOML []' in out, out)
+
+    # ---- bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/): scan rule 16, results, native, gate
+    if want('bounds'):
+        def bscan(rr):
+            return t.run(rr, [py, 'tools/scan.py'])
+
+        def edit(rr, rel, old, new):
+            text = open(os.path.join(rr, rel)).read()
+            assert old in text, (rel, old)
+            t.write(rr, rel, text.replace(old, new, 1))
+
+        r = bounds_repo(t)
+        rc, out, res = bscan(r)
+        t.expect('bounds: a bounded proof with its BOUNDS assume, both labels and a native test passes scan',
+                 rc == 0 and 'PASS' in res, out)
+        # without a BOUNDS entry: every constant upper bound on an input of the call under proof fails
+        def unbounded():
+            rr = bounds_repo(t, '{}')
+            os.remove(os.path.join(rr, 'tests', 'bounded', 'C-92-1.c'))
+            edit(rr, 'proofs/C-92/harness.c', '  __CPROVER_assume(n <= 64);\n', '')
+            return rr
+        r = bounds_repo(t, '{}')
+        rc, out, res = bscan(r)
+        t.expect('bounds: without a BOUNDS entry, a constant bound on a call argument fails, and tests/bounded/ may hold '
+                 'nothing', rc != 0 and 'a constant upper bound on n,' in out and 'tests/bounded/ holds only' in out, out)
+        for name, old, new, who in (
+                ('a bound on a field of the object passed', '  r->n = m;', '  r->n = m;\n  __CPROVER_assume(m < 9);', 'm'),
+                ('a bound on a local that a field is set from', '  r->n = m;', '  r->n = k;\n  k = m;\n  __CPROVER_assume(m <= 8);', 'm'),
+                ('a bound on a field set through an alias', '  r->n = m;', '  q = r;\n  q->n = j;\n  __CPROVER_assume(j <= 8);', 'j'),
+                ('a negated bound in a conjunction', '  __CPROVER_assume(m >= 0);', '  __CPROVER_assume(m >= 0 && !(m > 8));', 'm'),
+                ('a bound with the constant on the left', '  __CPROVER_assume(m >= 0);', '  __CPROVER_assume(8 >= m);', 'm'),
+                ('an equality', '  __CPROVER_assume(m >= 0);', '  __CPROVER_assume(m == 4);', 'm')):
+            rr = unbounded()
+            edit(rr, 'proofs/C-92/harness.c', '  int m;\n', '  int m, k, j;\n  Rec *q;\n')
+            edit(rr, 'proofs/C-92/harness.c', old, new)
+            rc, out, res = bscan(rr)
+            t.expect('bounds: scan rejects %s, an input of the call under proof' % name,
+                     rc != 0 and 'a constant upper bound on %s,' % who in out, out)
+        for name, old, new in (
+                ('a lower bound only', '', ''),
+                ('a bound on an allocation\'s size in an unbounded proof (as C-01\'s extent)',
+                 '  z = malloc(m);', '  size_t ext;\n  z = malloc(ext);\n  __CPROVER_assume(ext <= 80);'),
+                ('a bound on a pointer\'s offset in `x + y`', '  toySum(p, n);', '  toySum(p + k, n);'),
+                ('a bound on a field of an object the call never sees', '  r->n = m;',
+                 '  r->n = m;\n  Rec *other;\n  int j;\n  other = malloc(sizeof(Rec));\n  __CPROVER_assume(other != 0);\n'
+                 '  other->n = j;\n  __CPROVER_assume(j <= 3);')):
+            rr = unbounded()
+            if new.startswith('  toySum(p + k'):
+                edit(rr, 'proofs/C-92/harness.c', '  int n;\n', '  int n, k;\n')
+                edit(rr, 'proofs/C-92/harness.c', '  p = malloc(n);', '  p = malloc(n + 1);\n  __CPROVER_assume(k >= 0 && k <= 1);')
+            if old:
+                edit(rr, 'proofs/C-92/harness.c', old, new)
+            rc, out, res = bscan(rr)
+            t.expect('bounds: scan passes %s' % name, rc == 0 and 'PASS' in res, out)
+        # a bounded proof: its bounds exactly as BOUNDS gives them, exact allocations, labels and a native test
+        for name, change, want_text in (
+                ('BOUNDS giving another K', lambda rr: None, 'exactly once (found 0)'),
+                ('the bound inside a conjunction', lambda rr: edit(rr, 'proofs/C-92/harness.c',
+                 '  __CPROVER_assume(n >= 0);\n  __CPROVER_assume(n <= 64);', '  __CPROVER_assume(n >= 0 && n <= 64);'), 'exactly once (found 0)'),
+                ('the bound twice', lambda rr: edit(rr, 'proofs/C-92/harness.c', '  __CPROVER_assume(n <= 64);',
+                 '  __CPROVER_assume(n <= 64);\n  __CPROVER_assume(n <= 64);'), 'exactly once (found 2)'),
+                ('a second, tighter bound', lambda rr: edit(rr, 'proofs/C-92/harness.c', '  __CPROVER_assume(n <= 64);',
+                 '  __CPROVER_assume(n <= 64);\n  __CPROVER_assume(n < 10);'), 'a constant upper bound on n,'),
+                ('a fixed-size allocation', lambda rr: edit(rr, 'proofs/C-92/harness.c', '  p = malloc(n);', '  p = malloc(64);'),
+                 'allocates no fixed size'),
+                ('a bound on an allocation\'s size', lambda rr: edit(rr, 'proofs/C-92/harness.c', '  p = malloc(n);',
+                 '  size_t ext;\n  __CPROVER_assume(ext <= 80);\n  p = malloc(ext);'), 'a constant upper bound on ext,'),
+                ('a bound on an allocation\'s size, passed as `p + k`', lambda rr: (
+                    edit(rr, 'proofs/C-92/harness.c', '  p = malloc(n);', '  size_t ext;\n  int k;\n  __CPROVER_assume(ext <= 80 && k >= 0 && k <= 1);\n  p = malloc(ext);'),
+                    edit(rr, 'proofs/C-92/harness.c', '  toySum(p, n);', '  toySum(p + k, n);')), 'a constant upper bound on ext,'),
+                ('the label missing from the card', lambda rr: edit(rr, 'cards/C-92.md', ' ' + BOUNDS_LINE, ''),
+                 'cards/C-92.md: a bounded proof is labelled here'),
+                ('the label missing from PROPERTIES.md', lambda rr: edit(rr, 'PROPERTIES.md', BOUNDS_LINE, 'C-92 sum: bounded'),
+                 'PROPERTIES.md: a bounded proof is labelled here'),
+                ('no native test', lambda rr: os.remove(os.path.join(rr, 'tests', 'bounded', 'C-92-1.c')),
+                 'needs a native test past the bound'),
+                ('a native test named for another card', lambda rr: t.write(rr, 'tests/bounded/C-93-1.c', BOUNDS_NATIVE),
+                 'tests/bounded/ holds only'),
+                ('a symlinked native test', lambda rr: os.symlink('C-92-1.c', os.path.join(rr, 'tests', 'bounded', 'C-92-2.c')),
+                 'symlink not allowed'),
+                ('BOUNDS naming a proof the Makefile lacks', lambda rr: None, 'which the Makefile lacks')):
+            if name == 'BOUNDS giving another K':
+                rr = bounds_repo(t, "{'C-92': {'sum': (('n', 32, 'n'),)}}")
+            elif name.startswith('BOUNDS naming'):
+                rr = bounds_repo(t, "{'C-92': {'sum': (('n', 64, 'n'),), 'nope': (('m', 1, 'm'),)}}")
+            else:
+                rr = bounds_repo(t)
+            change(rr)
+            rc, out, res = bscan(rr)
+            t.expect('bounds: scan rejects a bounded proof with %s' % name, rc != 0 and want_text in out, out)
+        rr = bounds_repo(t)
+        edit(rr, 'proofs/C-92/harness.c', '  p = malloc(n);', '  Rec *one;\n  one = malloc(sizeof(Rec));\n  p = malloc(n);')
+        rc, out, res = bscan(rr)
+        t.expect('bounds: a bounded proof may allocate one object, sizeof(T)', rc == 0 and 'PASS' in res, out)
+        # results.py: the Bounds column
+        r = bounds_repo(t)
+        rec = {'prove_summary': [{'proof': p_, 'config': 'lp64-le', 'status': 'PASS', 'cbmc_seconds': 1, 'properties': 9,
+                                  'failed': 0} for p_ in ('sum', 'rec')], 'coverage_summary': [], 'mutants': [], 'provenance': {}}
+        t.write(r, 'evidence/results/C-92.json', json.dumps(rec))
+        rc, out, res = t.run(r, [py, 'tools/results.py', '--root', r])
+        csvt = open(os.path.join(r, 'results.csv')).read() if os.path.exists(os.path.join(r, 'results.csv')) else ''
+        mdt = open(os.path.join(r, 'RESULTS.md')).read() if os.path.exists(os.path.join(r, 'RESULTS.md')) else ''
+        rows_ = list(csv.DictReader(io.StringIO(csvt)))
+        t.expect('bounds: results.csv and RESULTS.md carry a bounded proof\'s label, and only its rows',
+                 rc == 0 and [x.get('bounds') for x in rows_] == ['bounded: n <= 64', ''] and '| bounded: n <= 64 |' in mdt
+                 and '| Bounds |' in mdt, out + csvt + mdt)
+        # tools/native.py, in campaign.py's repro sandbox
+        r = bounds_repo(t)
+        nat = lambda rr, c='C-92': t.run(rr, [py, 'tools/native.py', '--card', c], timeout=3600)  # noqa: E731
+        rc, out, res = nat(r)
+        t.expect('bounds: native.py builds and runs a bounded card\'s native test, which passes',
+                 rc == 0 and res == 'RESULT native C-92 PASS 1 tests 0 failed'
+                 and os.path.exists(os.path.join(r, 'proofs', 'C-92', 'build', 'native', 'C-92-1.txt')), out)
+        t.write(r, 'tests/bounded/C-92-2.c', BOUNDS_NATIVE.replace('toySum(p, n)', 'toySum(p, n + 1)'))
+        t.write(r, 'tests/bounded/C-92-3.c', BOUNDS_NATIVE.replace('return 0;\n}', 'return 3;\n}'))
+        rc, out, res = nat(r)
+        t.expect('bounds: native.py fails a test that overreads (a sanitizer report) and one that exits nonzero',
+                 rc != 0 and res == 'RESULT native C-92 FAIL 3 tests 2 failed' and 'C-92-2.c FAIL' in out
+                 and 'sanitizer report' in out and 'C-92-3.c FAIL: build exit 0, run exit 3' in out, out)
+        for n_ in ('C-92-1.c', 'C-92-2.c', 'C-92-3.c'):
+            os.remove(os.path.join(r, 'tests', 'bounded', n_))
+        rc, out, res = nat(r)
+        rc2, out2, res2 = nat(r, 'C-90')
+        t.expect('bounds: native.py fails a bounded card with no test, and a card BOUNDS doesn\'t name',
+                 rc != 0 and 'FAIL 0 tests' in res and rc2 != 0 and 'not in tools/prove.py BOUNDS' in out2, out + out2)
+        # the gate runs the native step for a bounded card
+        r = bounds_repo(t)
+        t.write(r, 'Makefile', open(os.path.join(REPO, 'Makefile')).read())
+        t.write(r, 'proofs/C-92/Makefile', BOUNDS_MK.split('rec_ENTRY')[0].replace('PROOFS := sum rec', 'PROOFS := sum')
+                + 'include ../Makefile.common\n')               # rec's loop has no bound to unwind
+        rc, out, res = t.run(r, [py, 'tools/gate.py', 'gate', '--card', 'C-92'], timeout=3600)
+        t.expect('bounds: make gate CARD=C-92 runs its native tests as a step (native C-92 PASS)',
+                 re.search(r'^  native C-92\s+PASS', out, re.M) is not None, out)
 
     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
     if want('probe'):
