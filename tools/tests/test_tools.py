@@ -1461,6 +1461,17 @@ def main():
                 'print("OK", campaign.land_paths_problems(["proofs/contracts/memcmp.h", "proof.lock", "evidence/approvals/x/APPROVED.md"], ["evidence/approvals/x/APPROVED.md"])[0])\n'
                 'print("TOML", campaign.land_paths_problems(["tools/sessions.toml"], [])[0])\n')
         rc, out, res = t.run(t.fresh(), [py, '-c', code])
+        rt = os.path.join(t.base, 'toml-keys')
+        os.makedirs(rt)
+        subprocess.run(['git', 'init', '-q', rt], check=True)
+        t.write(rt, 'tools/sessions.toml', '[vendors.codex]\nusage_limit_patterns = ["a"]\n[roles.builder.high]\nmodel = "m1"\neffort = "high"\n')
+        subprocess.run(['git', 'add', '-A'], cwd=rt, check=True)
+        subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'x'], cwd=rt, check=True)
+        t.write(rt, 'tools/sessions.toml', '[vendors.codex]\nusage_limit_patterns = ["a", "b"]\n[roles.builder.high]\nmodel = "m2"\neffort = "high"\n')
+        subprocess.run(['git', 'add', 'tools/sessions.toml'], cwd=rt, check=True)
+        rc2, out2, _ = t.run(rt, [py, '-c', 'import sys; sys.path.insert(0, %r); import campaign; print("KEYS", campaign.sessions_toml_changes("."))' % os.path.join(REPO, 'tools')])
+        t.expect('b2: a land that changes tools/sessions.toml names the changed keys in its trailer',
+                 "KEYS ['roles.builder.high.model', 'vendors.codex.usage_limit_patterns']" in out2, out2)
         t.expect('b2: memcmp.h is frozen and lands only with an approval record and proof.lock; tools/sessions.toml may land (T-007)',
                  'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out and 'TOML []' in out, out)
 
