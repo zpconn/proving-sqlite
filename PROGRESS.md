@@ -12,7 +12,7 @@
 4. **A-005:** callers give sqlite3PutVarint `sqlite3VarintLen(v)` bytes, not 9 (OP_MakeRecord), so C-01's requires isn't met at real calls, though the writes are safe. **Recommendation:** reopen C-01 for a value-dependent footprint.
 5. **C-15 round 3 and C-17 round 4** are ready to start once (1) is answered. C-15 can't merge before B2 repairs the lock.
 
-Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-012).
+Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-013).
 
 **Checkpoint 1** was approved on 2026-11-10 at 8fbb0c8; proof.lock is at 4b851e7. The list, fixes and checks are in evidence/checkpoint1/README.md, and the decisions in HANDOFF.md. **Findings:** FINDINGS.md (F-001). Approval records are in evidence/approvals/.
 
@@ -86,3 +86,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-10 23:25 My error: T-006's proof.lock was written before its 19 new test fixtures were staged (lock.py hashes tracked files only), so the land's gate fails its lock step. proof.lock rewritten with them; landed again.
 - 2026-11-11 00:19 The first T-006 land reached main with its full gate failing on the lock step (my error, 23:25). The corrected land was refused: "proof.lock changed without a frozen-file change". campaign.py lands a frozen change before gating it, and has no lock-only repair. Main's proof.lock lacks tools/tests/legacy/'s 19 fixtures, so every card gate fails its lock step until the next frozen land, B2, carries the full proof.lock. No card is waiting to merge. orch's proof.lock is put back to main's meanwhile, so non-frozen lands go through.
 - 2026-11-11 13:30 Auditor's interim on B2: --tools allowlist (Bash, Read, Write, Edit, Glob, Grep, Monitor, TaskStop, ToolSearch) instead of --disallowedTools; real start and resume sessions give exactly those 9 tools. TaskStop allowed (session_tools.py). F-002 reproduced by campaign.py's runner, control clean; it goes to C-17's Codex reviewer (C-15's reviewer is Claude, the ledger agent's vendor).
+- 2026-11-11 13:28 B2 (auditor OK at ab697bd) refused whole by the land job, which judges a rules change by the old rules (T-013). It lands in two parts with the approved end state (LANDING.md). Part A queued 13:33; the daemon is stopped while its job runs.
