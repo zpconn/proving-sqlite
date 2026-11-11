@@ -98,3 +98,19 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Repro:** change tools/sessions.toml on orch, commit, and run `tools/campaign.py land`.
 - **Effect:** none on the campaign so far. The exception's models now come from the vendor's existing roles (VENDOR_ROLE in campaign.py), so sessions.toml stays unchanged. A real CLI flag change mid-campaign would need `stop`, a change to campaign.py, or `finish`.
 - **Workaround:** keep sessions.toml unchanged during the campaign. If a CLI flag must change, ask Zach; the fix (sessions.toml in LAND_ALLOWED, or treated as frozen) is a frozen-file change.
+
+## T-008 tools/campaign.py (frozen): the daemon keeps running old code after a land changes tools/
+
+- **Tool:** tools/campaign.py's daemon, which imports its own code once at start.
+- **What happened:** land f09908705e36 (T-004's fix and C-17's vendor exception) reached main at 21:29 on 2026-11-10, after a full gate. The daemon had been running since 16:37 and kept the old code in memory: no CARD_ROLE_VENDOR, and the old finish. Had C-17 been retried, it would have started on Codex again. Nothing in campaign.py reloads or restarts the daemon after a frozen land. The `_job` runners are new processes, so they do pick up the new code; only the daemon's scheduling, prompts and vendor choice stay old.
+- **Repro:** land any change to tools/campaign.py while the daemon runs, then compare `grep 'daemon started' state/daemon.log` with the land's time.
+- **Effect:** none, because it was caught before the retry.
+- **Workaround:** after any land that changes tools/campaign.py, run `tools/campaign.py stop` (running sessions carry on), then `tools/campaign.py start`, then check the daemon's start time in daemon.log. Done at 21:30.
+
+## T-009 tools/campaign.py `start` with tmux 3.4: reports failure when the daemon started
+
+- **Tool:** tools/campaign.py `cmd_start`, tmux 3.4.
+- **What happened:** at 21:30, right after `tools/campaign.py stop`, `start` ran `tmux kill-session -t campaign`, which removed the old window, the only session. That ended the tmux server. Its `tmux new-session -d -s campaign …` then returned exit 1, so start raised CalledProcessError and printed "no server running". The new session and daemon (pid 921140) had in fact started. A second `start` found the daemon alive. Only one daemon ran.
+- **Repro:** with a "campaign" tmux session as the server's only session, run `tools/campaign.py stop`, then `tools/campaign.py start`.
+- **Effect:** none; a confusing error message.
+- **Workaround:** after `start`, check `tmux ls`, `ps … campaign.py daemon` and daemon.log's last "daemon started" line, rather than start's exit status.

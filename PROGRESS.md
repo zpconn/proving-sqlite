@@ -2,12 +2,12 @@
 
 ## Status (2026-11-10, campaign session: §3 running)
 
-**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named, after HANDOFF.md's checks passed. As of 20:11, 15 cards are merged. C-15 is parked for Zach (below). C-17 is retried under the vendor exception, and C-18 to C-20 wait on it. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** your answers, then §4 (ledger agent; tcl8.6-dev is installed), then §5.
+**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named, after HANDOFF.md's checks passed. As of 20:11, 15 cards are merged. C-15 is parked for Zach (below). C-17 is building round 3 on Claude under the vendor exception, and C-18 to C-20 wait on it. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** your answers, then §4 (ledger agent; tcl8.6-dev is installed), then §5.
 
 **Open questions for Zach:**
 1. **C-15 is parked: CBMC 6.11's DFCC can't encode sqlite3VdbeRecordUnpack's loop** (T-006; evidence/approvals/T-006-dfcc-loop-pointer/README.md). A loop-carried pointer plus replaced calls makes the encoding explode, reproduced in a 27-line toy with no SQLite code. **Recommendation: option 1**, the legacy (non-DFCC) contracts path for the proofs that need it: it verifies the toy in under 1 s and catches planted errors. No tool changes until the auditor has reproduced min4.c and its control (evidence/orchestrator/tool-issues/T-006/run.sh). Then the patch, then your and the auditor's review.
 
-Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-007).
+Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-009).
 
 The checkpoint 1 list, with each item's file and each fix's test: evidence/checkpoint1/README.md.
 
@@ -100,3 +100,4 @@ The checkpoint 1 list, with each item's file and each fix's test: evidence/check
 - 2026-11-10 19:17 C-15 STUCK in round 1: no CBMC verdict on any of 8 runs, from encoding memory exhaustion or timeouts under DFCC loop contracts (T-006, unconfirmed). Recommendation, done: retry with the builder's own next step first, a toy that isolates the blow-up; NEEDS-DECISION if it is CBMC's own.
 - 2026-11-10 20:03 C-15 round 2 NEEDS-DECISION: DFCC loop-carried pointer blow-up isolated to a toy; confirmed by me, legacy contracts path checked on the toy (T-006). C-15 parked for Zach (Open questions 2).
 - 2026-11-10 Zach: T-004 OK (applied); C-17 option (b), so campaign.py's CARD_ROLE_VENDOR, with models from each vendor's own role; C-15 stays parked until the auditor reproduces T-006's toy. Both tool changes land together with proof.lock and approval records.
+- 2026-11-10 21:29 Land f099087 (T-004 and the C-17 exception) on main; full gate PASS 3459s. The daemon was restarted onto the new code (T-008, T-009). C-17 retried: round 3 builder J0070 on claude-opus-5-5.
