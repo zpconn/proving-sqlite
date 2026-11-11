@@ -1,4 +1,4 @@
-selftest fixture: /var/tmp/campaign-selftest-uq53hk30
+selftest fixture: /var/tmp/campaign-selftest-omel_oit
 ok   sessions.toml's codex and claude commands, start and resume, pass the session guards
 ok   session guard refuses codex without the workspace-write sandbox
 ok   session guard refuses codex with approvals on
@@ -12,8 +12,9 @@ ok   session guard refuses codex bwrap that lets codex install skills into ~/.co
 ok   session guard refuses codex bwrap that binds ~/.ssh back
 ok   session guard refuses claude with skills and commands (the account's synced skills)
 ok   session guard refuses claude with MCP servers from anywhere but --mcp-config (claude.ai connectors)
-ok   session guard refuses claude without --disallowedTools (WebFetch, RemoteTrigger and the rest back)
-ok   session guard refuses claude that denies one tool fewer (WebFetch allowed)
+ok   session guard refuses claude without --tools (every built-in tool back)
+ok   session guard refuses claude with --tools default
+ok   session guard refuses claude whose --tools list has one extra tool (SendMessage)
 ok   session guard refuses claude bwrap that leaves $HOME visible
 ok   session guard refuses claude bwrap that leaves /mnt visible
 ok   session guard refuses claude bwrap that leaves $HOME writable
@@ -108,4 +109,4 @@ ok   kill -9 of the daemon mid-merge: the surviving merge job's result is taken 
 ok   finish of a campaign started with --no-tmux leaves a tmux session named campaign alone (T-004: the selftest's finish killed the live campaign's daemon)
 ok   finish: primary checkout back on main with orch merged, main's checkout removed
 ok   no session saw the API-key or CLAUDE_CODE_ variables planted in campaign.py's environment (56 sessions)
-RESULT selftest PASS 109/109
+RESULT selftest PASS 110/110

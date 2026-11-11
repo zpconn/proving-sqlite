@@ -1,18 +1,19 @@
 # PROGRESS
 
-## Status (2026-11-10, campaign session: §3 running)
+## Status (2026-11-11 16:00, campaign session: §3 and §4)
 
-**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named, after HANDOFF.md's checks passed. As of 22:00, 15 cards are merged. C-15 and C-17 are parked for Zach (below). C-18 to C-20 wait on C-17. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** your answers, then §4 (ledger agent; tcl8.6-dev is installed), then §5.
+**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named. 15 cards are merged (C-01 to C-14, C-16). C-15 is in triage after round 3 (STUCK; to a bounded P1, as Zach decided in advance). C-17 is parked until its round 4, which starts now that B2 is on main. C-18 to C-20 wait on C-17. §4's ledger agent ran (J0079; reports/ledger-2026-11-10.md). The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** C-17 round 4; C-15's measurement round (proof times over nField and nKey), then K and N proposed to Zach; then C-18 to C-20, the second ledger run, and §5.
 
-**CLI versions:** codex-cli 0.167.1 and Claude Code 2.1.322 since 22:22–22:25 on 2026-11-10; earlier sessions ran 0.166.0 and 2.1.321 (T-011). The recheck matches checkpoint 1 except that Codex offers tools the record omits (subagent `collaboration.*`, `request_user_input`), unused but also present under 0.166.0. **No new session starts until Zach has seen that.**
+**B2 is on main** in two parts (LANDING.md): part A 69a1b4e, part B 2e2eeee. Part B's full gate: RESULT gate all PASS 3494s 0 failed; `lock.py check` on main: PASS, 58 files, which also repairs the stale lock of 00:19. Its land trailer names `tools/sessions.toml keys changed: vendors.claude.resume, vendors.claude.start`. From now on every Claude session runs with `--tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch`. The daemon was restarted on main's campaign.py at 15:55 (T-008).
+
+**CLI versions:** codex-cli 0.167.1 and Claude Code 2.1.322 since 2026-11-10 22:22–22:25; rechecked under T-011 and cleared by Zach.
 
 **Open questions for Zach:**
-2. **B2** (evidence/approvals/B2-memcmp-contract/) waits for the auditor's OK. Its proof.lock also repairs main's: since 00:19 it lacks T-006's fixtures, so every card gate fails its lock step until B2 lands.
-3. **F-002** (ledger draft): sqlite3_preupdate_old overreads an exact-size record; reproduced by the auditor natively, and by campaign.py's sandboxed runner with its control clean (evidence/orchestrator/F-002/). C-17's round-4 Codex reviewer judges it, then it goes into FINDINGS.md.
-4. **A-005:** callers give sqlite3PutVarint `sqlite3VarintLen(v)` bytes, not 9 (OP_MakeRecord), so C-01's requires isn't met at real calls, though the writes are safe. **Recommendation:** reopen C-01 for a value-dependent footprint.
-5. **C-15 round 3 and C-17 round 4** are ready to start once (1) is answered. C-15 can't merge before B2 repairs the lock.
+1. **A-001 and F-002** (ledger run): A-001's caller obligation is violated, since 151,429 calls had less than 8 bytes of slack after the record. Its worst case is F-002: sqlite3_preupdate_old copies a record into an exact-size buffer (95940), and a corrupt one overreads in serialGet (91950) through RecordUnpack. It was reproduced by the auditor natively, and by campaign.py's sandboxed runner with its control clean (evidence/orchestrator/F-002/). C-17's round-4 Codex reviewer judges F-002; then it goes into FINDINGS.md with tests/repro/F-002.c. LEDGER.md's status moves (reports/ledger-2026-11-10.md §7) wait for your answer.
+2. **A-005:** callers give sqlite3PutVarint `sqlite3VarintLen(v)` bytes, not 9 (OP_MakeRecord), so C-01's requires isn't met at real calls, though the writes are safe. **Recommendation:** reopen C-01 for a value-dependent footprint.
+3. **C-15's bound (coming):** after its measurement round, I propose K for nField and N for nKey from the measured proof times, under the same approval and auditor-OK rules as C-17's bound.
 
-Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-012).
+Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-014).
 
 **Checkpoint 1** was approved on 2026-11-10 at 8fbb0c8; proof.lock is at 4b851e7. The list, fixes and checks are in evidence/checkpoint1/README.md, and the decisions in HANDOFF.md. **Findings:** FINDINGS.md (F-001). Approval records are in evidence/approvals/.
 
@@ -86,3 +87,6 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-10 23:25 My error: T-006's proof.lock was written before its 19 new test fixtures were staged (lock.py hashes tracked files only), so the land's gate fails its lock step. proof.lock rewritten with them; landed again.
 - 2026-11-11 00:19 The first T-006 land reached main with its full gate failing on the lock step (my error, 23:25). The corrected land was refused: "proof.lock changed without a frozen-file change". campaign.py lands a frozen change before gating it, and has no lock-only repair. Main's proof.lock lacks tools/tests/legacy/'s 19 fixtures, so every card gate fails its lock step until the next frozen land, B2, carries the full proof.lock. No card is waiting to merge. orch's proof.lock is put back to main's meanwhile, so non-frozen lands go through.
 - 2026-11-11 13:30 Auditor's interim on B2: --tools allowlist (Bash, Read, Write, Edit, Glob, Grep, Monitor, TaskStop, ToolSearch) instead of --disallowedTools; real start and resume sessions give exactly those 9 tools. TaskStop allowed (session_tools.py). F-002 reproduced by campaign.py's runner, control clean; it goes to C-17's Codex reviewer (C-15's reviewer is Claude, the ledger agent's vendor).
+- 2026-11-11 13:28 B2 (auditor OK at ab697bd) refused whole by the land job, which judges a rules change by the old rules (T-013). It lands in two parts with the approved end state (LANDING.md). Part A queued 13:33; the daemon is stopped while its job runs.
+- 2026-11-11 14:56 C-15 round 3 STUCK: legacy works, and a bounded diagnostic proves (64 bytes, at most 4 fields, 2,017/0, 128 s), but no full-domain verdict (T-014). Per Zach's decision in advance: a bounded P1 for C-15. Next round measures proof times over nField and nKey; then K is proposed to Zach.
+- 2026-11-11 15:54 B2 part B landed (main 2e2eeee): full gate PASS 3494s, lock PASS 58 files. Claude pause lifted; daemon restarted on main's campaign.py at 15:55.

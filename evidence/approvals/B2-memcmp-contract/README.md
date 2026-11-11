@@ -1,6 +1,6 @@
 # Approval request: memcmp's boundary contract (B2) and the changes bundled with it (2026-11-10)
 
-**Status: waiting for the auditor's OK on `patch.diff`**, which Zach relays. Nothing is applied: the patch is on the local branch `wip/b2-memcmp`. Zach approved B2 itself (memcmp's contract) and asked for the smallest frozen change that lets its header land. The other items below are his, to go in the same change.
+**Status (2026-11-11): the auditor's interim review passed everything but item 1. That item is now changed: see `delta-item1.diff` and the next section. Waiting for the auditor's OK on that delta and the full `patch.diff`**, which Zach relays. Nothing is applied: the patch is on the local branch `wip/b2-memcmp`. Zach approved B2 itself (memcmp's contract) and asked for the smallest frozen change that lets its header land. The other items below are his, to go in the same change.
 
 ## What the patch does (`patch.diff`, 10 files, against orch after T-006)
 | File | Frozen | Change |
@@ -16,6 +16,18 @@
 | tools/tests/test_tools.py | yes | `-k b2`, 12 tests, below. |
 | proof.lock | n/a | Rewritten: 58 files. **It also repairs main's proof.lock**, which since 00:19 lacks T-006's 19 test fixtures (tools/tests/legacy/). That was my error. A lock-only land is refused ("proof.lock changed without a frozen-file change"), so the repair has to ride with a frozen change. Until then, every card gate fails its lock step; no card is waiting to merge. |
 
+## Changes after the auditor's interim review (2026-11-11; `delta-item1.diff`, 6 files)
+1. **An allowlist instead of `--disallowedTools`.** The Claude command lines carry `--tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch`. That is session_tools.py's CLAUDE_OK, which now includes TaskStop. Claude Code 2.1.322 accepts Glob and Grep.
+   - command_problems requires that list exactly, once, and refuses `--allowedTools` and `--disallowedTools` beside it.
+   - Selftest guard cases: no `--tools`, `--tools default`, and the list plus SendMessage are each refused.
+   - Real sessions through probe.py (`tools-probe.txt`): the start and its resume (same session id) both report exactly `Bash Edit Glob Grep Monitor Read TaskStop ToolSearch Write`, and both replied normally.
+2. **Ride-alongs:**
+   - **A-006:** the proofs need less than the range. C-17 needs only a result other than INT_MIN, C-19 only the sign; [−255, 255] is what glibc and CBMC's model give. The clause is unchanged.
+   - **TRUSTED.md:** header_clause_problems misses a clause hidden in a one-line `#define`, and scan rule 15 guards that form.
+   - **campaign.py:** the stale comment at line 79 is fixed.
+   - **The land trailer:** a land that changes tools/sessions.toml names the changed keys in its `Campaign:` trailer (`sessions_toml_changes`), with a new `-k b2` test.
+3. **Tests on the branch:** tool tests 265/265 (`-k b2` 13/13) and selftest 110/110, guarded, with the live campaign's tmux session intact. The lock check passes on 58 files, and scan passes.
+
 ## Evidence
 - **Toys first, as Zach asked** (`toys.txt`, with `mc.c`, `mcl.c`, `kept.c`; all capped at 24 GB):
   - replacing memcmp with the contract proves for lengths up to 10^6 under both engines;
@@ -30,7 +42,7 @@
   - memcmp.h is frozen and lands only with an approval record and proof.lock;
   - tools/sessions.toml may land.
 - **A real session with the new Claude command line** (Claude Code 2.1.322, through checkpoint 1's probe, with this branch's campaign.py): it started with 17 tools, the seven above gone, and replied normally.
-- **Full tool tests:** 264/264 (`tool-tests.txt`). **Selftest:** 109/109 (`selftest.txt`), run as `env -u TMUX TMUX_TMPDIR=<scratch>`, with the live campaign's tmux session intact afterwards.
+- **Full tool tests (before the delta):** 264/264 (`tool-tests.txt`). **Selftest:** 109/109 (`selftest.txt`), run as `env -u TMUX TMUX_TMPDIR=<scratch>`, with the live campaign's tmux session intact afterwards.
 
 ## After the auditor's OK
 - Apply `patch.diff` on orch, rewrite proof.lock, add APPROVED.md, and land; the full gate runs.
