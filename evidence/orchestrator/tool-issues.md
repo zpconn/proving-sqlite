@@ -64,4 +64,5 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Repro:** ../proving-sqlite-wt/state/jobs/J0058-builder/out.jsonl, J0059-builder, J0060-builder.
 - **Effect:** C-17 lost round 1 (0.19M tokens). A resume of a flagged thread can never succeed, so the three-interruption rule spends the round on replays. The filter's message matches neither the usage-limit nor the auth-failure patterns.
 - **Workaround:** `tools/campaign.py retry C-17`, which starts a fresh session in a new round, with no change to the prompt. I'm not rephrasing anything to get past the filter. If it is flagged again, the card is parked for Zach, since the message's remedy (Daybreak access) is an account decision.
+- **Outcome:** round 2's fresh session (J0061, 18:49) was flagged after about 4 minutes, and its resumes (J0063, J0064) at once. C-17 was parked for Zach at 18:55 (PROGRESS.md, Open questions 1).
 - **Possible fix (not requested yet):** campaign.py could treat this message as its own outcome, sending the card straight to triage instead of resuming. That is a frozen-file change.
