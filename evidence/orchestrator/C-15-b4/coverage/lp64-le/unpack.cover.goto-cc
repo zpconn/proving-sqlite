@@ -1,0 +1,1 @@
+$ goto-cc -m64 -include /home/zpconn/code/proving-sqlite-wt/C-15/proofs/include/proof.h -I /home/zpconn/code/proving-sqlite-wt/C-15/overlay -I /home/zpconn/code/proving-sqlite-wt/C-15/proofs/include -I /home/zpconn/code/proving-sqlite-wt/C-15/proofs -c tmp/b4/coverage/lp64-le/unpack.legacy.c -o tmp/b4/coverage/lp64-le/unpack.legacy.o.goto

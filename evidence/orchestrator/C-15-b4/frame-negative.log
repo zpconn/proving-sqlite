@@ -1,0 +1,65 @@
+0 0
+1 0
+2 0
+3 0
+ line 11 pointer arithmetic: dead object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.5] line 11 pointer arithmetic: pointer outside object bounds in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.6] line 11 pointer arithmetic: invalid integer address in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.7] line 11 pointer arithmetic: pointer NULL in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.8] line 11 pointer arithmetic: pointer invalid in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.9] line 11 pointer arithmetic: deallocated dynamic object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.10] line 11 pointer arithmetic: dead object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.11] line 11 pointer arithmetic: pointer outside object bounds in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.12] line 11 pointer arithmetic: invalid integer address in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.19] line 11 pointer arithmetic: pointer NULL in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.20] line 11 pointer arithmetic: pointer invalid in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.21] line 11 pointer arithmetic: deallocated dynamic object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.22] line 11 pointer arithmetic: dead object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.23] line 11 pointer arithmetic: pointer outside object bounds in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.24] line 11 pointer arithmetic: invalid integer address in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.31] line 11 pointer arithmetic: pointer NULL in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.32] line 11 pointer arithmetic: pointer invalid in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.33] line 11 pointer arithmetic: deallocated dynamic object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.34] line 11 pointer arithmetic: dead object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.35] line 11 pointer arithmetic: pointer outside object bounds in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.36] line 11 pointer arithmetic: invalid integer address in cells + (signed long int)i: SUCCESS
+[f.assigns.6] line 13 Check that p->b is assignable: SUCCESS
+[f.assigns.7] line 13 Check that i is assignable: SUCCESS
+[f.assigns.8] line 13 Check that p is assignable: SUCCESS
+[f.assigns.9] line 13 Check that p->b is assignable: SUCCESS
+[f.assigns.10] line 13 Check that i is assignable: SUCCESS
+[f.assigns.11] line 13 Check that p is assignable: SUCCESS
+[f.pointer_arithmetic.13] line 13 pointer arithmetic: pointer NULL in p + 1l: SUCCESS
+[f.pointer_arithmetic.14] line 13 pointer arithmetic: pointer invalid in p + 1l: SUCCESS
+[f.pointer_arithmetic.15] line 13 pointer arithmetic: deallocated dynamic object in p + 1l: SUCCESS
+[f.pointer_arithmetic.16] line 13 pointer arithmetic: dead object in p + 1l: SUCCESS
+[f.pointer_arithmetic.17] line 13 pointer arithmetic: pointer outside object bounds in p + 1l: SUCCESS
+[f.pointer_arithmetic.18] line 13 pointer arithmetic: invalid integer address in p + 1l: SUCCESS
+[f.pointer_arithmetic.25] line 13 pointer arithmetic: pointer NULL in p + 1l: SUCCESS
+[f.pointer_arithmetic.26] line 13 pointer arithmetic: pointer invalid in p + 1l: SUCCESS
+[f.pointer_arithmetic.27] line 13 pointer arithmetic: deallocated dynamic object in p + 1l: SUCCESS
+[f.pointer_arithmetic.28] line 13 pointer arithmetic: dead object in p + 1l: SUCCESS
+[f.pointer_arithmetic.29] line 13 pointer arithmetic: pointer outside object bounds in p + 1l: SUCCESS
+[f.pointer_arithmetic.30] line 13 pointer arithmetic: invalid integer address in p + 1l: SUCCESS
+[f.pointer_dereference.1] line 13 dereference failure: pointer NULL in p->b: SUCCESS
+[f.pointer_dereference.2] line 13 dereference failure: pointer invalid in p->b: SUCCESS
+[f.pointer_dereference.3] line 13 dereference failure: deallocated dynamic object in p->b: SUCCESS
+[f.pointer_dereference.4] line 13 dereference failure: dead object in p->b: SUCCESS
+[f.pointer_dereference.5] line 13 dereference failure: pointer outside object bounds in p->b: SUCCESS
+[f.pointer_dereference.6] line 13 dereference failure: invalid integer address in p->b: SUCCESS
+[f.pointer_dereference.7] line 13 dereference failure: pointer NULL in p->b: SUCCESS
+[f.pointer_dereference.8] line 13 dereference failure: pointer invalid in p->b: SUCCESS
+[f.pointer_dereference.9] line 13 dereference failure: deallocated dynamic object in p->b: SUCCESS
+[f.pointer_dereference.10] line 13 dereference failure: dead object in p->b: SUCCESS
+[f.pointer_dereference.11] line 13 dereference failure: pointer outside object bounds in p->b: SUCCESS
+[f.pointer_dereference.12] line 13 dereference failure: invalid integer address in p->b: SUCCESS
+
+** 0 of 76 failed (1 iterations)
+VERIFICATION SUCCESSFUL
+
+tokens_used 10720348
+cap 60000000
+percent 17.9
+# 10720348 of 60000000 tokens (17.9%) used by this card's builder sessions so far; at 80% report STUCK.
+
+RESULT toy complete

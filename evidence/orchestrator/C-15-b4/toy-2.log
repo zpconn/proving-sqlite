@@ -1,0 +1,10 @@
+Reading GOTO program from 'tmp/b4/toy.loop'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Enforcing contracts
+Ignored duplicate stack-allocated target 'tmp_nondet_contents' at file tmp/b4/frame-toy.c line 10 function f
+line 9 function __CPROVER_enforce_requires_is_fresh: function 'malloc' is not declared
+Adding nondeterministic initialization of static/global variables.
+Writing GOTO program to 'tmp/b4/toy.enforced'

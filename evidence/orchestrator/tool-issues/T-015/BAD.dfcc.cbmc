@@ -1,0 +1,148 @@
+CBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux
+Reading GOTO program from file BAD.d.goto
+Generating GOTO Program
+Adding CPROVER library (x86_64)
+Removal of function pointers and virtual functions
+Generic Property Instrumentation
+Starting Bounded Model Checking
+Passing problem to propositional reduction
+converting SSA
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is UNSATISFIABLE
+
+** Results:
+<builtin-library-__CPROVER_contracts_library> function __CPROVER_contracts_car_set_insert
+[__CPROVER_contracts_car_set_insert.assertion.1] line 174 ptr NULL or writable up to size: SUCCESS
+[__CPROVER_contracts_car_set_insert.assertion.4] line 174 ptr NULL or writable up to size: SUCCESS
+[__CPROVER_contracts_car_set_insert.assertion.2] line 177 CAR size is less than __CPROVER_max_malloc_size: SUCCESS
+[__CPROVER_contracts_car_set_insert.assertion.5] line 177 CAR size is less than __CPROVER_max_malloc_size: SUCCESS
+[__CPROVER_contracts_car_set_insert.assertion.3] line 181 no offset bits overflow on CAR upper bound computation: SUCCESS
+[__CPROVER_contracts_car_set_insert.assertion.6] line 181 no offset bits overflow on CAR upper bound computation: SUCCESS
+
+<builtin-library-__CPROVER_contracts_library> function __CPROVER_contracts_make_invalid_pointer
+[__CPROVER_contracts_make_invalid_pointer.pointer_dereference.1] line 1186 dereference failure: pointer NULL in *ptr: SUCCESS
+[__CPROVER_contracts_make_invalid_pointer.pointer_dereference.2] line 1186 dereference failure: pointer invalid in *ptr: SUCCESS
+[__CPROVER_contracts_make_invalid_pointer.pointer_dereference.3] line 1186 dereference failure: deallocated dynamic object in *ptr: SUCCESS
+[__CPROVER_contracts_make_invalid_pointer.pointer_dereference.4] line 1186 dereference failure: dead object in *ptr: SUCCESS
+[__CPROVER_contracts_make_invalid_pointer.pointer_dereference.5] line 1186 dereference failure: pointer outside object bounds in *ptr: SUCCESS
+[__CPROVER_contracts_make_invalid_pointer.pointer_dereference.6] line 1186 dereference failure: invalid integer address in *ptr: SUCCESS
+
+<builtin-library-__CPROVER_contracts_library> function __CPROVER_contracts_obj_set_create_indexed_by_object_id
+[__CPROVER_contracts_obj_set_create_indexed_by_object_id.bit_count.1] line 264 count leading zeros is undefined for value zero in __builtin_clz(__CPROVER_max_malloc_size): SUCCESS
+[__CPROVER_contracts_obj_set_create_indexed_by_object_id.bit_count.2] line 264 count leading zeros is undefined for value zero in __builtin_clz(__CPROVER_max_malloc_size): SUCCESS
+[__CPROVER_contracts_obj_set_create_indexed_by_object_id.bit_count.3] line 264 count leading zeros is undefined for value zero in __builtin_clz(__CPROVER_max_malloc_size): SUCCESS
+
+<builtin-library-__CPROVER_contracts_library> function __CPROVER_contracts_write_set_add_allocated
+[__CPROVER_contracts_write_set_add_allocated.assertion.1] line 634 dynamic allocation is allowed: SUCCESS
+
+<builtin-library-__CPROVER_contracts_library> function __CPROVER_contracts_write_set_check_assignment
+[__CPROVER_contracts_write_set_check_assignment.assertion.1] line 805 ptr NULL or writable up to size: SUCCESS
+[__CPROVER_contracts_write_set_check_assignment.assertion.2] line 822 CAR size is less than __CPROVER_max_malloc_size: SUCCESS
+[__CPROVER_contracts_write_set_check_assignment.assertion.3] line 828 no offset bits overflow on CAR upper bound computation: SUCCESS
+[__CPROVER_contracts_write_set_check_assignment.unwind.1] line 837 unwinding assertion loop 0: SUCCESS
+
+<builtin-library-__CPROVER_contracts_library> function __CPROVER_contracts_write_set_havoc_slice
+[__CPROVER_contracts_write_set_havoc_slice.assertion.1] line 1605 assertion havoc_slice W_OK(car.lb, car.size): SUCCESS
+
+<builtin-library-malloc> function malloc
+[malloc.assertion.1] line 31 max allocation size exceeded: SUCCESS
+[malloc.assertion.2] line 36 max allocation may fail: SUCCESS
+
+[pointer_arithmetic.1] file toy.c line 5 pointer arithmetic: pointer NULL in cells + (signed long int)0: SUCCESS
+[pointer_arithmetic.2] file toy.c line 5 pointer arithmetic: pointer invalid in cells + (signed long int)0: SUCCESS
+[pointer_arithmetic.3] file toy.c line 5 pointer arithmetic: deallocated dynamic object in cells + (signed long int)0: SUCCESS
+[pointer_arithmetic.4] file toy.c line 5 pointer arithmetic: dead object in cells + (signed long int)0: SUCCESS
+[pointer_arithmetic.5] file toy.c line 5 pointer arithmetic: pointer outside object bounds in cells + (signed long int)0: SUCCESS
+[pointer_arithmetic.6] file toy.c line 5 pointer arithmetic: invalid integer address in cells + (signed long int)0: SUCCESS
+[pointer_arithmetic.7] file toy.c line 5 pointer arithmetic: pointer NULL in cells + (signed long int)1: SUCCESS
+[pointer_arithmetic.8] file toy.c line 5 pointer arithmetic: pointer invalid in cells + (signed long int)1: SUCCESS
+[pointer_arithmetic.9] file toy.c line 5 pointer arithmetic: deallocated dynamic object in cells + (signed long int)1: SUCCESS
+[pointer_arithmetic.10] file toy.c line 5 pointer arithmetic: dead object in cells + (signed long int)1: SUCCESS
+[pointer_arithmetic.11] file toy.c line 5 pointer arithmetic: pointer outside object bounds in cells + (signed long int)1: SUCCESS
+[pointer_arithmetic.12] file toy.c line 5 pointer arithmetic: invalid integer address in cells + (signed long int)1: SUCCESS
+toy.c function f
+[f.no_alloc_dealloc_in_ensures.1] line 5 Check that ensures do not allocate or deallocate memory: SUCCESS
+[f.no_alloc_dealloc_in_requires.1] line 5 Check that requires do not allocate or deallocate memory: SUCCESS
+[f.no_recursive_call.1] line 5 No recursive call to function f when checking contract f: SUCCESS
+[f.single_top_level_call.1] line 5 Only a single top-level call to function f when checking contract f: SUCCESS
+[f.pointer_primitives.1] line 6 pointer invalid in W_OK(cells_wrapper, sizeof(Cell) /*8ul*/  * (unsigned long int)n_wrapper): SUCCESS
+[f.pointer_primitives.2] line 6 deallocated dynamic object in W_OK(cells_wrapper, sizeof(Cell) /*8ul*/  * (unsigned long int)n_wrapper): SUCCESS
+[f.pointer_primitives.3] line 6 dead object in W_OK(cells_wrapper, sizeof(Cell) /*8ul*/  * (unsigned long int)n_wrapper): SUCCESS
+[f.pointer_primitives.4] line 6 pointer outside object bounds in W_OK(cells_wrapper, sizeof(Cell) /*8ul*/  * (unsigned long int)n_wrapper): SUCCESS
+[f.loop_assigns.1] line 11 Check assigns clause inclusion for loop f.0: SUCCESS
+[f.loop_assigns.2] line 11 Check assigns clause inclusion for loop f.0: FAILURE
+[f.loop_decreases.1] line 11 Check variant decreases after step for loop f.0: SUCCESS
+[f.loop_invariant_base.1] line 11 Check invariant before entry for loop f.0: SUCCESS
+[f.loop_invariant_base.2] line 11 Check invariant before entry for loop f.0: SUCCESS
+[f.loop_invariant_step.1] line 11 Check invariant after step for loop f.0: SUCCESS
+[f.loop_invariant_step.2] line 11 Check invariant after step for loop f.0: SUCCESS
+[f.loop_step_unwinding.1] line 11 Check step was unwound for loop f.0: SUCCESS
+[f.pointer_dereference.7] line 12 dereference failure: pointer NULL in *__havoc_target: SUCCESS
+[f.pointer_dereference.8] line 12 dereference failure: pointer invalid in *__havoc_target: SUCCESS
+[f.pointer_dereference.9] line 12 dereference failure: deallocated dynamic object in *__havoc_target: SUCCESS
+[f.pointer_dereference.10] line 12 dereference failure: dead object in *__havoc_target: SUCCESS
+[f.pointer_dereference.11] line 12 dereference failure: pointer outside object bounds in *__havoc_target: SUCCESS
+[f.pointer_dereference.12] line 12 dereference failure: invalid integer address in *__havoc_target: SUCCESS
+[f.pointer_dereference.13] line 12 dereference failure: pointer NULL in *__havoc_target$0: SUCCESS
+[f.pointer_dereference.14] line 12 dereference failure: pointer invalid in *__havoc_target$0: SUCCESS
+[f.pointer_dereference.15] line 12 dereference failure: deallocated dynamic object in *__havoc_target$0: SUCCESS
+[f.pointer_dereference.16] line 12 dereference failure: dead object in *__havoc_target$0: SUCCESS
+[f.pointer_dereference.17] line 12 dereference failure: pointer outside object bounds in *__havoc_target$0: SUCCESS
+[f.pointer_dereference.18] line 12 dereference failure: invalid integer address in *__havoc_target$0: SUCCESS
+[f.overflow.1] line 13 arithmetic overflow on signed * in (signed long int)i * (signed long int)8ul: SUCCESS
+[f.overflow.2] line 13 arithmetic overflow on signed * in (signed long int)i * (signed long int)8ul: SUCCESS
+[f.overflow.3] line 13 arithmetic overflow on signed * in (signed long int)i * (signed long int)8ul: SUCCESS
+[f.overflow.4] line 13 arithmetic overflow on signed * in (signed long int)i * (signed long int)8ul: SUCCESS
+[f.pointer_arithmetic.1] line 13 pointer arithmetic: pointer NULL in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.2] line 13 pointer arithmetic: pointer invalid in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.3] line 13 pointer arithmetic: deallocated dynamic object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.4] line 13 pointer arithmetic: dead object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.5] line 13 pointer arithmetic: pointer outside object bounds in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.6] line 13 pointer arithmetic: invalid integer address in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.13] line 13 pointer arithmetic: pointer NULL in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.14] line 13 pointer arithmetic: pointer invalid in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.15] line 13 pointer arithmetic: deallocated dynamic object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.16] line 13 pointer arithmetic: dead object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.17] line 13 pointer arithmetic: pointer outside object bounds in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.18] line 13 pointer arithmetic: invalid integer address in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.25] line 13 pointer arithmetic: pointer NULL in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.26] line 13 pointer arithmetic: pointer invalid in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.27] line 13 pointer arithmetic: deallocated dynamic object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.28] line 13 pointer arithmetic: dead object in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.29] line 13 pointer arithmetic: pointer outside object bounds in cells + (signed long int)i: SUCCESS
+[f.pointer_arithmetic.30] line 13 pointer arithmetic: invalid integer address in cells + (signed long int)i: SUCCESS
+[f.assigns.1] line 19 Check that p->b is assignable: SUCCESS
+[f.assigns.4] line 19 Check that p->b is assignable: SUCCESS
+[f.pointer_dereference.1] line 19 dereference failure: pointer NULL in p->b: SUCCESS
+[f.pointer_dereference.2] line 19 dereference failure: pointer invalid in p->b: SUCCESS
+[f.pointer_dereference.3] line 19 dereference failure: deallocated dynamic object in p->b: SUCCESS
+[f.pointer_dereference.4] line 19 dereference failure: dead object in p->b: SUCCESS
+[f.pointer_dereference.5] line 19 dereference failure: pointer outside object bounds in p->b: SUCCESS
+[f.pointer_dereference.6] line 19 dereference failure: invalid integer address in p->b: SUCCESS
+[f.pointer_dereference.19] line 19 dereference failure: pointer NULL in p->b: SUCCESS
+[f.pointer_dereference.20] line 19 dereference failure: pointer invalid in p->b: SUCCESS
+[f.pointer_dereference.21] line 19 dereference failure: deallocated dynamic object in p->b: SUCCESS
+[f.pointer_dereference.22] line 19 dereference failure: dead object in p->b: SUCCESS
+[f.pointer_dereference.23] line 19 dereference failure: pointer outside object bounds in p->b: SUCCESS
+[f.pointer_dereference.24] line 19 dereference failure: invalid integer address in p->b: SUCCESS
+[f.assigns.2] line 21 Check that i is assignable: SUCCESS
+[f.assigns.3] line 21 Check that p is assignable: SUCCESS
+[f.assigns.5] line 21 Check that i is assignable: SUCCESS
+[f.assigns.6] line 21 Check that p is assignable: SUCCESS
+[f.pointer_arithmetic.7] line 21 pointer arithmetic: pointer NULL in p + 1l: SUCCESS
+[f.pointer_arithmetic.8] line 21 pointer arithmetic: pointer invalid in p + 1l: SUCCESS
+[f.pointer_arithmetic.9] line 21 pointer arithmetic: deallocated dynamic object in p + 1l: SUCCESS
+[f.pointer_arithmetic.10] line 21 pointer arithmetic: dead object in p + 1l: SUCCESS
+[f.pointer_arithmetic.11] line 21 pointer arithmetic: pointer outside object bounds in p + 1l: SUCCESS
+[f.pointer_arithmetic.12] line 21 pointer arithmetic: invalid integer address in p + 1l: SUCCESS
+[f.pointer_arithmetic.19] line 21 pointer arithmetic: pointer NULL in p + 1l: SUCCESS
+[f.pointer_arithmetic.20] line 21 pointer arithmetic: pointer invalid in p + 1l: SUCCESS
+[f.pointer_arithmetic.21] line 21 pointer arithmetic: deallocated dynamic object in p + 1l: SUCCESS
+[f.pointer_arithmetic.22] line 21 pointer arithmetic: dead object in p + 1l: SUCCESS
+[f.pointer_arithmetic.23] line 21 pointer arithmetic: pointer outside object bounds in p + 1l: SUCCESS
+[f.pointer_arithmetic.24] line 21 pointer arithmetic: invalid integer address in p + 1l: SUCCESS
+
+** 1 of 115 failed (2 iterations)
+VERIFICATION FAILED

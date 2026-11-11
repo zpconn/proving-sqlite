@@ -1,0 +1,8 @@
+$ goto-instrument --apply-loop-contracts tmp/b4/candidate-ilp32/ilp32-le/unpack.2a.goto tmp/b4/candidate-ilp32/ilp32-le/unpack.2b.goto
+Reading GOTO program from 'tmp/b4/candidate-ilp32/ilp32-le/unpack.2a.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Adding nondeterministic initialization of static/global variables.
+Writing GOTO program to 'tmp/b4/candidate-ilp32/ilp32-le/unpack.2b.goto'
