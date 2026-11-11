@@ -258,8 +258,9 @@ ok   b2 (legacy): a kept callee body writing outside the loop's assigns fails ("
 ok   b2 (legacy): a contract clause smuggled into preds.h, onto the ENFORCE function fails the build
 ok   b2 (legacy): scan rejects a function contract clause in proofs/include/preds.h
 ok   b2 (legacy): a contract clause smuggled into a contracts header, onto the REPLACE function fails the build
+ok   b2: a land that changes tools/sessions.toml names the changed keys in its trailer
 ok   b2: memcmp.h is frozen and lands only with an approval record and proof.lock; tools/sessions.toml may land (T-007)
 ok   probe: lp64-be with -funsigned-char passes, char signedness included
 ok   probe: lp64-be without -funsigned-char (x86's signed char) fails
 ok   scan: CONFIGS may carry -funsigned-char but not another char flag
-RESULT tool-tests PASS 264/264
+RESULT tool-tests PASS 265/265
