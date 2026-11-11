@@ -180,3 +180,11 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 
   The daemon is stopped while each part's job runs, so no session starts on mismatched code. A related trap: a part that changed campaign.py's command lines without sessions.toml's would leave the daemon unable to start, because cmd_start refuses a sessions.toml that differs. So the `--tools` lines go only in part B, with sessions.toml.
 - **Workaround:** split such a change: widen the rules first, then use them. Stop the daemon across a land that changes campaign.py's command lines, and restart it after the land job exits (T-008).
+
+## T-014 CBMC 6.11.0 legacy loop contracts: a frame length that dereferences a field aborts the SMT encoder
+
+- **Tool:** CBMC 6.11.0, goto-instrument `--apply-loop-contracts` then `--enforce-contract`, with `--z3`. With SAT the same program warns "ignoring dereference" and runs out of memory.
+- **What happened:** C-15's round-3 builder (2026-11-11, reports/C-15-b3.md) found that a loop frame `__CPROVER_object_upto(b->a, sizeof(Cell)*b->n)` aborts in smt2_conv.cpp:2978, "unsupported expression: dereference". So does `__CPROVER_object_from(b->a)`. The generated `tmp_nondet_contents` has an array length that dereferences `b->n`. C-15's real loop has `sizeof(Mem)*p->nField`. `__CPROVER_loop_entry` inside an assigns target isn't lowered either. A frame from the loop-carried local, `__CPROVER_object_from(p)`, works: 193 properties, 0 failed, up to a u16 count.
+- **Repro:** evidence/orchestrator/tool-issues/T-014/legacy-slice.c with FRAME set as above; the commands are in C-15-b3.md. The builder's runs; not yet rerun by me.
+- **Effect:** C-15's frame uses the workaround. Even so, its full-domain runs give no verdict (memory, VERIFICATION ERROR or a timeout), while a bounded diagnostic proves (64 bytes, at most 4 fields: 2,017 properties, 0 failed, 128 s). Per Zach's decision in advance, C-15 moves to a bounded P1.
+- **Workaround:** frame from the loop-carried local pointer (`object_from(p)`), not from a dereferenced base and length.
