@@ -1,58 +1,57 @@
-# C-15: sqlite3VdbeRecordUnpack, incomplete round 3
+# C-15: bounded measurement candidate, round 4
 
-Proved: only a bounded lp64-le diagnostic, 2,017 properties, zero failures,
-128 s CBMC. It used 64 input bytes and four Mem slots; not the card's P1.
-STUCK: eight subsequent attempts obtained no full-range verdict. See b3.
-The retained full-range candidate is not approved for replacement by callers.
-Trusted: legacy contracts (T-006), CBMC/C/models and preprocessor.
-Tested: diagnostic tool executions only; no native SQLite runtime claim.
-Overlay, scan and all-config include checks pass; these do not establish P1.
-Assumed: A-001's exact max(nKey,1)+8 readable extent, with nKey>=0;
-A-002's native eight-byte allocation alignment through C-14.
+NEEDS-DECISION: proposed K=4, N=256; neither bound is approved.
+Proved: bounded CBMC runs return PASS on all three configurations, 1,759
+properties each, zero failures. This is not an approved P1 claim: Tested
+negative controls expose a legacy function/loop framing gap (report b4).
+Tested: native ASan/UBSan, 1,414 cases, 1,362 beyond the proposed bounds.
+Assumed: A-001 exact readable extent and A-002 native eight-byte alignment.
+Trusted: legacy contracts T-006, CBMC/C/models/preprocessor; b4 requests
+triage of the observed framing gap before this contract is used by callers.
 
-Candidate: writable record, readable KeyInfo prefix through db, positive
-capacity, writable incoming nField Mems, aligned aMem, and A-001 verbatim.
-Ensures default_rc=0 and output nField<=incoming capacity. Assigns default_rc,
-nField and the incoming Mem region. Exact member framing is unfinished.
-| Requires | Counterexample evidence | Caller justification |
+Requires writable record and incoming nField Mems, positive capacity,
+readable KeyInfo prefix through db, C-14's shared layout, eight-byte aMem
+alignment, and input/KeyInfo objects distinct from the output object.
+A-001 is verbatim: nKey>=0 and max(nKey,1)+8 readable bytes at pKey.
+Ensures default_rc=0 and output nField<=incoming capacity. Assigns names
+only default_rc,nField and each eligible cell's u,z,n,flags,enc,db,szMalloc.
+Four guarded cell groups describe only the proposed bounded domain.
+The broader loop frame is retained as instructed; it currently prevents
+claiming the narrower function frame was checked soundly (b4's toy).
+| Requires | Negative evidence | Caller justification |
 | --- | --- | --- |
-| w_ok(p,sizeof(UnpackedRecord)) | Deletion check unrun. | C-14 ensures writable record on success. |
-| r_ok(pKeyInfo,offsetof(KeyInfo,db)+sizeof(sqlite3*)) | Deletion check unrun. | C-14's input prefix and retained pointer; lifetime remains external. |
-| w_ok(aMem,sizeof(Mem)*nField) | Deletion check unrun. | C-14's output extent. |
-| nField>0 | No completed zero-capacity trace; loop writes before testing capacity. | C-14 ensures nKeyField+1, with nKeyField<65535. |
-| ((size_t)aMem%8)==0 | Alignment is outside CBMC's checks (UB-CLASSES.md). | Assumed A-002 and C-14's ROUND8P offset. |
-| A-001 exact clause | Full-range proof and minus-one check incomplete. | Assumed A-001; external b-tree and sorter callers. |
+| writable record | Deletion unrun. | C-14 success, upstream 92102-92108. |
+| readable KeyInfo prefix through db | Deletion unrun here; C-14 checked prefix minimality. | C-14 retains pKeyInfo; external callers preserve lifetime. |
+| writable nField Mems; nField>0 | Zero-capacity deletion still unrun. | C-14 ensures nKeyField+1 with nKeyField<65535. |
+| aMem at ROUND8P(sizeof(UnpackedRecord)) after p | Layout deletion unrun. | C-14 source 92105; its contract does not state this equality. |
+| input and KeyInfo distinct from output object | Alias deletion unrun. | Fresh allocation in C-14/A-002; external lifetime obligation. |
+| eight-byte alignment | Not a CBMC native-alignment check. | Assumed A-002 and C-14's rounded offset; UB-CLASSES.md. |
+| A-001 exact clause | +7 fails: nKey=0, one varint precondition; nKey=2, four callee preconditions. Native ASan confirms both real overreads. | Assumed A-001; external b-tree/sorter callers. |
 
-The harness now allows every nonnegative int nKey and the full u16 capacity,
-allocates exactly max(nKey,1)+8 nondet bytes and a shared record/Mem block,
-and places aMem at ((sizeof(UnpackedRecord)+7)/8)*8, C-14's layout here.
-Allocation failure is excluded before pointer arithmetic. KeyInfo has its
-own allocation. No record bytes or Mem string/blob contents are constrained.
-The contract still needs any required alias/region separation made explicit;
-the harness supplies disjoint record/Mem regions and separate input/KeyInfo.
-No claim that this harness discharges all layouts admitted by the contract.
+SETUP proposes nKey<=256 and capacity<=4; requires filters out capacity=0.
+Constant-sized malloc objects have variable leading offsets: the remaining
+input extent is exactly max(nKey,1)+8, and the shared record/Mem suffix is
+exactly ROUND8P(sizeof(UnpackedRecord))+capacity*sizeof(Mem). KeyInfo is
+separately allocated. Bytes and initial Mem/KeyInfo contents stay nondet.
+C-14's relative layout is preserved. Leading padding is not accessed by
+SQLite: input indices are unsigned; pMem is aMem+u, with its final backward
+step guarded by u>0. See b4 for grid recipes and the padding limitation.
 
-Loop 92134 uses induction, not bounded unwinding; candidate invariants:
-- u==0 || u<nField: next slot index, with nField positive under requires.
-- same_object(pMem,aMem) and pMem==aMem+u: pointer position.
-- idx>=1 && szHdr<=d: relation supporting A-001's read bound.
-- u==0 || previous flags exclude MEM_Agg|MEM_Dyn: null-call premise.
-- decreases nField-u; assigns idx,d,u,pMem and object_from(pMem).
-The tail frame starts at initial pMem; in the exact C-14-shaped allocation
-it is exactly the Mem region. Larger allocation tails need further scrutiny.
-Using object_upto(aMem,sizeof(Mem)*nField) generated a dereference in an
-array type: SAT exhausted memory; SMT aborted. The local-pointer tail frame
-avoids that particular encoder fault (independent toy and bounded pass).
-
-Only unpack opts into legacy. sqlite3VdbeSerialGet keeps its body because
-its static aFlag aborts replacement under T-012. Its serialGet helper uses
-C-07's unchanged contract, as in C-08. Kept-body writes are u,flags,n,z;
-Unpack adds enc,db,szMalloc; all lie in the Mem region. Full-range frame and
-MemSetNull precondition checks have no completed positive verdict.
+Loop 92134: assigns idx,d,u,pMem,object_from(pMem); decreases nField-u.
+Invariant u==0 || u<nField bounds the next slot; same_object and
+pMem==aMem+u locate it; idx>=1 && szHdr<=d support A-001; when u>0 the
+preceding flags exclude MEM_Agg|MEM_Dyn, supplying MemSetNull's premise.
+Only unpack uses legacy. SerialGet's body stays for T-012; its writes are
+u,flags,n,z. Its serialGet helper is replaced by C-07's unchanged contract.
+Unpack adds enc,db,szMalloc. T-014 forbids the dereferencing-length frame.
 
 ## Unreached lines
 
 ## Open questions
-Full-range encoding; explicit alias premises; precise member framing;
-requires deletion and minus-one evidence; all configurations, coverage,
-M-050/M-051, and the orchestrator's separate pre-merge planted-bug check.
+Coverage runner fails on all configurations: it seeks DFCC's body name,
+not legacy's __CPROVER_contracts_original_sqlite3VdbeRecordUnpack. Raw
+results have seven uncovered instrumentation goals at 92134; no accepted
+coverage claim or invented gap explanation. M-050/M-051/M-063 are killed.
+Approve the bounded scope and labels, resolve the framing/coverage tool
+issues, complete remaining requires-deletion evidence, and rerun the gate.
+The orchestrator's separate pre-merge --adhoc planted-bug check remains.
