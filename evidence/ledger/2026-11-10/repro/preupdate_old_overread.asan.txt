@@ -1,0 +1,30 @@
+=================================================================
+==288049==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x51d000003a58 at pc 0x61326c8a15d0 bp 0x7ffcdd5a4b00 sp 0x7ffcdd5a4af0
+READ of size 1 at 0x51d000003a58 thread T0
+    #0 0x61326c8a15cf in serialGet ../../upstream/sqlite3.c:91950
+    #1 0x61326c8a15cf in sqlite3VdbeSerialGet ../../upstream/sqlite3.c:92064
+    #2 0x61326c8b3432 in sqlite3VdbeRecordUnpack ../../upstream/sqlite3.c:92143
+    #3 0x61326c8d719d in vdbeUnpackRecord ../../upstream/sqlite3.c:95888
+    #4 0x61326c97e1d6 in sqlite3_preupdate_old ../../upstream/sqlite3.c:95944
+    #5 0x61326c87bc1e in hook /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/repro/preupdate_old_overread.c:30
+    #6 0x61326c8b4f63 in sqlite3VdbePreUpdateHook ../../upstream/sqlite3.c:93647
+    #7 0x61326c9fb8e8 in sqlite3VdbeExec ../../upstream/sqlite3.c:102564
+    #8 0x61326ca08288 in sqlite3Step ../../upstream/sqlite3.c:94551
+    #9 0x61326ca08288 in sqlite3_step ../../upstream/sqlite3.c:94612
+    #10 0x61326ca09731 in sqlite3_exec ../../upstream/sqlite3.c:142366
+    #11 0x61326c87c096 in main /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/repro/preupdate_old_overread.c:68
+    #12 0x7385aba2a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+    #13 0x7385aba2a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+    #14 0x61326c87b9c4 in _start (/home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/build/repro/preupdate_old_overread+0x299c4) (BuildId: 9058d4eb3b5f2ffd6e202b878617d256f7066ce1)
+
+0x51d000003a58 is located 0 bytes after 2008-byte region [0x51d000003280,0x51d000003a58)
+allocated by thread T0 here:
+    #0 0x7385abefd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x61326c918416 in sqlite3MemMalloc ../../upstream/sqlite3.c:28035
+    #2 0x61326c8b9a4f in mallocWithAlarm ../../upstream/sqlite3.c:31754
+    #3 0x61326c8b9a4f in sqlite3Malloc ../../upstream/sqlite3.c:31779
+    #4 0x61326c8d151a in dbMallocRawFinish ../../upstream/sqlite3.c:32084
+    #5 0x61326c8d15c4 in sqlite3DbMallocRawNN ../../upstream/sqlite3.c:32132
+    #6 0x61326c8d1862 in sqlite3DbMallocRaw ../../upstream/sqlite3.c:32115
+    #7 0x61326c97e140 in sqlite3_preupdate_old ../../upstream/sqlite3.c:95940
+    #8 0x61326c87bc1e in hook /home/zpconn/code/proving-sqlite-wt/session-ledger-1/validation/repro/preupdate_old_overread.c:30
