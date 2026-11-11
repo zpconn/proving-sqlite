@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Check every ended campaign session's tool calls against Zach's allowlist (2026-11-10, after T-011).
 
-  Claude: Bash, Read, Write, Edit, Glob, Grep, Monitor, ToolSearch          (tool_use names in the stream-json log)
+  Claude: Bash, Read, Write, Edit, Glob, Grep, Monitor, TaskStop, ToolSearch (tool_use names in the stream-json log;
+          campaign.py's --tools gives Claude sessions exactly these once B2 lands)
   Codex:  exec, wait, apply_patch and exec's shell tools                    (function calls in the rollout, and the
           tools.exec_command, tools.write_stdin, tools.apply_patch            tools a code-mode cell calls)
 
@@ -20,7 +21,7 @@ import time
 
 STATE = '/home/zpconn/code/proving-sqlite-wt/state'
 LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'session-tools.log')
-CLAUDE_OK = {'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep', 'Monitor', 'ToolSearch'}
+CLAUDE_OK = {'Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep', 'Monitor', 'TaskStop', 'ToolSearch'}   # TaskStop: Zach and the auditor, 2026-11-11
 CODEX_CALLS_OK = {'exec', 'wait', 'apply_patch', 'exec_command', 'write_stdin'}
 CODEX_CELL_OK = {'tools.exec_command', 'tools.write_stdin', 'tools.apply_patch'}
 CELL_CALL = re.compile(r'\b(tools|collaboration|clock|functions|web|browser|image|mcp)\.([A-Za-z_][A-Za-z0-9_]*)\s*\(')
