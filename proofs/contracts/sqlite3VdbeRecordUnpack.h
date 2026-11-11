@@ -18,7 +18,11 @@ void contract_sqlite3VdbeRecordUnpack(int nKey, const void *pKey, UnpackedRecord
     p->nField > 0: p->aMem[0].u, p->aMem[0].z, p->aMem[0].n, p->aMem[0].flags, p->aMem[0].enc, p->aMem[0].db, p->aMem[0].szMalloc;
     p->nField > 1: p->aMem[1].u, p->aMem[1].z, p->aMem[1].n, p->aMem[1].flags, p->aMem[1].enc, p->aMem[1].db, p->aMem[1].szMalloc;
     p->nField > 2: p->aMem[2].u, p->aMem[2].z, p->aMem[2].n, p->aMem[2].flags, p->aMem[2].enc, p->aMem[2].db, p->aMem[2].szMalloc;
-    p->nField > 3: p->aMem[3].u, p->aMem[3].z, p->aMem[3].n, p->aMem[3].flags, p->aMem[3].enc, p->aMem[3].db, p->aMem[3].szMalloc)
+    p->nField > 3: p->aMem[3].u, p->aMem[3].z, p->aMem[3].n, p->aMem[3].flags, p->aMem[3].enc, p->aMem[3].db, p->aMem[3].szMalloc;
+    p->nField > 4: p->aMem[4].u, p->aMem[4].z, p->aMem[4].n, p->aMem[4].flags, p->aMem[4].enc, p->aMem[4].db, p->aMem[4].szMalloc;
+    p->nField > 5: p->aMem[5].u, p->aMem[5].z, p->aMem[5].n, p->aMem[5].flags, p->aMem[5].enc, p->aMem[5].db, p->aMem[5].szMalloc;
+    p->nField > 6: p->aMem[6].u, p->aMem[6].z, p->aMem[6].n, p->aMem[6].flags, p->aMem[6].enc, p->aMem[6].db, p->aMem[6].szMalloc;
+    p->nField > 7: p->aMem[7].u, p->aMem[7].z, p->aMem[7].n, p->aMem[7].flags, p->aMem[7].enc, p->aMem[7].db, p->aMem[7].szMalloc)
   __CPROVER_ensures(p->default_rc == 0)
   __CPROVER_ensures(p->nField <= __CPROVER_old(p->nField));
 
