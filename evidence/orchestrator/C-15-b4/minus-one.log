@@ -1,0 +1,28 @@
+  FAILED unpack lp64-le [sqlite3GetVarint32.precondition.1] line 92131 Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack
+RESULT prove C-15/unpack lp64-le FAIL 271s 1759 properties 1 failed
+RESULT prove C-15 lp64-le FAIL 271s 1759 properties 1 failed
+Command exited with non-zero status 1
+elapsed_s=270.91 peak_rss_kib=5290260
+
+tokens_used 10349403
+cap 60000000
+percent 17.2
+# 10349403 of 60000000 tokens (17.2%) used by this card's builder sessions so far; at 80% report STUCK.
+
+RESULT measurement minus-one-n0 exit 1
+  FAILED unpack lp64-le [serialGet.precondition.1] line 92064 Check requires clause of serialGet in sqlite3VdbeSerialGet
+  FAILED unpack lp64-le [serialGet.precondition.3] line 92064 Check requires clause of serialGet in sqlite3VdbeSerialGet
+  FAILED unpack lp64-le [sqlite3GetVarint32.precondition.3] line 92146 Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack
+  FAILED unpack lp64-le [sqlite3GetVarint32.precondition.5] line 92146 Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack
+RESULT prove C-15/unpack lp64-le FAIL 322s 1759 properties 4 failed
+RESULT prove C-15 lp64-le FAIL 322s 1759 properties 4 failed
+Command exited with non-zero status 1
+elapsed_s=321.94 peak_rss_kib=5256704
+
+tokens_used 10349403
+cap 60000000
+percent 17.2
+# 10349403 of 60000000 tokens (17.2%) used by this card's builder sessions so far; at 80% report STUCK.
+
+RESULT measurement minus-one-n2 exit 1
+RESULT minus-one experiments complete; retained files restored

@@ -1,0 +1,151 @@
+--cover is incompatible with --unwinding-assertions, so unwinding-assertions will be defaulted to false
+CBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux
+Reading GOTO program from file GOOD.d.goto
+Generating GOTO Program
+Adding CPROVER library (x86_64)
+Removal of function pointers and virtual functions
+Generic Property Instrumentation
+Rewriting existing assertions as assumptions
+Starting Bounded Model Checking
+Passing problem to propositional reduction
+converting SSA
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is UNSATISFIABLE
+
+** coverage results:
+[contract::f::assigns.coverage.1] file toy.c line 5 function contract::f::assigns block 1 (lines toy.c::5): SATISFIED
+[contract::f::assigns.coverage.2] file toy.c line 7 function contract::f::assigns block 2 (lines toy.c:f:7): SATISFIED
+[contract::f::assigns.coverage.3] file toy.c line 7 function contract::f::assigns block 3 (lines toy.c:f:7): SATISFIED
+[contract::f::assigns.coverage.4] file toy.c line 5 function contract::f::assigns block 4 (lines toy.c::5): SATISFIED
+[contract::f::assigns.coverage.5] file toy.c line 7 function contract::f::assigns block 5 (lines toy.c:f:7): SATISFIED
+[contract::f::assigns.coverage.6] file toy.c line 5 function contract::f::assigns block 6 (lines toy.c::5): SATISFIED
+[contract::f::frees.coverage.1] file toy.c line 5 function contract::f::frees block 1 (lines toy.c::5): SATISFIED
+[entry.coverage.1] file toy.c line 24 function entry block 1 (lines toy.c:entry:24,25): SATISFIED
+[entry.coverage.2] file toy.c line 26 function entry block 2 (lines toy.c:entry:26): SATISFIED
+[entry.coverage.3] file toy.c line 26 function entry block 3 (lines toy.c:entry:26,27): SATISFIED
+[entry.coverage.4] file toy.c line 28 function entry block 4 (lines toy.c:entry:28): SATISFIED
+[entry.coverage.5] file toy.c line 29 function entry block 5 (lines toy.c:entry:29): FAILED
+[f.coverage.1] file toy.c line 5 function f block 1 (lines toy.c::5): SATISFIED
+[f.coverage.2] file toy.c line 5 function f block 2 (lines toy.c:f:5): SATISFIED
+[f.coverage.3] file toy.c line 5 function f block 3 (lines toy.c::5): SATISFIED
+[f.coverage.4] file toy.c line 5 function f block 4 (lines toy.c::5): SATISFIED
+[f.coverage.5] file toy.c line 5 function f block 5 (lines toy.c::5): SATISFIED
+[f.coverage.6] file toy.c line 5 function f block 6 (lines toy.c::5): SATISFIED
+[f.coverage.7] file toy.c line 5 function f block 7 (lines toy.c::5): SATISFIED
+[f.coverage.8] file toy.c line 6 function f block 8 (lines toy.c:f:6): SATISFIED
+[f.coverage.9] file toy.c line 5 function f block 9 (lines toy.c::5): SATISFIED
+[f.coverage.10] file toy.c line 5 function f block 10 (lines toy.c::5): SATISFIED
+[f.coverage.11] file toy.c line 5 function f block 11 (lines toy.c::5): SATISFIED
+[f.coverage.12] file toy.c line 5 function f block 12 (lines toy.c::5): SATISFIED
+[f.coverage.13] file toy.c line 5 function f block 13 (lines toy.c::5): FAILED
+[f.coverage.14] file toy.c line 5 function f block 14 (lines toy.c::5): FAILED
+[f.coverage.15] file toy.c line 5 function f block 15 (lines toy.c::5): FAILED
+[f.coverage.16] file toy.c line 5 function f block 16 (lines toy.c:f:5): FAILED
+[f.coverage.17] file toy.c line 5 function f block 17 (lines toy.c::5): FAILED
+[f.coverage.18] file toy.c line 5 function f block 18 (lines toy.c::5): FAILED
+[f.coverage.19] file toy.c line 5 function f block 19 (lines toy.c:f:5): FAILED
+[f.coverage.20] file toy.c line 5 function f block 20 (lines toy.c::5): FAILED
+[f.coverage.21] file toy.c line 5 function f block 21 (lines toy.c::5): FAILED
+[f.coverage.22] file toy.c line 5 function f block 22 (lines toy.c::5): FAILED
+[f.coverage.23] file toy.c line 5 function f block 23 (lines toy.c:f:5): FAILED
+[f.coverage.24] file toy.c line 5 function f block 24 (lines toy.c::5): FAILED
+[f_wrapped_for_contract_checking.coverage.1] file toy.c line 9 function f_wrapped_for_contract_checking block 1 (lines toy.c:f:9): SATISFIED
+[f_wrapped_for_contract_checking.coverage.2] file toy.c line 9 function f_wrapped_for_contract_checking block 2 (lines toy.c:f:9): SATISFIED
+[f_wrapped_for_contract_checking.coverage.3] file toy.c line 9 function f_wrapped_for_contract_checking block 3 (lines toy.c:f:9,10): SATISFIED
+[f_wrapped_for_contract_checking.coverage.4] file toy.c line 10 function f_wrapped_for_contract_checking block 4 (lines toy.c:f:10): SATISFIED
+[f_wrapped_for_contract_checking.coverage.5] file toy.c line 10 function f_wrapped_for_contract_checking block 5 (lines toy.c:f:10,11,13): SATISFIED
+[f_wrapped_for_contract_checking.coverage.6] file toy.c line 11 function f_wrapped_for_contract_checking block 6 (lines toy.c:f:11,13): SATISFIED
+[f_wrapped_for_contract_checking.coverage.7] file toy.c line 12 function f_wrapped_for_contract_checking block 7 (lines toy.c:f:11,12): SATISFIED
+[f_wrapped_for_contract_checking.coverage.8] file toy.c line 12 function f_wrapped_for_contract_checking block 8 (lines toy.c:f:11,12): SATISFIED
+[f_wrapped_for_contract_checking.coverage.9] file toy.c line 12 function f_wrapped_for_contract_checking block 9 (lines toy.c:f:11,12): SATISFIED
+[f_wrapped_for_contract_checking.coverage.10] file toy.c line 11 function f_wrapped_for_contract_checking block 10 (lines toy.c:f:11): SATISFIED
+[f_wrapped_for_contract_checking.coverage.11] file toy.c line 11 function f_wrapped_for_contract_checking block 11 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.12] file toy.c line 11 function f_wrapped_for_contract_checking block 12 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.13] file toy.c line 11 function f_wrapped_for_contract_checking block 13 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.14] file toy.c line 11 function f_wrapped_for_contract_checking block 14 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.15] file toy.c line 11 function f_wrapped_for_contract_checking block 15 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.16] file toy.c line 11 function f_wrapped_for_contract_checking block 16 (lines toy.c:f:11,12): FAILED
+[f_wrapped_for_contract_checking.coverage.17] file toy.c line 12 function f_wrapped_for_contract_checking block 17 (lines toy.c:f:11,12): FAILED
+[f_wrapped_for_contract_checking.coverage.18] file toy.c line 12 function f_wrapped_for_contract_checking block 18 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.19] file toy.c line 12 function f_wrapped_for_contract_checking block 19 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.20] file toy.c line 12 function f_wrapped_for_contract_checking block 20 (lines toy.c:f:11,12): FAILED
+[f_wrapped_for_contract_checking.coverage.21] file toy.c line 12 function f_wrapped_for_contract_checking block 21 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.22] file toy.c line 12 function f_wrapped_for_contract_checking block 22 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.23] file toy.c line 12 function f_wrapped_for_contract_checking block 23 (lines toy.c:f:11,12): FAILED
+[f_wrapped_for_contract_checking.coverage.24] file toy.c line 13 function f_wrapped_for_contract_checking block 24 (lines toy.c:f:13): FAILED
+[f_wrapped_for_contract_checking.coverage.25] file toy.c line 11 function f_wrapped_for_contract_checking block 25 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.26] file toy.c line 11 function f_wrapped_for_contract_checking block 26 (lines toy.c:f:11,14): FAILED
+[f_wrapped_for_contract_checking.coverage.27] file toy.c line 11 function f_wrapped_for_contract_checking block 27 (lines toy.c:f:11): SATISFIED
+[f_wrapped_for_contract_checking.coverage.28] file toy.c line 17 function f_wrapped_for_contract_checking block 28 (lines toy.c:f:17): SATISFIED
+[f_wrapped_for_contract_checking.coverage.29] file toy.c line 17 function f_wrapped_for_contract_checking block 29 (lines toy.c:f:11,17): SATISFIED
+[f_wrapped_for_contract_checking.coverage.30] file toy.c line 17 function f_wrapped_for_contract_checking block 30 (lines toy.c:f:17): SATISFIED
+[f_wrapped_for_contract_checking.coverage.31] file toy.c line 17 function f_wrapped_for_contract_checking block 31 (lines toy.c:f:17): SATISFIED
+[f_wrapped_for_contract_checking.coverage.32] file toy.c line 17 function f_wrapped_for_contract_checking block 32 (lines toy.c:f:17): SATISFIED
+[f_wrapped_for_contract_checking.coverage.33] file toy.c line 17 function f_wrapped_for_contract_checking block 33 (lines toy.c:f:17,21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.34] file toy.c line 21 function f_wrapped_for_contract_checking block 34 (lines toy.c:f:11,21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.35] file toy.c line 21 function f_wrapped_for_contract_checking block 35 (lines toy.c:f:21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.36] file toy.c line 21 function f_wrapped_for_contract_checking block 36 (lines toy.c:f:21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.37] file toy.c line 21 function f_wrapped_for_contract_checking block 37 (lines toy.c:f:21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.38] file toy.c line 21 function f_wrapped_for_contract_checking block 38 (lines toy.c:f:11,21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.39] file toy.c line 21 function f_wrapped_for_contract_checking block 39 (lines toy.c:f:21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.40] file toy.c line 21 function f_wrapped_for_contract_checking block 40 (lines toy.c:f:21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.41] file toy.c line 21 function f_wrapped_for_contract_checking block 41 (lines toy.c:f:21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.42] file toy.c line 21 function f_wrapped_for_contract_checking block 42 (lines toy.c:f:11,21): SATISFIED
+[f_wrapped_for_contract_checking.coverage.43] file toy.c line 11 function f_wrapped_for_contract_checking block 43 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.44] file toy.c line 11 function f_wrapped_for_contract_checking block 44 (lines toy.c:f:11): SATISFIED
+[f_wrapped_for_contract_checking.coverage.45] file toy.c line 11 function f_wrapped_for_contract_checking block 45 (lines toy.c:f:11): SATISFIED
+[f_wrapped_for_contract_checking.coverage.46] file toy.c line 11 function f_wrapped_for_contract_checking block 46 (lines toy.c:f:11): SATISFIED
+[f_wrapped_for_contract_checking.coverage.47] file toy.c line 11 function f_wrapped_for_contract_checking block 47 (lines toy.c:f:11): SATISFIED
+[f_wrapped_for_contract_checking.coverage.48] file toy.c line 11 function f_wrapped_for_contract_checking block 48 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.49] file toy.c line 11 function f_wrapped_for_contract_checking block 49 (lines toy.c:f:11,12): FAILED
+[f_wrapped_for_contract_checking.coverage.50] file toy.c line 12 function f_wrapped_for_contract_checking block 50 (lines toy.c:f:11,12): FAILED
+[f_wrapped_for_contract_checking.coverage.51] file toy.c line 12 function f_wrapped_for_contract_checking block 51 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.52] file toy.c line 12 function f_wrapped_for_contract_checking block 52 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.53] file toy.c line 12 function f_wrapped_for_contract_checking block 53 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.54] file toy.c line 12 function f_wrapped_for_contract_checking block 54 (lines toy.c:f:11,12): FAILED
+[f_wrapped_for_contract_checking.coverage.55] file toy.c line 12 function f_wrapped_for_contract_checking block 55 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.56] file toy.c line 12 function f_wrapped_for_contract_checking block 56 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.57] file toy.c line 12 function f_wrapped_for_contract_checking block 57 (lines toy.c:f:12): FAILED
+[f_wrapped_for_contract_checking.coverage.58] file toy.c line 12 function f_wrapped_for_contract_checking block 58 (lines toy.c:f:11,12): FAILED
+[f_wrapped_for_contract_checking.coverage.59] file toy.c line 13 function f_wrapped_for_contract_checking block 59 (lines toy.c:f:13): FAILED
+[f_wrapped_for_contract_checking.coverage.60] file toy.c line 11 function f_wrapped_for_contract_checking block 60 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.61] file toy.c line 11 function f_wrapped_for_contract_checking block 61 (lines toy.c:f:11,14): FAILED
+[f_wrapped_for_contract_checking.coverage.62] file toy.c line 17 function f_wrapped_for_contract_checking block 62 (lines toy.c:f:17): FAILED
+[f_wrapped_for_contract_checking.coverage.63] file toy.c line 17 function f_wrapped_for_contract_checking block 63 (lines toy.c:f:11,17): FAILED
+[f_wrapped_for_contract_checking.coverage.64] file toy.c line 17 function f_wrapped_for_contract_checking block 64 (lines toy.c:f:17): FAILED
+[f_wrapped_for_contract_checking.coverage.65] file toy.c line 17 function f_wrapped_for_contract_checking block 65 (lines toy.c:f:17): FAILED
+[f_wrapped_for_contract_checking.coverage.66] file toy.c line 17 function f_wrapped_for_contract_checking block 66 (lines toy.c:f:17): FAILED
+[f_wrapped_for_contract_checking.coverage.67] file toy.c line 17 function f_wrapped_for_contract_checking block 67 (lines toy.c:f:17,21): FAILED
+[f_wrapped_for_contract_checking.coverage.68] file toy.c line 21 function f_wrapped_for_contract_checking block 68 (lines toy.c:f:11,21): FAILED
+[f_wrapped_for_contract_checking.coverage.69] file toy.c line 21 function f_wrapped_for_contract_checking block 69 (lines toy.c:f:21): FAILED
+[f_wrapped_for_contract_checking.coverage.70] file toy.c line 21 function f_wrapped_for_contract_checking block 70 (lines toy.c:f:21): FAILED
+[f_wrapped_for_contract_checking.coverage.71] file toy.c line 21 function f_wrapped_for_contract_checking block 71 (lines toy.c:f:21): FAILED
+[f_wrapped_for_contract_checking.coverage.72] file toy.c line 21 function f_wrapped_for_contract_checking block 72 (lines toy.c:f:11,21): FAILED
+[f_wrapped_for_contract_checking.coverage.73] file toy.c line 21 function f_wrapped_for_contract_checking block 73 (lines toy.c:f:21): FAILED
+[f_wrapped_for_contract_checking.coverage.74] file toy.c line 21 function f_wrapped_for_contract_checking block 74 (lines toy.c:f:21): FAILED
+[f_wrapped_for_contract_checking.coverage.75] file toy.c line 21 function f_wrapped_for_contract_checking block 75 (lines toy.c:f:21): FAILED
+[f_wrapped_for_contract_checking.coverage.76] file toy.c line 21 function f_wrapped_for_contract_checking block 76 (lines toy.c:f:11,21): FAILED
+[f_wrapped_for_contract_checking.coverage.77] file toy.c line 11 function f_wrapped_for_contract_checking block 77 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.78] file toy.c line 11 function f_wrapped_for_contract_checking block 78 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.79] file toy.c line 11 function f_wrapped_for_contract_checking block 79 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.80] file toy.c line 13 function f_wrapped_for_contract_checking block 80 (lines toy.c:f:13): FAILED
+[f_wrapped_for_contract_checking.coverage.81] file toy.c line 11 function f_wrapped_for_contract_checking block 81 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.82] file toy.c line 11 function f_wrapped_for_contract_checking block 82 (lines toy.c:f:11,14): FAILED
+[f_wrapped_for_contract_checking.coverage.83] file toy.c line 11 function f_wrapped_for_contract_checking block 83 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.84] file toy.c line 11 function f_wrapped_for_contract_checking block 84 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.85] file toy.c line 11 function f_wrapped_for_contract_checking block 85 (lines toy.c:f:11): FAILED
+[f_wrapped_for_contract_checking.coverage.86] file toy.c line 11 function f_wrapped_for_contract_checking block 86 (lines toy.c:f:11,22): FAILED
+[f_wrapped_for_contract_checking.coverage.87] file toy.c line 22 function f_wrapped_for_contract_checking block 87 (lines toy.c:f:22): FAILED
+[f_wrapped_for_contract_checking.coverage.88] file toy.c line 22 function f_wrapped_for_contract_checking block 88 (lines toy.c:f:22): FAILED
+[f_wrapped_for_contract_checking.coverage.89] file toy.c line 22 function f_wrapped_for_contract_checking block 89 (lines toy.c:f:22): FAILED
+[f_wrapped_for_contract_checking.coverage.90] file toy.c line 22 function f_wrapped_for_contract_checking block 90 (lines toy.c:f:22): FAILED
+
+** 53 of 126 covered (42.1%)

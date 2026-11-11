@@ -1,0 +1,23 @@
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.1] line 92126 dereference failure: pointer NULL in p->aMem
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.2] line 92126 dereference failure: pointer invalid in p->aMem
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.5] line 92126 dereference failure: pointer outside object bounds in p->aMem
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.6] line 92126 dereference failure: invalid integer address in p->aMem
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.7] line 92127 dereference failure: pointer NULL in p->pKeyInfo
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.8] line 92127 dereference failure: pointer invalid in p->pKeyInfo
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.11] line 92127 dereference failure: pointer outside object bounds in p->pKeyInfo
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.12] line 92127 dereference failure: invalid integer address in p->pKeyInfo
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.assigns.227] line 92129 Check that p->default_rc is assignable
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.13] line 92129 dereference failure: pointer NULL in p->default_rc
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.14] line 92129 dereference failure: pointer invalid in p->default_rc
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.17] line 92129 dereference failure: pointer outside object bounds in p->default_rc
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.18] line 92129 dereference failure: invalid integer address in p->default_rc
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.19] line 92131 dereference failure: pointer NULL in *aKey
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.20] line 92131 dereference failure: pointer invalid in *aKey
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.23] line 92131 dereference failure: pointer outside object bounds in *aKey
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.pointer_dereference.24] line 92131 dereference failure: invalid integer address in *aKey
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.2] line 92134 Check loop invariant before entry
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.3] line 92134 Check that loop invariant is preserved
+  FAILED unpack lp64-le [sqlite3VdbeRecordUnpack.4] line 92134 Check decreases clause on loop iteration
+  ERROR unpack lp64-le: cbmc VERIFICATION ERROR; see tmp/b4/grid-k32-n64/lp64-le/unpack.cbmc
+RESULT prove C-15/unpack lp64-le FAIL 44s 1955 properties 1263 failed
+RESULT prove C-15 lp64-le FAIL 44s 1955 properties 1263 failed

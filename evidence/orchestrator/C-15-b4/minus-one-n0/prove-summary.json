@@ -1,0 +1,22 @@
+[
+ {
+  "card": "C-15",
+  "proof": "unpack",
+  "config": "lp64-le",
+  "status": "FAIL",
+  "seconds": 271,
+  "properties": 1759,
+  "failed": 1,
+  "failures": [
+   {
+    "id": "sqlite3GetVarint32.precondition.1",
+    "line": 92131,
+    "desc": "Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack",
+    "status": "FAILURE"
+   }
+  ],
+  "error": null,
+  "float_to_int_properties": 0,
+  "cbmc_seconds": 255
+ }
+]

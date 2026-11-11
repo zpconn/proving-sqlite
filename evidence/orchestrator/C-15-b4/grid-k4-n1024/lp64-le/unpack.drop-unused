@@ -1,0 +1,34 @@
+$ goto-instrument --drop-unused-functions tmp/b4/grid-k4-n1024/lp64-le/unpack.0b.goto tmp/b4/grid-k4-n1024/lp64-le/unpack.1.goto
+Reading GOTO program from 'tmp/b4/grid-k4-n1024/lp64-le/unpack.0b.goto'
+Function Pointer Removal
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 104758 function sqlite3VdbeExec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 167374 function isAuxiliaryVtabOperator: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 142392 function sqlite3_exec: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 87042 function sqlite3VdbeMemSetText: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 86959 function sqlite3VdbeMemSetStr: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 163082 function sqlite3VtabOverloadFunction: cast from const to non-const pointer found, only worst case function pointer removal will be done.
+Virtual function removal
+Cleaning inline assembler statements
+Removing unused functions
+Writing GOTO program to 'tmp/b4/grid-k4-n1024/lp64-le/unpack.1.goto'

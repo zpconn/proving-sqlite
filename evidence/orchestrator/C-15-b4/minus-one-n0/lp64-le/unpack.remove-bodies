@@ -1,0 +1,7 @@
+$ goto-instrument --remove-function-body serialGet --remove-function-body sqlite3GetVarint32 --remove-function-body sqlite3VdbeMemSetNull --remove-function-body sqlite3VdbeSerialTypeLen tmp/b4/minus-one-n0/lp64-le/unpack.0.goto tmp/b4/minus-one-n0/lp64-le/unpack.0b.goto
+Reading GOTO program from 'tmp/b4/minus-one-n0/lp64-le/unpack.0.goto'
+Removing body of serialGet
+Removing body of sqlite3GetVarint32
+Removing body of sqlite3VdbeMemSetNull
+Removing body of sqlite3VdbeSerialTypeLen
+Writing GOTO program to 'tmp/b4/minus-one-n0/lp64-le/unpack.0b.goto'

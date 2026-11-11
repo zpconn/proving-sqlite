@@ -1,0 +1,7 @@
+$ goto-instrument --slice-global-inits tmp/b4/grid-k16-n64/lp64-le/unpack.2c.goto tmp/b4/grid-k16-n64/lp64-le/unpack.goto
+Reading GOTO program from 'tmp/b4/grid-k16-n64/lp64-le/unpack.2c.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Slicing away initializations of unused global variables
+Writing GOTO program to 'tmp/b4/grid-k16-n64/lp64-le/unpack.goto'

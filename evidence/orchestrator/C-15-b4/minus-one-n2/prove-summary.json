@@ -1,0 +1,40 @@
+[
+ {
+  "card": "C-15",
+  "proof": "unpack",
+  "config": "lp64-le",
+  "status": "FAIL",
+  "seconds": 322,
+  "properties": 1759,
+  "failed": 4,
+  "failures": [
+   {
+    "id": "serialGet.precondition.1",
+    "line": 92064,
+    "desc": "Check requires clause of serialGet in sqlite3VdbeSerialGet",
+    "status": "FAILURE"
+   },
+   {
+    "id": "serialGet.precondition.3",
+    "line": 92064,
+    "desc": "Check requires clause of serialGet in sqlite3VdbeSerialGet",
+    "status": "FAILURE"
+   },
+   {
+    "id": "sqlite3GetVarint32.precondition.3",
+    "line": 92146,
+    "desc": "Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack",
+    "status": "FAILURE"
+   },
+   {
+    "id": "sqlite3GetVarint32.precondition.5",
+    "line": 92146,
+    "desc": "Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack",
+    "status": "FAILURE"
+   }
+  ],
+  "error": null,
+  "float_to_int_properties": 0,
+  "cbmc_seconds": 304
+ }
+]

@@ -1,0 +1,1 @@
+$ goto-instrument --show-goto-functions --json-ui tmp/b4/grid-k16-n64/lp64-le/unpack.1.goto

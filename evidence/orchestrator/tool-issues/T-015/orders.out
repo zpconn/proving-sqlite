@@ -1,0 +1,4 @@
+enforce-then-loops BAD: loops step rc=6: Numeric exception : 0
+combined BAD: rc=134: Aborted (core dumped)
+enforce-then-loops GOOD: loops step rc=6: Numeric exception : 0
+combined GOOD: rc=134: Aborted (core dumped)

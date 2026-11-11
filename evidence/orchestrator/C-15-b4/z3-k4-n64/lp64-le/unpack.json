@@ -1,0 +1,13 @@
+{
+ "card": "C-15",
+ "proof": "unpack",
+ "config": "lp64-le",
+ "status": "FAIL",
+ "seconds": 616,
+ "properties": 0,
+ "failed": 0,
+ "failures": [],
+ "error": "cbmc timed out after 600s; see tmp/b4/z3-k4-n64/lp64-le/unpack.cbmc",
+ "float_to_int_properties": 0,
+ "cbmc_seconds": 600
+}

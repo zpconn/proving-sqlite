@@ -1,0 +1,74 @@
+--cover is incompatible with --unwinding-assertions, so unwinding-assertions will be defaulted to false
+CBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux
+Reading GOTO program from file GOOD.c.goto
+Generating GOTO Program
+Adding CPROVER library (x86_64)
+Removal of function pointers and virtual functions
+Generic Property Instrumentation
+Rewriting existing assertions as assumptions
+Ignoring block 3 location 289 f (missing source location)
+Ignoring block 1 location 248 __CPROVER_enforce_requires_is_fresh (missing source location)
+Ignoring block 2 location 250 __CPROVER_enforce_requires_is_fresh (missing source location)
+Ignoring block 3 location 253 __CPROVER_enforce_requires_is_fresh (missing source location)
+Ignoring block 4 location 255 __CPROVER_enforce_requires_is_fresh (missing source location)
+Ignoring block 5 location 257 __CPROVER_enforce_requires_is_fresh (missing source location)
+Ignoring block 1 location 242 __CPROVER_enforce_ensures_is_fresh (missing source location)
+Starting Bounded Model Checking
+Passing problem to propositional reduction
+converting SSA
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+
+** coverage results:
+[__CPROVER_contracts_original_f.coverage.1] file toy.c line 7 function __CPROVER_contracts_original_f block 1 (lines toy.c:f:7): SATISFIED
+[__CPROVER_contracts_original_f.coverage.2] file toy.c line 7 function __CPROVER_contracts_original_f block 2 (lines toy.c:f:5,7): SATISFIED
+[__CPROVER_contracts_original_f.coverage.3] file toy.c line 7 function __CPROVER_contracts_original_f block 3 (lines toy.c:f:5,7,9-11,13): SATISFIED
+[__CPROVER_contracts_original_f.coverage.4] file toy.c line 11 function __CPROVER_contracts_original_f block 4 (lines toy.c:f:11-13): SATISFIED
+[__CPROVER_contracts_original_f.coverage.5] file toy.c line 12 function __CPROVER_contracts_original_f block 5 (lines toy.c:f:12): SATISFIED
+[__CPROVER_contracts_original_f.coverage.6] file toy.c line 12 function __CPROVER_contracts_original_f block 6 (lines toy.c:f:12): SATISFIED
+[__CPROVER_contracts_original_f.coverage.7] file toy.c line 12 function __CPROVER_contracts_original_f block 7 (lines toy.c:f:11,12): SATISFIED
+[__CPROVER_contracts_original_f.coverage.8] file toy.c line 11 function __CPROVER_contracts_original_f block 8 (lines toy.c:f:11): FAILED
+[__CPROVER_contracts_original_f.coverage.9] file toy.c line 11 function __CPROVER_contracts_original_f block 9 (lines toy.c:f:11,12): FAILED
+[__CPROVER_contracts_original_f.coverage.10] file toy.c line 12 function __CPROVER_contracts_original_f block 10 (lines toy.c:f:11-13): FAILED
+[__CPROVER_contracts_original_f.coverage.11] file toy.c line 11 function __CPROVER_contracts_original_f block 11 (lines toy.c:f:11): FAILED
+[__CPROVER_contracts_original_f.coverage.12] file toy.c line 11 function __CPROVER_contracts_original_f block 12 (lines toy.c:f:11,14): FAILED
+[__CPROVER_contracts_original_f.coverage.13] file toy.c line 11 function __CPROVER_contracts_original_f block 13 (lines toy.c:f:11): SATISFIED
+[__CPROVER_contracts_original_f.coverage.14] file toy.c line 17 function __CPROVER_contracts_original_f block 14 (lines toy.c:f:17): SATISFIED
+[__CPROVER_contracts_original_f.coverage.15] file toy.c line 17 function __CPROVER_contracts_original_f block 15 (lines toy.c:f:17,21): SATISFIED
+[__CPROVER_contracts_original_f.coverage.16] file toy.c line 21 function __CPROVER_contracts_original_f block 16 (lines toy.c:f:21): SATISFIED
+[__CPROVER_contracts_original_f.coverage.17] file toy.c line 21 function __CPROVER_contracts_original_f block 17 (lines toy.c:f:11,21): SATISFIED
+[__CPROVER_contracts_original_f.coverage.18] file toy.c line 11 function __CPROVER_contracts_original_f block 18 (lines toy.c:f:11): FAILED
+[__CPROVER_contracts_original_f.coverage.19] file toy.c line 11 function __CPROVER_contracts_original_f block 19 (lines toy.c:f:11): SATISFIED
+[__CPROVER_contracts_original_f.coverage.20] file toy.c line 11 function __CPROVER_contracts_original_f block 20 (lines toy.c:f:11,12): SATISFIED
+[__CPROVER_contracts_original_f.coverage.21] file toy.c line 12 function __CPROVER_contracts_original_f block 21 (lines toy.c:f:11-13): SATISFIED
+[__CPROVER_contracts_original_f.coverage.22] file toy.c line 11 function __CPROVER_contracts_original_f block 22 (lines toy.c:f:11): SATISFIED
+[__CPROVER_contracts_original_f.coverage.23] file toy.c line 11 function __CPROVER_contracts_original_f block 23 (lines toy.c:f:11,14): SATISFIED
+[__CPROVER_contracts_original_f.coverage.24] file toy.c line 17 function __CPROVER_contracts_original_f block 24 (lines toy.c:f:17): SATISFIED
+[__CPROVER_contracts_original_f.coverage.25] file toy.c line 17 function __CPROVER_contracts_original_f block 25 (lines toy.c:f:17,21): SATISFIED
+[__CPROVER_contracts_original_f.coverage.26] file toy.c line 21 function __CPROVER_contracts_original_f block 26 (lines toy.c:f:21): SATISFIED
+[__CPROVER_contracts_original_f.coverage.27] file toy.c line 21 function __CPROVER_contracts_original_f block 27 (lines toy.c:f:11,21): SATISFIED
+[__CPROVER_contracts_original_f.coverage.28] file toy.c line 11 function __CPROVER_contracts_original_f block 28 (lines toy.c:f:11): SATISFIED
+[__CPROVER_contracts_original_f.coverage.29] file toy.c line 11 function __CPROVER_contracts_original_f block 29 (lines toy.c:f:11): FAILED
+[__CPROVER_contracts_original_f.coverage.30] file toy.c line 13 function __CPROVER_contracts_original_f block 30 (lines toy.c:f:13): SATISFIED
+[__CPROVER_contracts_original_f.coverage.31] file toy.c line 11 function __CPROVER_contracts_original_f block 31 (lines toy.c:f:11): SATISFIED
+[__CPROVER_contracts_original_f.coverage.32] file toy.c line 11 function __CPROVER_contracts_original_f block 32 (lines toy.c:f:11,14): SATISFIED
+[__CPROVER_contracts_original_f.coverage.33] file toy.c line 11 function __CPROVER_contracts_original_f block 33 (lines toy.c:f:11): SATISFIED
+[__CPROVER_contracts_original_f.coverage.34] file toy.c line 11 function __CPROVER_contracts_original_f block 34 (lines toy.c:f:11): SATISFIED
+[__CPROVER_contracts_original_f.coverage.35] file toy.c line 11 function __CPROVER_contracts_original_f block 35 (lines toy.c:f:9-11,22): SATISFIED
+[entry.coverage.1] file toy.c line 24 function entry block 1 (lines toy.c:entry:24,25): SATISFIED
+[entry.coverage.2] file toy.c line 26 function entry block 2 (lines toy.c:entry:26): SATISFIED
+[entry.coverage.3] file toy.c line 26 function entry block 3 (lines toy.c:entry:26,27): SATISFIED
+[entry.coverage.4] file toy.c line 28 function entry block 4 (lines toy.c:entry:28): SATISFIED
+[entry.coverage.5] file toy.c line 29 function entry block 5 (lines toy.c:entry:29): SATISFIED
+[f.coverage.1] file instrumented for code contracts line 0 function f block 1 (lines instrumented for code contracts:f:0; toy.c:f:5,6): SATISFIED
+[f.coverage.2] file instrumented for code contracts line 0 function f block 2 (lines instrumented for code contracts:f:0): SATISFIED
+
+** 35 of 42 covered (83.3%)

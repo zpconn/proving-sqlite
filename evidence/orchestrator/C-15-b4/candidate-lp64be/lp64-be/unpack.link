@@ -1,0 +1,1 @@
+$ goto-cc --function harness_unpack tmp/b4/candidate-lp64be/lp64-be/unpack.legacy.o.goto -o tmp/b4/candidate-lp64be/lp64-be/unpack.0.goto

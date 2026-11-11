@@ -1,0 +1,1 @@
+$ goto-instrument --show-goto-functions --json-ui tmp/b4/minus-one-n2/lp64-le/unpack.1.goto
