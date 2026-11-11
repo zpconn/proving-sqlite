@@ -14,7 +14,7 @@
 | tools/sessions.toml | no | The same `--disallowedTools` in the Claude start and resume lines. It lands now because of the T-007 fix. |
 | TRUSTED.md | yes | The legacy entry: loop frames are checked against kept callee bodies too, and where clauses may sit. memcmp's library-model line: where C-17 and C-19 replace it with A-006, the model isn't used and the contract is *assumed*. |
 | tools/tests/test_tools.py | yes | `-k b2`, 12 tests, below. |
-| proof.lock | n/a | Rewritten: 58 files. |
+| proof.lock | n/a | Rewritten: 58 files. **It also repairs main's proof.lock**, which since 00:19 lacks T-006's 19 test fixtures (tools/tests/legacy/). That was my error. A lock-only land is refused ("proof.lock changed without a frozen-file change"), so the repair has to ride with a frozen change. Until then, every card gate fails its lock step; no card is waiting to merge. |
 
 ## Evidence
 - **Toys first, as Zach asked** (`toys.txt`, with `mc.c`, `mcl.c`, `kept.c`; all capped at 24 GB):

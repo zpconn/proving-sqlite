@@ -1,0 +1,9 @@
+control: campaign.py's fixed build and sandbox (repro_sandbox), then the binary run with argument "clean" (no corruption)
+$ cc -std=gnu11 -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined -I /tmp/repro/upstream -o /tmp/repro/out/repro /tmp/repro/src/repro.c -lm -lpthread -ldl
+exit: 0
+
+$ /tmp/repro/out/repro clean
+exit: 0
+record headers found: 1; corrupted: no
+preupdate_old(b): rc=0 type=1
+DELETE rc=0 (not an error); hook calls=1
