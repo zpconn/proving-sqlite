@@ -17,6 +17,19 @@ configuration the pipeline is:
                   [--apply-loop-contracts]       (only if the proof uses contracts)
   goto-instrument --slice-global-inits
   cbmc <every option in proofs/CHECKS> [--unwindset ...] [solver] [--object-bits n]
+
+A proof with <name>_CONTRACTS := legacy (only the cards in LEGACY_CARDS: T-006, Zach 2026-11-10,
+evidence/approvals/T-006-dfcc-loop-pointer/) uses CBMC's legacy contracts instead of DFCC:
+  goto-cc ... -c <build>/<name>.legacy.c         (harness.c, then each ENFORCE and REPLACE function redeclared with
+                                                  the clauses of its proofs/contracts/<fn>.h, generated at every build)
+  link, remove-bodies, drop-unused and the argument-type check as above
+  goto-instrument --replace-call-with-contract g ...   then   --apply-loop-contracts   then   --enforce-contract f
+That order is required: with loop contracts applied before the replacement, a replaced callee whose body is removed
+can write outside the loop's assigns unchecked (evidence/approvals/T-006-dfcc-loop-pointer/, the callee-frame toy).
+The legacy engine reads clauses only from a function's own declaration (it can't use contract_<fn>), so each one is
+copied, mechanically, from its header's contract_<fn> declaration with only the name changed; there is no stored
+copy to diverge, and the build key includes the generated text, so a header edit always rebuilds. A replaced callee
+with a static local aborts the legacy enforce pass (T-012): such a callee keeps its body.
   cbmc ... --conversion-check --property <id>... (the %float-to-int pass, when such properties exist)
 
 Bodies are removed before drop-unused-functions (checkpoint 1, fix 1): otherwise drop-unused keeps everything a
@@ -40,6 +53,7 @@ The card's Makefile is declarative (tools/scan.py enforces it):
   <name>_SOLVER := --smt2 | --z3 | --sat-solver cadical | --sat-solver minisat2 | --sat-solver glucose
   <name>_OBJECT_BITS := <8..16>
   <name>_COVER := <fn> ...                           functions whose lines coverage reports
+  <name>_CONTRACTS := dfcc | legacy                 default dfcc; legacy only for LEGACY_CARDS (T-006)
   include ../Makefile.common
 
 Every command prints one RESULT line last, e.g.
@@ -67,6 +81,11 @@ MEM_LIMIT = 12 * 1024 ** 3     # address-space cap per tool process, so CBMC fai
 ALLOWED_SOLVERS = ['', '--smt2', '--z3', '--sat-solver cadical', '--sat-solver minisat2',
                    '--sat-solver glucose']
 FLOAT2INT_DIRECTIVE = '%float-to-int'
+# Zach, 2026-11-10 (evidence/approvals/T-006-dfcc-loop-pointer/): CBMC's legacy contracts, opted into per proof, only
+# for the cards whose loops carry a pointer that DFCC can't encode (T-006). Every other proof stays on DFCC.
+LEGACY_CARDS = ('C-15', 'C-17')
+CONTRACT_CLAUSE_RX = re.compile(r'__CPROVER_(requires|ensures|assigns|frees)\b')
+LEGACY_STATIC_ABORT = 'Expected an assignment of the form `symbol_exprt := side_effect_expr_nondett`'
 
 IDENT = r'[A-Za-z_][A-Za-z0-9_]*'
 RE_PAIR = re.compile(r'^(%s)/contract_(%s)$' % (IDENT, IDENT))
@@ -153,11 +172,14 @@ class Proof:
         self.solver = ' '.join(g('SOLVER').split())
         self.object_bits = g('OBJECT_BITS')
         self.cover = g('COVER').split()
+        self.contracts = g('CONTRACTS', 'dfcc') or 'dfcc'
         if len(self.enforce) > 1:
             raise CardError('%s_ENFORCE: at most one function per proof (DFCC checks one contract per run)' % name)
         for p in self.enforce + self.replace:
             if not RE_PAIR.match(p) or RE_PAIR.match(p).group(1) != RE_PAIR.match(p).group(2):
                 raise CardError('%s: %r must be <fn>/contract_<fn>' % (name, p))
+        if self.contracts not in ('dfcc', 'legacy'):
+            raise CardError('%s_CONTRACTS must be dfcc or legacy' % name)
         if self.loops not in ('contracts', 'unwind', 'none'):
             raise CardError('%s_LOOPS must be contracts, unwind or none' % name)
         if self.unwindset:
@@ -172,8 +194,14 @@ class Proof:
             self.cover = [p.split('/')[0] for p in self.enforce]
         self.enforced = [p.split('/')[0] for p in self.enforce]
 
-    def uses_dfcc(self):
+    def uses_contracts(self):
         return bool(self.enforce or self.replace or self.loops == 'contracts')
+
+    def uses_dfcc(self):
+        return self.contracts == 'dfcc' and self.uses_contracts()
+
+    def uses_legacy(self):
+        return self.contracts == 'legacy' and self.uses_contracts()
 
 
 def load_card(card_dir):
@@ -189,12 +217,73 @@ def load_card(card_dir):
         raise CardError('%s: PROOFS is empty' % mk)
     allowed = {'CARD', 'PROOFS'}
     for n in names:
-        for k in ('ENTRY', 'ENFORCE', 'REPLACE', 'LOOPS', 'UNWINDSET', 'SOLVER', 'OBJECT_BITS', 'COVER'):
+        for k in ('ENTRY', 'ENFORCE', 'REPLACE', 'LOOPS', 'UNWINDSET', 'SOLVER', 'OBJECT_BITS', 'COVER', 'CONTRACTS'):
             allowed.add('%s_%s' % (n, k))
     extra = sorted(set(v) - allowed)
     if extra:
         raise CardError('%s: variables not allowed: %s' % (mk, ' '.join(extra)))
-    return card, [Proof(n, v) for n in names]
+    proofs = [Proof(n, v) for n in names]
+    legacy = [p.name for p in proofs if p.contracts == 'legacy']
+    if legacy and card not in LEGACY_CARDS:
+        raise CardError('%s: %s_CONTRACTS := legacy, but only %s may use CBMC\'s legacy contracts (T-006)' % (
+            mk, legacy[0], ', '.join(LEGACY_CARDS)))
+    return card, proofs
+
+
+def _strip_comments(text):
+    return re.sub(r'//[^\n]*', '', re.sub(r'/\*.*?\*/', lambda m: ' ' * len(m.group(0)), text, flags=re.S))
+
+
+def contract_declaration(text, fn):
+    """The declaration of contract_<fn> in a contracts header, comments removed: (start, end, text). Exactly one."""
+    t = _strip_comments(text)
+    hits = [m for m in re.finditer(r'\bcontract_%s\s*\(' % re.escape(fn), t)]
+    if len(hits) != 1:
+        raise CardError('proofs/contracts/%s.h: %d declarations of contract_%s, want exactly one' % (fn, len(hits), fn))
+    p = hits[0].start()
+    start = max(t.rfind(';', 0, p), t.rfind('}', 0, p)) + 1
+    nl = t.rfind('\n#', 0, p)                          # after the last preprocessor line, too
+    if nl >= start:
+        start = t.index('\n', nl + 1) + 1
+    depth, i = 0, hits[0].end() - 1
+    while i < len(t):
+        c = t[i]
+        if c == '(':
+            depth += 1
+        elif c == ')':
+            depth -= 1
+        elif c == ';' and depth == 0:
+            return start, i + 1, t[start:i + 1].strip()
+        i += 1
+    raise CardError('proofs/contracts/%s.h: contract_%s\'s declaration has no closing ;' % (fn, fn))
+
+
+def legacy_redeclaration(text, fn):
+    """<fn> redeclared with exactly contract_<fn>'s clauses: the header's declaration with only its name changed."""
+    decl = contract_declaration(text, fn)[2]
+    out = re.sub(r'\bcontract_%s(\s*\()' % re.escape(fn), lambda m: fn + m.group(1), decl, count=1)
+    # the check that the two can't diverge: the redeclaration is the header's declaration, token for token, but the name
+    norm = lambda s: re.sub(r'\s+', ' ', s).strip()  # noqa: E731
+    if norm(out.replace(fn + '(', 'contract_' + fn + '(', 1)) != norm(decl) or not CONTRACT_CLAUSE_RX.search(decl):
+        raise CardError('proofs/contracts/%s.h: the legacy redeclaration does not match contract_%s' % (fn, fn))
+    return out
+
+
+def legacy_source(card_dir, proof):
+    """The legacy translation unit: harness.c, then each ENFORCE and REPLACE function redeclared from its header."""
+    harness = os.path.join(card_dir, 'harness.c')
+    if CONTRACT_CLAUSE_RX.search(_strip_comments(open(harness, errors='replace').read())):
+        raise CardError('%s: a legacy proof\'s harness may carry no function contract clauses: under the legacy engine '
+                        'a redeclaration there would attach a contract of its own to a SQLite function' % harness)
+    parts = ['/* Generated by tools/prove.py for proof %s (legacy contracts, T-006). Do not edit: it is rebuilt from '
+             'proofs/contracts/ at every build. */' % proof.name, '#include "%s"' % os.path.abspath(harness)]
+    for pair in proof.enforce + proof.replace:
+        fn = pair.split('/')[0]
+        hdr = os.path.join(ROOT, 'proofs', 'contracts', fn + '.h')
+        if not os.path.exists(hdr):
+            raise CardError('%s: no proofs/contracts/%s.h to generate its legacy contract from' % (proof.name, fn))
+        parts.append('/* from proofs/contracts/%s.h */\n%s' % (fn, legacy_redeclaration(open(hdr, errors='replace').read(), fn)))
+    return '\n'.join(parts) + '\n'
 
 
 # ---------------------------------------------------------------- running tools
@@ -409,6 +498,17 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
     harness = os.path.join(card_dir, 'harness.c')
     stamp = os.path.join(bdir, 'harness.o.stamp')
     key = json.dumps([cfg_flags, os.path.abspath(overlay_dir), _mtimes(card_dir, overlay_dir)])
+    if proof.uses_legacy():
+        try:
+            src = legacy_source(card_dir, proof)
+        except (CardError, OSError) as e:
+            return None, str(e)
+        harness = os.path.join(bdir, proof.name + '.legacy.c')
+        with open(harness, 'w') as f:
+            f.write(src)
+        obj = os.path.join(bdir, proof.name + '.legacy.o.goto')
+        stamp = os.path.join(bdir, proof.name + '.legacy.o.stamp')
+        key = json.dumps([cfg_flags, os.path.abspath(overlay_dir), _mtimes(card_dir, overlay_dir), src])
     if not (os.path.exists(obj) and os.path.exists(stamp) and open(stamp).read() == key):
         cmd = ['goto-cc'] + cfg_flags + ['-include', os.path.join(ROOT, 'proofs', 'include', 'proof.h'),
                                          '-I', overlay_dir, '-I', os.path.join(ROOT, 'proofs', 'include'),
@@ -469,13 +569,27 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
         cmd += [cur, p2]
         steps.append((cmd, 'dfcc'))
         cur = p2
+    elif proof.uses_legacy():
+        # replace, then loops, then enforce: the order the callee-frame toy requires (T-006)
+        passes = [('legacy-replace', sum([['--replace-call-with-contract', r.split('/')[0]] for r in proof.replace], [])),
+                  ('legacy-loops', ['--apply-loop-contracts'] if proof.loops == 'contracts' else []),
+                  ('legacy-enforce', sum([['--enforce-contract', e.split('/')[0]] for e in proof.enforce], []))]
+        for k, (tag, opts) in enumerate(p for p in passes if p[1]):
+            nxt = os.path.join(bdir, proof.name + '.2%s.goto' % 'abc'[k])
+            steps.append((['goto-instrument'] + opts + [cur, nxt], tag))
+            cur = nxt
     p3 = os.path.join(bdir, proof.name + '.goto')
     steps.append((['goto-instrument', '--slice-global-inits', cur, p3], 'slice-global-inits'))
     for cmd, tag in steps:
         rc, _ = run(cmd, log + '.' + tag, timeout=900)
         if rc != 0:
-            return None, '%s failed (%s); see %s' % (tag, rc, log + '.' + tag)
-    for f in (p0, p0b, p1, os.path.join(bdir, proof.name + '.2.goto')):
+            hint = ''
+            if tag.startswith('legacy-') and LEGACY_STATIC_ABORT in open(log + '.' + tag, errors='replace').read():
+                hint = (' (T-012: the legacy engine aborts when a replaced callee has a static local; keep that callee\'s '
+                        'body, that is, leave it off REPLACE)')
+            return None, '%s failed (%s); see %s%s' % (tag, rc, log + '.' + tag, hint)
+    for f in (p0, p0b, p1, os.path.join(bdir, proof.name + '.2.goto')) + tuple(
+            os.path.join(bdir, proof.name + '.2%s.goto' % x) for x in 'abc'):
         if os.path.exists(f):
             os.remove(f)
     return p3, None
