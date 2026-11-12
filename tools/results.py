@@ -22,7 +22,7 @@ import prove  # noqa: E402
 
 COLS = ['card', 'property', 'proof', 'functions', 'config', 'status', 'cbmc_seconds', 'properties', 'failed',
         'lines_covered', 'lines_total', 'uncovered_lines', 'mutants_killed', 'mutants_total', 'mutants_equivalent',
-        'review', 'ledger_entries', 'argued', 'bounds', 'prove_from', 'coverage_from', 'mutants_from']
+        'review', 'ledger_entries', 'argued', 'bounds', 'assigns', 'prove_from', 'coverage_from', 'mutants_from']
 
 # Inputs a proof leaves to argument, by function (Zach's decision on C-11, 2026-11-10,
 # evidence/approvals/C-11-f2i-exact-min/; PROPERTIES.md change 7). Fixed here, in a frozen file, so no card can drop it.
@@ -40,6 +40,14 @@ def argued_notes(proof):
         elif any(r.split('/')[0] == fn for r in proof.replace):
             notes.append('uses contract_%s, which is %s' % (fn, text))
     return '; '.join(notes)
+
+
+def assigns_status(cid, proof):
+    """How a row's contract frame (assigns) is established: 'proved' by CBMC, or 'reviewed (T-015)' for a legacy proof
+    whose card argues its loop frame's inclusion instead of passing prove.py's frame check (Zach, 2026-11-11)."""
+    if proof is None or not proof.enforced:
+        return ''
+    return 'reviewed (T-015)' if proof.uses_legacy() and cid in prove.LEGACY_FRAME_ARGUED else 'proved'
 
 
 def review_verdict(root, cid):
@@ -112,6 +120,7 @@ def rows(root):
                         'uncovered_lines': cv[2], 'mutants_killed': mk, 'mutants_total': len(muts), 'mutants_equivalent': me,
                         'review': rv, 'ledger_entries': ledger_entries(root, pr) if pr else '',
                         'argued': argued_notes(pr), 'bounds': prove.bounds_label(cid, r['proof']),
+                        'assigns': assigns_status(cid, pr),
                         'prove_from': frm['prove_summary'], 'coverage_from': frm['coverage_summary'], 'mutants_from': frm['mutants']})
     return out
 
@@ -130,15 +139,17 @@ def results_md(rs):
              'Every row is *proved*: CBMC verified the proof under proofs/CHECKS on that configuration, except for what '
              'its Argued column names, which is *argued* in UB-CLASSES.md and *tested*. A row with a Bounds column is '
              'proved only for inputs within those bounds, and *tested* past them by tests/bounded/ (PROPERTIES.md, '
-             'bounded proofs). Ledger entries are *assumed*; see LEDGER.md. CBMC itself is *trusted*; see TRUSTED.md.', '',
-             '| Card | Prop | Proof | Functions | Config | Status | CBMC s | Properties | Failed | Coverage | Mutants killed | Review | Ledger | Argued | Bounds |',
-             '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|']
+             'bounded proofs). The Assigns column says how the contract\'s frame is established: *proved*, or *reviewed* where '
+             'CBMC\'s legacy engine leaves a loop\'s frame unchecked against it (T-015, TRUSTED.md). Ledger entries are '
+             '*assumed*; see LEDGER.md. CBMC itself is *trusted*; see TRUSTED.md.', '',
+             '| Card | Prop | Proof | Functions | Config | Status | CBMC s | Properties | Failed | Coverage | Mutants killed | Review | Ledger | Argued | Bounds | Assigns |',
+             '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|']
     for r in rs:
         cov = '%s/%s' % (r['lines_covered'], r['lines_total']) if r['lines_total'] != '' else ''
         mu = '%s/%s%s' % (r['mutants_killed'], r['mutants_total'], (' (+%s equiv.)' % r['mutants_equivalent']) if r['mutants_equivalent'] else '')
         lines.append('| %s |' % ' | '.join(str(x) for x in [r['card'], r['property'], r['proof'], r['functions'], r['config'],
                                                              r['status'], r['cbmc_seconds'], r['properties'], r['failed'], cov,
-                                                             mu, r['review'], r['ledger_entries'], r.get('argued', ''), r.get('bounds', '')]))
+                                                             mu, r['review'], r['ledger_entries'], r.get('argued', ''), r.get('bounds', ''), r.get('assigns', '')]))
     seen = []
     for r in rs:
         k = (r['card'], r['prove_from'], r['coverage_from'], r['mutants_from'])

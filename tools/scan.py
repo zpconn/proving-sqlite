@@ -1104,7 +1104,8 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
             local.update(declared_names(st))
             if is_declaration(st) or top_assignment(st):
                 ptrs |= pointer_names(st)
-        bounds = prove.BOUNDS.get(cid, {}).get(proof.name)
+        spec = prove.BOUNDS.get(cid, {}).get(proof.name)
+        bounds = spec['bounds'] if spec else None
         inputs = set()
         targets = proof.enforced or (card.functions if card else [])
         m = re.compile(r'\b(%s)\s*\(' % '|'.join(re.escape(x) for x in targets)).search(code, ends[0].end(), e) if targets else None
@@ -1166,16 +1167,71 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
                 for names, conj in bound_conjuncts(t[t.index('(') + 1:k - 1] if k > 0 else '', inputs, local):
                     s.bad(where, 'line %d: a constant upper bound on %s, an input of the call under proof, that tools/prove.py '
                                  'BOUNDS does not give (a bounded proof needs Zach\'s approval): %s' % (ln, ', '.join(names), conj[:80]))
-            if bounds:
-                for size in malloc_sizes(t):
-                    if not set(re.findall(_ID, size)) & local and not re.fullmatch(r'\s*sizeof\s*\(\s*[A-Za-z_][\w\s]*\)\s*', size):
-                        s.bad(where, 'line %d: a bounded proof allocates no fixed size but one object, sizeof(T): a fixed '
-                                     'buffer would bound an input through a requires: malloc(%s)' % (ln, ' '.join(size.split())[:60]))
+        if spec:
+            check_bounded_allocations(s, where, code, setup, proof.name, spec, inputs)
+
+
+def _nospace(x):
+    return re.sub(r'\s+', '', x)
+
+
+def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
+    """Rule 16: a bounded proof allocates single objects (`sizeof(T)`) and its BOUNDS buffers only, each used only as
+    `<buffer> + <offset>`, its offset set once to 0 ('start': an underread fails) or `(<size>) - (<extent>)` ('end': an
+    overread fails)."""
+    bufs = {b[0]: b for b in spec.get('buffers', ())}
+    # a constant local: set once in SETUP, from an expression that names no local (sizeof and literals only)
+    sets_of = {}
+    for _, st in setup:
+        a = top_assignment(st)
+        if a and '->' not in a[0]:
+            sets_of.setdefault((re.findall(_ID, a[0]) or [''])[-1], []).append(a[1])
+    local_names = set(sets_of)
+    const = {n for n, rhs in sets_of.items() if len(rhs) == 1 and not set(re.findall(_ID, re.sub(
+        r'\bsizeof\s*\([^()]*\)', ' ', rhs[0]))) & (local_names | inputs)}
+    line = lambda off, st: code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1  # noqa: E731
+    for off, st in setup:
+        a = top_assignment(st)
+        target = (re.findall(_ID, a[0]) or [''])[-1] if a else ''
+        for size in malloc_sizes(st):
+            if target in bufs and _nospace(size) == _nospace(bufs[target][1]) and '->' not in a[0]:
+                continue
+            if not re.fullmatch(r'\s*sizeof\s*\(\s*[A-Za-z_][\w\s]*\)\s*', size):
+                s.bad(where, 'line %d: a bounded proof allocates only single objects, sizeof(T), and its BOUNDS buffers '
+                             '(tools/prove.py): malloc(%s)' % (line(off, st), ' '.join(size.split())[:60]))
+    for name, size, offname, extent in spec.get('buffers', ()):
+        allocs = [1 for _, st in setup if _nospace(st) == _nospace('%s = malloc(%s)' % (name, size))]
+        named = set(re.findall(_ID, re.sub(r'\bsizeof\s*\([^()]*\)', ' ', size)))
+        if named - const:
+            s.bad(where, '%s: the BOUNDS buffer %s\'s size names %s, which is not a constant local of SETUP' % (
+                pname, name, ', '.join(sorted(named - const))))
+        if len(allocs) != 1:
+            s.bad(where, '%s: tools/prove.py BOUNDS gives the buffer `%s = malloc(%s);`, which SETUP must hold exactly once '
+                         '(found %d)' % (pname, name, size, len(allocs)))
+        want = '0' if spec['exact'] == 'start' else '(%s) - (%s)' % (size, extent)
+        sets = [(off, st) for off, st in setup if top_assignment(st)
+                and (re.findall(_ID, top_assignment(st)[0]) or [''])[-1] == offname and '->' not in top_assignment(st)[0]]
+        if len(sets) != 1 or _nospace(top_assignment(sets[0][1])[1]) != _nospace(want):
+            s.bad(where, '%s: %s %s-exact proof sets %s exactly once, to `%s` (tools/prove.py BOUNDS; found %s)' % (
+                pname, 'an' if spec['exact'] == 'end' else 'a', spec['exact'], offname, want, '; '.join(' '.join(x.split()) for _, x in sets) or 'none'))
+        prefix = _nospace('%s + %s' % (name, offname))
+        selfs = 0
+        for off, st in setup:
+            a = top_assignment(st)
+            if not a or name not in re.findall(_ID, a[1]) or _nospace(st) == _nospace('%s = malloc(%s)' % (name, size)):
+                continue
+            r = _nospace(a[1])
+            rest = r[len(prefix):] if r.startswith(prefix) else None
+            ok = rest == '' or (rest is not None and rest.startswith('+') and set(re.findall(_ID, rest)) <= const)
+            selfs += (re.findall(_ID, a[0]) or [''])[-1] == name
+            if not ok or selfs > 1:
+                s.bad(where, 'line %d: %s, a BOUNDS buffer, is used only as `%s + %s` (then constant locals), once '
+                             'if it is reassigned: %s' % (line(off, st), name, name, offname, ' '.join(st.split())[:80]))
 
 
 def check_bounded_cards(s, card_proofs):
-    """Rule 16, across the tree: BOUNDS names real proofs; the label is in the card and PROPERTIES.md; tests/bounded/
-    holds each bounded card's native tests and nothing else."""
+    """Rule 16, across the tree: BOUNDS names real proofs (once the card has proofs/<card>/); the label is in the card and
+    PROPERTIES.md; tests/bounded/ holds each bounded card's native tests and nothing else."""
     props = os.path.join(s.root, 'PROPERTIES.md')
     ptext = open(props, errors='replace').read() if os.path.exists(props) else ''
     d = os.path.join(s.root, 'tests', 'bounded')
@@ -1189,8 +1245,9 @@ def check_bounded_cards(s, card_proofs):
         names = [p.name for p in card_proofs.get(cid) or []]
         cpath = os.path.join(s.root, 'cards', cid + '.md')
         ctext = open(cpath, errors='replace').read() if os.path.exists(cpath) else ''
+        merged = os.path.exists(os.path.join(s.root, 'proofs', cid, 'Makefile'))
         for proof in sorted(pm):
-            if proof not in names:
+            if merged and proof not in names:
                 s.bad('proofs/%s/Makefile' % cid, 'tools/prove.py BOUNDS names proof %s, which the Makefile lacks' % proof)
             line = prove.bounds_line(cid, proof)
             for where, text in (('cards/%s.md' % cid, ctext), ('PROPERTIES.md', ptext)):
