@@ -2157,7 +2157,8 @@ def main():
                 'print("PATHS", C.ROLE_PATHS["finding-review"])\n'
                 'pr = C.prompt_oneoff("finding-review", 1)\n'
                 'print("PROMPT", all(x in pr for x in ("F-002", "tests/repro/F-001-b.c", "evidence/orchestrator/F-002/", '
-                '"evidence/orchestrator/F-001-b/run.txt", "reviews/finding-r1.md", "Do not modify any tracked file")))\n')
+                '"evidence/orchestrator/F-001-b/run.txt", "reviews/finding-r1.md", "Do not modify any tracked file", '
+                '"campaign-control.txt", "Rebuild and run its repro and its clean control")))\n')
         r = t.fresh()
         shutil.copy(os.path.join(REPO, 'tools', 'sessions.toml'), os.path.join(r, 'tools', 'sessions.toml'))
         rc, out, res = t.run(r, [py, '-c', code])
