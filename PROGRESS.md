@@ -37,6 +37,12 @@
    - **Later:** once the legacy-unwind pass exists, C-15 is measured once on it, at K = 4 and 8, with exact symbolic-size allocations and no nKey bound. If that fits 600 s on all configurations, it replaces N = 256 in a later frozen change.
 
 Answered on 2026-11-11:
+- **The auditor on part 2:** OK, with one prompt change, now made: the finding-review session rebuilds and runs F-002's repro and its clean control itself, in $TMPDIR in the foreground, and compares them with campaign.py's runs. If Codex's content filter stops it (T-005), it is parked for Zach, with no fallback to Claude, the finders' vendor.
+- **The auditor on the C-17 package:** OK to land after part 2, with three cheap fixes, now in the package:
+  - the aColl rule allows only malloc(sizeof(CollSeq)), and `c = 0` is refused;
+  - C-17's card tells the reviewer to check that each symbolic allocation's size is the extent's local;
+  - C-17's card tells the builder that the contract requires `bSkip == 0 || bSkip == 1`.
+  The constant-input rule was judged a good addition.
 - **C-15's bounded package:** the auditor's OK on wip/bounds 5111466; landing with APPROVED.md and proof.lock (59 files), all but proofs/HOWTO.md, which no land can change (T-017). Its section is in the approval record. Zach: K=4, N=256 stays in the gate. The K=8, N=256 PASS (1,036 s) goes in C-15's NOTES.md as "measured once, not gated", with no timeout change. Follow-ups 1 and 2 (T-015 conditions and reassignment; rule 16's named tail terms) are a small frozen change before C-17 merges. Follow-up 3, the reviewer's own check of tests/bounded/C-15-1.c, is in the card.
 - **F-001's impact** is raised to wrong query results and integrity_check failures on a DESC index with a legal collation. The auditor's test is tests/repro/F-001-b.c, reproduced by me in campaign.py's sandbox at -O2 and -O0 with clean controls (evidence/orchestrator/F-001-b/). C-17's Codex reviewer reproduces it with F-002.
 - **F-002 and F-001-b, if J0092 reports DONE:** its reviewer's worktree predates F-001-b's note, so F-002 and F-001-b get their Codex judgement from a separate one-off Codex session, not from C-17's reviewer (Zach).
