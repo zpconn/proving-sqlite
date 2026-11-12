@@ -25,26 +25,16 @@
      - `--arrays-uf-always`: CBMC crash (T-016).
    - **Start-exact measurement** (K=4, N=256): 203, 108 and 182 s, each with 1,757 properties and 0 failed.
    - **Tests:** tool tests 311/311, selftest 110/110.
-2. **C-17, round 4 NEEDS-DECISION** (reports/C-17-b4.md on card/C-17). B1 holds under legacy, so your advance decision applies: a bounded P1. The measurements:
-   - String and blob lengths need no bound (L = none), since memcmp, A-003 and isAllZero are all contracts.
-   - Today's tools (DFCC): K ≤ 5 for the proof, K ≤ 3 for coverage. Memory grows about 2.5 GB per field, and nField = 6 needs 13.3 GB.
-   - Legacy with the loop unwound before enforcement: K = 16, worst 171 s and 3.5 GB, on lp64-le only. K = 24 takes 594 s, at the timeout; K = 32 takes 27 min and 16.4 GB.
-   - The cost per configuration: K = 16 is 31 proofs and 39.5 min of CBMC; K = 8 is 15 proofs and 4.4 min.
-
-   Its decisions, with my recommendations:
-   - **(a) The bound. Recommended: K = 8 in the gate,** with K = 16 measured once, not gated, as for C-15.
-     - K = 16 in the gate would add about 4 hours to every full gate: 39.5 min × 3 configurations × 2 allocation shapes.
-     - K = 8 adds about 26 minutes.
-     - L = none either way.
-   - **(b) A prove.py pass for legacy proofs with `LOOPS := unwind`:** goto-instrument `--unwindset ... --unwinding-assertions` between legacy-replace and legacy-enforce. It's needed for any K > 5. **Recommended: yes**, a frozen change, with toys showing a planted assigns bug caught and the unwinding assertion kept. With no loop contract, T-015 doesn't arise.
-   - **(c) Scan SETUP:** allow `p->aColl[k] = c`, with p and c malloc results (c may be 0) and k a local size_t. It builds a pointer table entry, not data bytes; without it, no harness can give a field a collation. **Recommended: yes, with tests.**
-   - **(d) F-001 inside the proof:** every bounded run fails exactly the 92793 negation, through A-003's unbounded result. **Recommended: the builder's (a) with (c):** a frozen table names that one property, by name and line, as F-001's. The gate accepts it, and RESULTS.md says "proved but for F-001 at 92793". A ledger bound on xCmp's result would assume away a reproduced finding.
-   - **(e)** C-18 to C-20 inherit the bound and the per-field clauses, as you decided. The label mechanism comes with C-17's BOUNDS entry.
-   - **Also:**
-     - both allocation shapes, start-exact and end-exact, apply to C-17 (your fallback); round 4 predates that, so round 5 measures both, on all three configurations;
-     - the native test past the bound goes in tests/bounded/C-17-<k>.c, a mechanism that now exists. The builder's past.c ran 300,000 trials up to nField 120 with no sanitizer report;
-     - the builder's new ledger draft becomes A-008: each compared field is a well-formed Mem, and each collation pointer is NULL or a CollSeq.
-   - **F-002 and F-001-b's Codex judgement:** J0092 reported NEEDS-DECISION, so no reviewer ran. The next C-17 reviewer is far off, behind the tool changes above. **Recommended: the separate one-off Codex session now.**
+2. **C-17, round 4: your decisions, being carried out** (reports/C-17-b4.md). C-17 stays parked until its frozen change lands.
+   - **The bound:** K = 8 in the gate; K = 16 measured once, recorded in proofs/C-17/NOTES.md as "measured once, not gated"; no length bound.
+   - **One frozen change**, with an approval record and patch.diff for the auditor:
+     - prove.py's legacy-unwind pass, always with `--unwinding-assertions` and its `--unwindset`, refusing a legacy `LOOPS := unwind` proof without one;
+     - scan's narrow aColl rule;
+     - rule 16 allowing exact `malloc(<local>)` and `malloc(sizeof(T) * <local>)` for an input local, so C-17 needs no allocation shapes;
+     - the strict F-001 exception table, also in mutate.py;
+     - the label carried into C-18 to C-20 through their BOUNDS entries.
+   - **The one-off Codex session for F-002 and F-001-b:** yes. campaign.py has no Codex one-off role for findings, so a small `finding-review` role rides with the T-015 follow-up's part 2, for the auditor's OK.
+   - **Later:** once the legacy-unwind pass exists, C-15 is measured once on it, at K = 4 and 8, with exact symbolic-size allocations and no nKey bound. If that fits 600 s on all configurations, it replaces N = 256 in a later frozen change.
 
 Answered on 2026-11-11:
 - **C-15's bounded package:** the auditor's OK on wip/bounds 5111466; landing with APPROVED.md and proof.lock (59 files), all but proofs/HOWTO.md, which no land can change (T-017). Its section is in the approval record. Zach: K=4, N=256 stays in the gate. The K=8, N=256 PASS (1,036 s) goes in C-15's NOTES.md as "measured once, not gated", with no timeout change. Follow-ups 1 and 2 (T-015 conditions and reassignment; rule 16's named tail terms) are a small frozen change before C-17 merges. Follow-up 3, the reviewer's own check of tests/bounded/C-15-1.c, is in the card.
