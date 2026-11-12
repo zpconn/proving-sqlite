@@ -1,0 +1,8 @@
+native.py built and ran tests/bounded/C-15-1.c against upstream/sqlite3.c (sha256 b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189), in campaign.py's repro sandbox.
+$ cc -std=gnu11 -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined -I /tmp/repro/upstream -o /tmp/repro/out/repro /tmp/repro/src/repro.c -lm -lpthread -ldl
+
+exit: 0
+$ /tmp/repro/out/repro
+RESULT native PASS 1414 cases, 1362 beyond proposed bounds; seed 0xC150004
+
+exit: 0
