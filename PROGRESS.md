@@ -1,12 +1,17 @@
 # PROGRESS
 
-## Status (2026-11-12 00:40, campaign session: §3 and §4)
+## Status (2026-11-12 00:35, campaign session: §3 and §4)
 
 **In progress:** §3, started 2026-11-10 15:26 with all 20 cards named. 16 cards are merged: C-01 to C-16, with C-15 bounded at nField <= 4 and nKey <= 256 (merged 2026-11-11 23:33, card gate PASS 2871 s). C-17 is parked until its bounded package lands: J0118, with the full gate running. Then come round 5, C-18 to C-20, the second ledger run (evidence/orchestrator/ledger-run-2.md) and §5. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md.
 
 **B2 is on main** in two parts (LANDING.md): part A 69a1b4e, part B 2e2eeee. Part B's full gate: RESULT gate all PASS 3494s 0 failed; `lock.py check` on main: PASS, 58 files, which also repairs the stale lock of 00:19. Its land trailer names `tools/sessions.toml keys changed: vendors.claude.resume, vendors.claude.start`. From now on every Claude session runs with `--tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch`. The daemon was restarted on main's campaign.py at 15:55 (T-008).
 
 **CLI versions:** codex-cli 0.167.1 and Claude Code 2.1.322 since 2026-11-10 22:22–22:25; rechecked under T-011 and cleared by Zach.
+
+**Budget, first:** the milestone has used 843M of its 1B tokens (GOAL.md §0.8).
+- **Where it went:** this orchestrator session 713M (evidence/orchestrator/tokens.csv, nearly all cache reads), and the campaign's sessions 130M (evidence/tokens.csv).
+- **What it means for C-17:** its builder has used 53.5M of its 80M cap, so the builder's 80% STUCK rule leaves about 10.5M. Round 4 alone used 45.3M.
+- C-17's round 5 is held until you answer.
 
 **Open questions for Zach:**
 1. **T-018: legacy-unwind coverage reports reached lines as uncovered** (evidence/orchestrator/tool-issues.md T-018).
@@ -131,4 +136,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-11 19:08 C-15's bounded package approved and queued to land (full gate). F-001-b added and reproduced. C-17's fallback recorded. The follow-ups are on wip/t015-followup.
 - 2026-11-11 20:04 C-17 round 4 NEEDS-DECISION: B1 holds under legacy. Measured: K = 16 on legacy-unwind (a tools change), K = 5 on DFCC, L = none; F-001 fails inside every bounded run. C-17 parked (Open questions 2).
 - 2026-11-11 22:55 Part 1 and part 2 landed (full gates PASS 4139 s and 3954 s), and the daemon was restarted on main's code. C-15 round 5 was approved and is merging; its planted bug was caught first. The finding-review session approved F-002 and F-001-b, and F-002 is in FINDINGS.md. The C-17 package is applied and queued to land.
-- 2026-11-12 00:40 C-15 merged (card gate PASS 2871 s). The C-17 package is landing (J0118, full gate). Item 7 measured: C-15 on legacy-unwind passes at K=4 on all three configurations, at most 104 s, with no nKey bound, and K=8 runs out of memory. T-018 found there: legacy-unwind coverage counts the last unwound copy's dead goals as uncovered (Open questions 1 and 2).
+- 2026-11-12 00:30 C-15 merged (card gate PASS 2871 s). The C-17 package is landing (J0118, full gate). Item 7 measured: C-15 on legacy-unwind passes at K=4 on all three configurations, at most 104 s, with no nKey bound, and K=8 runs out of memory. T-018 found there: legacy-unwind coverage counts the last unwound copy's dead goals as uncovered (Open questions 1 and 2).
