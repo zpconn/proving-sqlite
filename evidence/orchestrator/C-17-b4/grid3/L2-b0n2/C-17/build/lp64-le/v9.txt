@@ -1,0 +1,18 @@
+Runtime Symex: 164.9s
+size of program expression: 29081 steps
+Generated 6475 VCC(s), 6193 remaining after simplification
+Runtime Postprocess Equation: 0.00698877s
+Runtime Convert SSA: 1.19272s
+Runtime Post-process: 0.535966s
+Solving with MiniSAT 2.2.1 with simplifier
+2104336 variables, 6787025 clauses
+Runtime Solver: 9.09591s
+Runtime decision procedure: 10.3216s
+Solving with MiniSAT 2.2.1 with simplifier
+2104337 variables, 3900916 clauses
+Runtime Solver: 0.851099s
+Runtime decision procedure: 0.859789s
+Solving with MiniSAT 2.2.1 with simplifier
+2104338 variables, 3883416 clauses
+Runtime Solver: 5.57937s
+Runtime decision procedure: 5.58414s

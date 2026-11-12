@@ -25,6 +25,16 @@
      - `--arrays-uf-always`: CBMC crash (T-016).
    - **Start-exact measurement** (K=4, N=256): 203, 108 and 182 s, each with 1,757 properties and 0 failed.
    - **Tests:** tool tests 311/311, selftest 110/110.
+2. **C-17, round 4: your decisions, being carried out** (reports/C-17-b4.md). C-17 stays parked until its frozen change lands.
+   - **The bound:** K = 8 in the gate; K = 16 measured once, recorded in proofs/C-17/NOTES.md as "measured once, not gated"; no length bound.
+   - **One frozen change**, with an approval record and patch.diff for the auditor:
+     - prove.py's legacy-unwind pass, always with `--unwinding-assertions` and its `--unwindset`, refusing a legacy `LOOPS := unwind` proof without one;
+     - scan's narrow aColl rule;
+     - rule 16 allowing exact `malloc(<local>)` and `malloc(sizeof(T) * <local>)` for an input local, so C-17 needs no allocation shapes;
+     - the strict F-001 exception table, also in mutate.py;
+     - the label carried into C-18 to C-20 through their BOUNDS entries.
+   - **The one-off Codex session for F-002 and F-001-b:** yes. campaign.py has no Codex one-off role for findings, so a small `finding-review` role rides with the T-015 follow-up's part 2, for the auditor's OK.
+   - **Later:** once the legacy-unwind pass exists, C-15 is measured once on it, at K = 4 and 8, with exact symbolic-size allocations and no nKey bound. If that fits 600 s on all configurations, it replaces N = 256 in a later frozen change.
 
 Answered on 2026-11-11:
 - **C-15's bounded package:** the auditor's OK on wip/bounds 5111466; landing with APPROVED.md and proof.lock (59 files), all but proofs/HOWTO.md, which no land can change (T-017). Its section is in the approval record. Zach: K=4, N=256 stays in the gate. The K=8, N=256 PASS (1,036 s) goes in C-15's NOTES.md as "measured once, not gated", with no timeout change. Follow-ups 1 and 2 (T-015 conditions and reassignment; rule 16's named tail terms) are a small frozen change before C-17 merges. Follow-up 3, the reviewer's own check of tests/bounded/C-15-1.c, is in the card.
@@ -119,3 +129,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-11 17:46 C-15 round 4 NEEDS-DECISION: K=4/N=256 passes on all three configurations (slowest 290 s); M-050, M-051 and M-063 are killed. T-015 confirmed by me (legacy doesn't check a loop's frame against the function's assigns). prove.py's legacy coverage bug (my T-006 error) is fixed on wip/bounds. C-15 parked; the encoding diagnostic is running.
 - 2026-11-11 18:37 Zach's C-15 decisions applied on wip/bounds. Diagnostic done: none reaches K=8 within 600 s, so K=4, N=256. The start-exact shape passes on all three configurations. T-016 is the `--arrays-uf-always` crash. The approval request (C-15-bounded) waits for the auditor's OK; tool tests 311/311, selftest 110/110.
 - 2026-11-11 19:08 C-15's bounded package approved and queued to land (full gate). F-001-b added and reproduced. C-17's fallback recorded. The follow-ups are on wip/t015-followup.
+- 2026-11-11 20:04 C-17 round 4 NEEDS-DECISION: B1 holds under legacy. Measured: K = 16 on legacy-unwind (a tools change), K = 5 on DFCC, L = none; F-001 fails inside every bounded run. C-17 parked (Open questions 2).

@@ -68,8 +68,9 @@ Rejects:
      assume, `!` aside, comparing an expression that names an input with one that names no local: `x <= K`,
      `x < K`, `x == K`, `K >= x`, `K > x`, and their negations. A pointer's offset in `x + y` is not an input (it
      places the pointer in its allocation). A bounded proof's SETUP holds each of its BOUNDS as exactly
-     `__CPROVER_assume(<local> <= K);`, once, on an input; it allocates no fixed size but one object
-     (`sizeof(T)`), since a fixed buffer would bound an input through a requires; cards/<card>.md and PROPERTIES.md
+     `__CPROVER_assume(<local> <= K);`, once, on an input; it allocates only single objects (`sizeof(T)`) and
+     the constant-size buffers BOUNDS names, each used only as `<buffer> + <offset>` then the tail terms BOUNDS
+     names, its offset set once to 0 (start-exact) or to `(<size>) - (<extent>)` (end-exact); cards/<card>.md and PROPERTIES.md
      carry `<card> <proof>: bounded: <what> <= K, ...`; and, once proofs/<card>/ exists, tests/bounded/ holds at
      least one `<card>-<k>.c` (k 1 to 9), regular files only, which tools/native.py builds and runs.
      This rule is a mechanical floor, not a complete one: an input narrowed some other way (a non-constant bound,
@@ -1177,7 +1178,7 @@ def _nospace(x):
 
 def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
     """Rule 16: a bounded proof allocates single objects (`sizeof(T)`) and its BOUNDS buffers only, each used only as
-    `<buffer> + <offset>`, its offset set once to 0 ('start': an underread fails) or `(<size>) - (<extent>)` ('end': an
+    `<buffer> + <offset>` then the tail terms BOUNDS names, its offset set once to 0 ('start': an underread fails) or `(<size>) - (<extent>)` ('end': an
     overread fails)."""
     bufs = {b[0]: b for b in spec.get('buffers', ())}
     # a constant local: set once in SETUP, from an expression that names no local (sizeof and literals only)
@@ -1199,7 +1200,7 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
             if not re.fullmatch(r'\s*sizeof\s*\(\s*[A-Za-z_][\w\s]*\)\s*', size):
                 s.bad(where, 'line %d: a bounded proof allocates only single objects, sizeof(T), and its BOUNDS buffers '
                              '(tools/prove.py): malloc(%s)' % (line(off, st), ' '.join(size.split())[:60]))
-    for name, size, offname, extent in spec.get('buffers', ()):
+    for name, size, offname, extent, tails in spec.get('buffers', ()):
         allocs = [1 for _, st in setup if _nospace(st) == _nospace('%s = malloc(%s)' % (name, size))]
         named = set(re.findall(_ID, re.sub(r'\bsizeof\s*\([^()]*\)', ' ', size)))
         if named - const:
@@ -1222,11 +1223,13 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
                 continue
             r = _nospace(a[1])
             rest = r[len(prefix):] if r.startswith(prefix) else None
-            ok = rest == '' or (rest is not None and rest.startswith('+') and set(re.findall(_ID, rest)) <= const)
+            terms = rest.split('+')[1:] if rest is not None and rest.startswith('+') else None
+            ok = rest == '' or (terms is not None and all(x in tails and x in const for x in terms))
             selfs += (re.findall(_ID, a[0]) or [''])[-1] == name
             if not ok or selfs > 1:
-                s.bad(where, 'line %d: %s, a BOUNDS buffer, is used only as `%s + %s` (then constant locals), once '
-                             'if it is reassigned: %s' % (line(off, st), name, name, offname, ' '.join(st.split())[:80]))
+                s.bad(where, 'line %d: %s, a BOUNDS buffer, is used only as `%s + %s`, then the tail terms BOUNDS names (%s), '
+                             'once if it is reassigned: %s' % (line(off, st), name, name, offname,
+                                                                ', '.join(tails) or 'none', ' '.join(st.split())[:80]))
 
 
 def check_bounded_cards(s, card_proofs):
