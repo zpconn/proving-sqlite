@@ -22,6 +22,8 @@ No proof reached `main` without passing a gate that re-ran the checker on it.
 |:-:|:-:|:-:|:-:|:-:|
 | agent sessions | models, from 2 vendors | start to finish | tokens | bytes of SQLite changed |
 
+By hand, without AI, the same work would take an estimated **8 to 14 person-months** ([how that was estimated](#what-it-would-take-by-hand)).
+
 ---
 
 ## Contents
@@ -32,6 +34,7 @@ No proof reached `main` without passing a gate that re-ran the checker on it.
 - [Keeping the proofs honest](#keeping-the-proofs-honest)
 - [What we found](#what-we-found)
 - [Results](#results)
+- [What it would take by hand](#what-it-would-take-by-hand)
 - [Limits and what is left](#limits-and-what-is-left)
 - [Repository tour](#repository-tour)
 - [Reproducing the proofs](#reproducing-the-proofs)
@@ -230,6 +233,45 @@ As of November 2026: 16 of 20 cards merged, 23 proofs, each passing on all three
 - 7 recorded assumptions about code outside the scope;
 - 18 verifier and tooling issues logged;
 - about 856 million tokens across all agent sessions (most of them cached context), within a 1-billion-token budget.
+
+---
+
+## What it would take by hand
+
+How long would one engineer take to do all of this without AI, leaving out the agent orchestration? The orchestrator estimated it from what the repo holds: **about 8 to 14 person-months for an engineer who already knows CBMC.**
+- Working alone, that is about a year on the calendar.
+- A pair would take about six months, and the work needs a second person anyway, because reviews must be independent.
+- Someone new to CBMC would need another 2 to 3 months.
+
+| Work | What the repo holds | Weeks |
+|---|---|---|
+| Setup and spec | SQLite pinned at 3.53.4, the overlay, three platform configurations, the properties and harness rules | 3–5 |
+| Proof tooling | prove.py, scan.py, mutate.py, gate, results, overlay, lock, native: about 4,300 lines of Python plus about 1,500 lines of tests | 6–10 |
+| Proofs | 16 cards covering 18 functions, each on 3 configurations | 8–14 |
+| Independent review | 24 reviews, done by a second person | 3–6 |
+| Planted bugs and coverage | 65 hand-designed mutants | 1–2 |
+| Ledger | 7 assumptions checked against SQLite's real callers and test suite | 1–3 |
+| SQLite findings | 2 bugs, each with a reproducing test and a clean control | 1–2 |
+| Verifier issues | 18 logged, including 2 places where CBMC silently checked less than it appeared to, found by reading CBMC's source | 3–6 |
+| Native tests and measurements | sanitizer tests past the proof bounds, and the solver and memory experiments | 3–5 |
+| C-17 to C-20 | design, partial proofs and measurements | 2–4 |
+| Write-up | RESULTS, FINDINGS, NOTES, README | 1–2 |
+| **Total** | | **32–59** |
+
+**Most of the time goes on dead ends, not typing.** The harnesses and contracts are about 1,100 lines of C, which an expert could type in a week. The time goes on finding out what doesn't work. C-15 alone needed:
+- five builder rounds;
+- a switch of CBMC contract engines, because the newer one couldn't handle its loop (T-006);
+- a gap in the older engine that had to be argued around (T-015);
+- solver runs that ran out of memory;
+- three changes to the frozen rules.
+
+A person would hit most of the same walls. An expert who knows CBMC's contract internals well would avoid some of them, which is the main reason the range is wide.
+
+**Against the campaign's 81 hours, that is roughly 50 to 100 times faster on the calendar.** The comparison is generous to the agents in two ways:
+- The 81 hours run from the first session's start to the last session's end. They leave out writing GOAL.md and the bring-up before the campaign, the human's decisions, and the orchestrator's work afterwards.
+- A human team could skip some of the work. Much of scan.py exists because agents might game the rules, and people would rely more on code review.
+
+This is an estimate, not a measurement: the sizes and counts come from the repo, and the weeks are judgment.
 
 ---
 
