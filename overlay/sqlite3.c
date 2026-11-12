@@ -92131,7 +92131,16 @@ SQLITE_PRIVATE void sqlite3VdbeRecordUnpack(
   idx = getVarint32(aKey, szHdr);
   d = szHdr;
   u = 0;
-  while( idx<szHdr && d<=(u32)nKey ){
+  while( idx<szHdr && d<=(u32)nKey )PROOF(
+    __CPROVER_assigns(idx, d, u, pMem,
+      __CPROVER_object_from(pMem))
+    __CPROVER_loop_invariant(u == 0 || u < p->nField)
+    __CPROVER_loop_invariant(__CPROVER_same_object(pMem, p->aMem))
+    __CPROVER_loop_invariant(pMem == p->aMem + u)
+    __CPROVER_loop_invariant(idx >= 1 && szHdr <= d)
+    __CPROVER_loop_invariant(u == 0 || ((pMem - 1)->flags & (MEM_Agg|MEM_Dyn)) == 0)
+    __CPROVER_decreases(p->nField - u)
+  ){
     u32 serial_type;
 
     idx += getVarint32(&aKey[idx], serial_type);

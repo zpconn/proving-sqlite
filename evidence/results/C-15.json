@@ -1,0 +1,464 @@
+{
+ "card": "C-15",
+ "coverage_summary": [
+  {
+   "card": "C-15",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeRecordUnpack": {
+     "blocks": 95,
+     "blocks_failed": 7,
+     "goal_lines": [
+      92117,
+      92118,
+      92119,
+      92121,
+      92122,
+      92123,
+      92124,
+      92125,
+      92126,
+      92127,
+      92129,
+      92131,
+      92132,
+      92133,
+      92134,
+      92135,
+      92137,
+      92138,
+      92139,
+      92141,
+      92142,
+      92143,
+      92144,
+      92145,
+      92146,
+      92147,
+      92148,
+      92153,
+      92158,
+      92159
+     ],
+     "uncovered": [
+      92134
+     ],
+     "uncovered_blocks": [
+      [
+       92134
+      ]
+     ]
+    }
+   },
+   "proof": "unpack",
+   "seconds": 246
+  },
+  {
+   "card": "C-15",
+   "config": "lp64-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeRecordUnpack": {
+     "blocks": 95,
+     "blocks_failed": 7,
+     "goal_lines": [
+      92117,
+      92118,
+      92119,
+      92121,
+      92122,
+      92123,
+      92124,
+      92125,
+      92126,
+      92127,
+      92129,
+      92131,
+      92132,
+      92133,
+      92134,
+      92135,
+      92137,
+      92138,
+      92139,
+      92141,
+      92142,
+      92143,
+      92144,
+      92145,
+      92146,
+      92147,
+      92148,
+      92153,
+      92158,
+      92159
+     ],
+     "uncovered": [
+      92134
+     ],
+     "uncovered_blocks": [
+      [
+       92134
+      ]
+     ]
+    }
+   },
+   "proof": "unpack_start",
+   "seconds": 185
+  },
+  {
+   "card": "C-15",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeRecordUnpack": {
+     "blocks": 95,
+     "blocks_failed": 7,
+     "goal_lines": [
+      92117,
+      92118,
+      92119,
+      92121,
+      92122,
+      92123,
+      92124,
+      92125,
+      92126,
+      92127,
+      92129,
+      92131,
+      92132,
+      92133,
+      92134,
+      92135,
+      92137,
+      92138,
+      92139,
+      92141,
+      92142,
+      92143,
+      92144,
+      92145,
+      92146,
+      92147,
+      92148,
+      92153,
+      92158,
+      92159
+     ],
+     "uncovered": [
+      92134
+     ],
+     "uncovered_blocks": [
+      [
+       92134
+      ]
+     ]
+    }
+   },
+   "proof": "unpack",
+   "seconds": 117
+  },
+  {
+   "card": "C-15",
+   "config": "ilp32-le",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeRecordUnpack": {
+     "blocks": 95,
+     "blocks_failed": 7,
+     "goal_lines": [
+      92117,
+      92118,
+      92119,
+      92121,
+      92122,
+      92123,
+      92124,
+      92125,
+      92126,
+      92127,
+      92129,
+      92131,
+      92132,
+      92133,
+      92134,
+      92135,
+      92137,
+      92138,
+      92139,
+      92141,
+      92142,
+      92143,
+      92144,
+      92145,
+      92146,
+      92147,
+      92148,
+      92153,
+      92158,
+      92159
+     ],
+     "uncovered": [
+      92134
+     ],
+     "uncovered_blocks": [
+      [
+       92134
+      ]
+     ]
+    }
+   },
+   "proof": "unpack_start",
+   "seconds": 67
+  },
+  {
+   "card": "C-15",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeRecordUnpack": {
+     "blocks": 95,
+     "blocks_failed": 7,
+     "goal_lines": [
+      92117,
+      92118,
+      92119,
+      92121,
+      92122,
+      92123,
+      92124,
+      92125,
+      92126,
+      92127,
+      92129,
+      92131,
+      92132,
+      92133,
+      92134,
+      92135,
+      92137,
+      92138,
+      92139,
+      92141,
+      92142,
+      92143,
+      92144,
+      92145,
+      92146,
+      92147,
+      92148,
+      92153,
+      92158,
+      92159
+     ],
+     "uncovered": [
+      92134
+     ],
+     "uncovered_blocks": [
+      [
+       92134
+      ]
+     ]
+    }
+   },
+   "proof": "unpack",
+   "seconds": 191
+  },
+  {
+   "card": "C-15",
+   "config": "lp64-be",
+   "error": null,
+   "functions": {
+    "sqlite3VdbeRecordUnpack": {
+     "blocks": 95,
+     "blocks_failed": 7,
+     "goal_lines": [
+      92117,
+      92118,
+      92119,
+      92121,
+      92122,
+      92123,
+      92124,
+      92125,
+      92126,
+      92127,
+      92129,
+      92131,
+      92132,
+      92133,
+      92134,
+      92135,
+      92137,
+      92138,
+      92139,
+      92141,
+      92142,
+      92143,
+      92144,
+      92145,
+      92146,
+      92147,
+      92148,
+      92153,
+      92158,
+      92159
+     ],
+     "uncovered": [
+      92134
+     ],
+     "uncovered_blocks": [
+      [
+       92134
+      ]
+     ]
+    }
+   },
+   "proof": "unpack_start",
+   "seconds": 136
+  }
+ ],
+ "mutants": [
+  {
+   "detail": "by C-15/unpack lp64-le: 1 failed: [sqlite3VdbeRecordUnpack.3] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-050/sqlite3.c line 92134 Check that loop invariant is preserved",
+   "mutant": {
+    "card": "C-15",
+    "equivalent": null,
+    "from": ">=p->nField",
+    "function": "sqlite3VdbeRecordUnpack",
+    "id": "M-050",
+    "line": 92145,
+    "review": null,
+    "to": ">p->nField"
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-15/unpack lp64-le: 38 failed: [sqlite3VdbeMemSetNull.pointer_dereference.5] dereference failure: pointer outside object bounds in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.6] dereference failure: invalid integer address in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.assigns.1] Check that (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags is valid; [sqlite3VdbeMemSetNull.pointer_dereference.7] dereference failure: pointer NULL in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.8] dereference failure: pointer invalid in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.9] dereference failure: deallocated dynamic object in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.10] dereference failure: dead object in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.11] dereference failure: pointer outside object bounds in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.12] dereference failure: invalid integer address in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.13] dereference failure: pointer NULL in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.14] dereference failure: pointer invalid in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.15] dereference failure: deallocated dynamic object in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.16] dereference failure: dead object in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.17] dereference failure: pointer outside object bounds in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.18] dereference failure: invalid integer address in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.precondition.1] Check requires clause of sqlite3VdbeMemSetNull in sqlite3VdbeRecordUnpack; [sqlite3VdbeMemSetNull.precondition.2] Check requires clause of sqlite3VdbeMemSetNull in sqlite3VdbeRecordUnpack; [sqlite3VdbeRecordUnpack.assigns.29] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 Check that (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags (assigned by the contract of sqlite3VdbeMemSetNull) is assignable; [sqlite3VdbeRecordUnpack.overflow.9] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 arithmetic overflow on signed * in (signed long int)((signed int)u < (signed int)p->nField) * (signed long int)56ul; [sqlite3VdbeRecordUnpack.pointer_arithmetic.103] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer NULL in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.104] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer invalid in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.105] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: deallocated dynamic object in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.106] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: dead object in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.107] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer outside object bounds in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.108] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: invalid integer address in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_dereference.241] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer NULL in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.242] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer invalid in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.243] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: deallocated dynamic object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.244] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: dead object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.245] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer outside object bounds in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.246] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: invalid integer address in p->nField; [sqlite3VdbeRecordUnpack.assigns.30] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 Check that p->nField is assignable; [sqlite3VdbeRecordUnpack.pointer_dereference.247] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer NULL in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.248] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer invalid in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.249] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: deallocated dynamic object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.250] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: dead object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.251] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer outside object bounds in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.252] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: invalid integer address in p->nField",
+   "mutant": {
+    "card": "C-15",
+    "equivalent": null,
+    "from": "pMem-(",
+    "function": "sqlite3VdbeRecordUnpack",
+    "id": "M-051",
+    "line": 92153,
+    "review": null,
+    "to": "pMem+("
+   },
+   "verdict": "KILLED"
+  },
+  {
+   "detail": "by C-15/unpack lp64-le: 4 failed: [serialGet.precondition.1] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.3] Check requires clause of serialGet in sqlite3VdbeSerialGet; [sqlite3GetVarint32.precondition.3] Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack; [sqlite3GetVarint32.precondition.5] Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack",
+   "mutant": {
+    "card": "C-15",
+    "equivalent": null,
+    "from": "(u32)nKey",
+    "function": "sqlite3VdbeRecordUnpack",
+    "id": "M-063",
+    "line": 92134,
+    "review": null,
+    "to": "(u32)nKey+1"
+   },
+   "verdict": "KILLED"
+  }
+ ],
+ "prove_summary": [
+  {
+   "card": "C-15",
+   "cbmc_seconds": 288,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "unpack",
+   "properties": 1730,
+   "seconds": 302,
+   "status": "PASS"
+  },
+  {
+   "card": "C-15",
+   "cbmc_seconds": 147,
+   "config": "lp64-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "unpack_start",
+   "properties": 1730,
+   "seconds": 162,
+   "status": "PASS"
+  },
+  {
+   "card": "C-15",
+   "cbmc_seconds": 88,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "unpack",
+   "properties": 1730,
+   "seconds": 103,
+   "status": "PASS"
+  },
+  {
+   "card": "C-15",
+   "cbmc_seconds": 61,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "unpack_start",
+   "properties": 1730,
+   "seconds": 75,
+   "status": "PASS"
+  },
+  {
+   "card": "C-15",
+   "cbmc_seconds": 199,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "unpack",
+   "properties": 1730,
+   "seconds": 213,
+   "status": "PASS"
+  },
+  {
+   "card": "C-15",
+   "cbmc_seconds": 120,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "unpack_start",
+   "properties": 1730,
+   "seconds": 134,
+   "status": "PASS"
+  }
+ ],
+ "provenance": {
+  "coverage_summary": {
+   "commit": "636e6a1bf7945c44af10141a673bd8b6e2781b95",
+   "gate": "make gate CARD=C-15 (merge of C-15 r5)",
+   "gate_log": "evidence/gate/C-15-r5.log"
+  },
+  "mutants": {
+   "commit": "636e6a1bf7945c44af10141a673bd8b6e2781b95",
+   "gate": "make gate CARD=C-15 (merge of C-15 r5)",
+   "gate_log": "evidence/gate/C-15-r5.log"
+  },
+  "prove_summary": {
+   "commit": "636e6a1bf7945c44af10141a673bd8b6e2781b95",
+   "gate": "make gate CARD=C-15 (merge of C-15 r5)",
+   "gate_log": "evidence/gate/C-15-r5.log"
+  }
+ }
+}
