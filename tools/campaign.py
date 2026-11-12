@@ -13,7 +13,7 @@ Commands
   retry C-NN | park C-NN | reopen C-NN --for C-MM
   resume-vendor <codex|claude>            after Zach signs in again: lift the pause a failed login caused
   land                                    merge main into orch, check the paths, queue orch for main
-  session <spec-review|ledger>            a one-off session, started the same way
+  session <spec-review|ledger|finding-review>  a one-off session, started the same way
   selftest                                rerun the coordinator tests in a scratch directory of its own
 Internal: daemon, _job <dir>, _merge <dir>
 
@@ -68,10 +68,14 @@ LAND_ALLOWED = ['cards/', 'tests/repro/', 'evidence/approvals/', 'evidence/orche
                 # T-007: not frozen (GOAL.md §0.3), and its command lines must equal SESSION_COMMANDS, so a land
                 # can change only its models, efforts and patterns; land names the keys it changes in its trailer
                 'tools/sessions.toml']
-ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evidence/ledger/', 'reports/ledger-']}
+ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evidence/ledger/', 'reports/ledger-'],
+              'finding-review': ['reviews/finding-']}
 # GOAL.md §0.10, hard-coded (checkpoint 0, decision C5): sessions.toml supplies models and command lines, never vendors.
 # The spec was written by Claude, so its reviewer runs on Codex.
-ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'spec-review': 'codex'}
+ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'spec-review': 'codex',
+               'finding-review': 'codex'}
+# finding-review (Zach, 2026-11-11): a one-off Codex judgement of finding drafts found on Claude (F-002, by the ledger
+# agent) or reproduced by the auditor (F-001's second repro), when no Codex card reviewer will judge them in time.
 # The one exception (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): C-17's builder runs on Claude and
 # its reviewer on Codex, because the Codex service's content filter stops a Codex builder on it (T-005). A reviewer is
 # still never on its round's builder vendor. The models are those sessions.toml gives the vendor's own role at the
@@ -1309,6 +1313,23 @@ def prompt_oneoff(role, n):
                 '60 lines with each case citing its row. Do not modify any tracked file. Write your verdict to '
                 'reviews/spec-r%d.md: first line APPROVE or REJECT, then numbered issues with severity, evidence and '
                 'the fix.\n' % n)
+    if role == 'finding-review':
+        return ('You are a reviewer session in the proving-sqlite project, on the vendor that did not find what you '
+                'judge. The rules every role obeys are in AGENTS.md; agents/reviewer/GOAL.md\'s rules on evidence and '
+                'reruns apply. Judge two items, each as its own numbered issue:\n'
+                '1. F-002, the ledger agent\'s finding draft: reports/ledger-2026-11-10.md section 4, and LEDGER.md '
+                'A-001\'s caller paths 1 and 2. campaign.py\'s sandboxed run of its repro and the clean control are in '
+                'evidence/orchestrator/F-002/. Judge whether it fails as claimed on unmodified upstream, whether it is '
+                'reachable through the public API with SQLITE_ENABLE_PREUPDATE_HOOK, and whether it is A-001\'s caller '
+                'obligation unmet (a finding) rather than a proof\'s issue.\n'
+                '2. F-001\'s second repro, tests/repro/F-001-b.c (FINDINGS.md F-001). Reproduce it: build and run it as '
+                'FINDINGS.md says, at -O2 and -O0, controls included, in $TMPDIR, which is tmp/ in your worktree (/tmp is '
+                'not writable). Run each command in the foreground and wait for it. Compare with '
+                'evidence/orchestrator/F-001-b/run.txt, and judge whether the stated impact holds: wrong query results '
+                'and integrity_check failures on a DESC index with a legal collation.\n'
+                'Do not modify any tracked file and do not run git commands that write. Write your verdict to '
+                'reviews/finding-r%d.md: first line APPROVE if both hold, else REJECT, then the numbered issues with '
+                'severity, evidence and the fix.\n' % n)
     if role == 'ledger':
         return ('You are the ledger agent in the proving-sqlite project. Your instructions are agents/ledger/GOAL.md; '
                 'read it first and follow it. The rules every role obeys are in AGENTS.md. Write only under '

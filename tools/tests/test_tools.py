@@ -1930,6 +1930,22 @@ def main():
         t.expect('bounds shift: a constant +1 shift fails coverage (every input lacks a byte the requires asks for, so the '
                  'proof passes vacuously)', prc == 0 and 'PASS' in pres and crc != 0 and 'FAIL' in cres, pout[-600:] + cout[-800:])
 
+    # ---- finding-review (Zach, 2026-11-11): a one-off Codex judgement of F-002 and F-001's second repro
+    if want('finding'):
+        code = ('import sys; sys.path.insert(0, "tools"); import campaign as C\n'
+                's = C.load_sessions(".")\n'
+                'print("CFG", C.role_config(s, "finding-review", "high")[:3])\n'
+                'print("PATHS", C.ROLE_PATHS["finding-review"])\n'
+                'pr = C.prompt_oneoff("finding-review", 1)\n'
+                'print("PROMPT", all(x in pr for x in ("F-002", "tests/repro/F-001-b.c", "evidence/orchestrator/F-002/", '
+                '"evidence/orchestrator/F-001-b/run.txt", "reviews/finding-r1.md", "Do not modify any tracked file")))\n')
+        r = t.fresh()
+        shutil.copy(os.path.join(REPO, 'tools', 'sessions.toml'), os.path.join(r, 'tools', 'sessions.toml'))
+        rc, out, res = t.run(r, [py, '-c', code])
+        t.expect('finding-review: a one-off role on Codex (gpt-6-astra, xhigh) that writes only reviews/finding-, and its '
+                 'prompt names F-002, F-001-b, their evidence and its verdict file',
+                 "CFG ('codex', 'gpt-6-astra', 'xhigh')" in out and "PATHS ['reviews/finding-']" in out and 'PROMPT True' in out, out)
+
     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
     if want('probe'):
         r = t.fresh()
