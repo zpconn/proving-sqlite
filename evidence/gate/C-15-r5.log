@@ -1,0 +1,93 @@
+==== check_overlay: /usr/bin/python3 tools/check_overlay.py
+  check_overlay: overlay = upstream + 2 PROOF spans; upstream sha256 matches pin.txt
+  RESULT check_overlay PASS 2 spans
+==== check_overlay PASS (0s)
+==== lock: /usr/bin/python3 tools/lock.py check
+  RESULT lock PASS 60 files
+==== lock PASS (0s)
+==== scan: /usr/bin/python3 tools/scan.py --card C-15 --base fa635938c83e2dd6c69f80ed6d3240af2a82d26c
+  scan: 16 card directories, contracts, predicates and overlay spans pass
+  RESULT scan PASS 0 problems
+==== scan PASS (1s)
+==== probe: /usr/bin/python3 tools/prove.py probe
+    probe lp64-le: pointer width: SUCCESS
+    probe lp64-le: long width: SUCCESS
+    probe lp64-le: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-le: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-le: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-le: plain char signedness (CBMC): SUCCESS
+    probe lp64-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-le PASS
+    probe ilp32-le: pointer width: SUCCESS
+    probe ilp32-le: long width: SUCCESS
+    probe ilp32-le: SQLITE_PTRSIZE: SUCCESS
+    probe ilp32-le: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe ilp32-le: SQLITE_BYTEORDER: SUCCESS
+    probe ilp32-le: SQLITE_BIGENDIAN: SUCCESS
+    probe ilp32-le: plain char signedness (CBMC): SUCCESS
+    probe ilp32-le: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe ilp32-le: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe ilp32-le PASS
+    probe lp64-be: pointer width: SUCCESS
+    probe lp64-be: long width: SUCCESS
+    probe lp64-be: SQLITE_PTRSIZE: SUCCESS
+    probe lp64-be: byte order of memory (low byte of 0x01020304): SUCCESS
+    probe lp64-be: SQLITE_BYTEORDER: SUCCESS
+    probe lp64-be: SQLITE_BIGENDIAN: SUCCESS
+    probe lp64-be: plain char signedness (CBMC): SUCCESS
+    probe lp64-be: plain char signedness (preprocessor, __CHAR_UNSIGNED__): SUCCESS
+    probe lp64-be: sqlite3Get4byte decodes big-endian on this config: SUCCESS
+  RESULT probe lp64-be PASS
+  RESULT probe all PASS
+==== probe PASS (19s)
+gate: cards to run: C-15
+==== includes C-15: /usr/bin/python3 tools/prove.py includes --card-dir proofs/C-15
+    includes C-15 lp64-le: 157 files, 0 not allowed
+    includes C-15 ilp32-le: 157 files, 0 not allowed
+    includes C-15 lp64-be: 157 files, 0 not allowed
+  RESULT includes C-15 all PASS
+==== includes C-15 PASS (0s)
+==== prove C-15: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py prove --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build
+  RESULT prove C-15/unpack lp64-le PASS 302s 1730 properties 0 failed
+  RESULT prove C-15/unpack_start lp64-le PASS 162s 1730 properties 0 failed
+  RESULT prove C-15 lp64-le PASS 464s 3460 properties 0 failed
+  RESULT prove C-15/unpack ilp32-le PASS 103s 1730 properties 0 failed
+  RESULT prove C-15/unpack_start ilp32-le PASS 75s 1730 properties 0 failed
+  RESULT prove C-15 ilp32-le PASS 178s 3460 properties 0 failed
+  RESULT prove C-15/unpack lp64-be PASS 213s 1730 properties 0 failed
+  RESULT prove C-15/unpack_start lp64-be PASS 134s 1730 properties 0 failed
+  RESULT prove C-15 lp64-be PASS 347s 3460 properties 0 failed
+  RESULT prove C-15 all PASS 989s 10380 properties 0 failed
+==== prove C-15 PASS (988s)
+==== coverage C-15: /usr/bin/python3 /home/zpconn/code/proving-sqlite-wt/merge/tools/prove.py coverage --card-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15 --config all --overlay /home/zpconn/code/proving-sqlite-wt/merge/overlay --build-dir /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build
+    coverage unpack lp64-le sqlite3VdbeRecordUnpack: 29/30 lines; uncovered sqlite3.c:92134
+    coverage unpack_start lp64-le sqlite3VdbeRecordUnpack: 29/30 lines; uncovered sqlite3.c:92134
+    coverage unpack ilp32-le sqlite3VdbeRecordUnpack: 29/30 lines; uncovered sqlite3.c:92134
+    coverage unpack_start ilp32-le sqlite3VdbeRecordUnpack: 29/30 lines; uncovered sqlite3.c:92134
+    coverage unpack lp64-be sqlite3VdbeRecordUnpack: 29/30 lines; uncovered sqlite3.c:92134
+    coverage unpack_start lp64-be sqlite3VdbeRecordUnpack: 29/30 lines; uncovered sqlite3.c:92134
+  RESULT coverage C-15 all PASS 174/180 lines 6 uncovered 0 unexplained
+==== coverage C-15 PASS (993s)
+==== native C-15: /usr/bin/python3 tools/native.py --card C-15
+  native C-15-1.c PASS: build exit 0, run exit 0
+  RESULT native C-15 PASS 1 tests 0 failed
+==== native C-15 PASS (20s)
+==== mutants C-15: /usr/bin/python3 tools/mutate.py --card C-15 --with  --json proofs/C-15/build/mutants.json
+  MUTANT M-050 sqlite3VdbeRecordUnpack:92145 '>=p->nField'->'>p->nField' KILLED by C-15/unpack lp64-le: 1 failed: [sqlite3VdbeRecordUnpack.3] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-050/sqlite3.c line 92134 Check that loop invariant is preserved
+  MUTANT M-051 sqlite3VdbeRecordUnpack:92153 'pMem-('->'pMem+(' KILLED by C-15/unpack lp64-le: 38 failed: [sqlite3VdbeMemSetNull.pointer_dereference.5] dereference failure: pointer outside object bounds in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.6] dereference failure: invalid integer address in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.assigns.1] Check that (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags is valid; [sqlite3VdbeMemSetNull.pointer_dereference.7] dereference failure: pointer NULL in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.8] dereference failure: pointer invalid in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.9] dereference failure: deallocated dynamic object in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.10] dereference failure: dead object in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.11] dereference failure: pointer outside object bounds in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.12] dereference failure: invalid integer address in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.13] dereference failure: pointer NULL in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.14] dereference failure: pointer invalid in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.15] dereference failure: deallocated dynamic object in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.16] dereference failure: dead object in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.17] dereference failure: pointer outside object bounds in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.18] dereference failure: invalid integer address in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.precondition.1] Check requires clause of sqlite3VdbeMemSetNull in sqlite3VdbeRecordUnpack; [sqlite3VdbeMemSetNull.precondition.2] Check requires clause of sqlite3VdbeMemSetNull in sqlite3VdbeRecordUnpack; [sqlite3VdbeRecordUnpack.assigns.29] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 Check that (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags (assigned by the contract of sqlite3VdbeMemSetNull) is assignable; [sqlite3VdbeRecordUnpack.overflow.9] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 arithmetic overflow on signed * in (signed long int)((signed int)u < (signed int)p->nField) * (signed long int)56ul; [sqlite3VdbeRecordUnpack.pointer_arithmetic.103] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer NULL in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.104] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer invalid in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.105] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: deallocated dynamic object in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.106] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: dead object in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.107] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer outside object bounds in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.108] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: invalid integer address in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_dereference.241] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer NULL in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.242] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer invalid in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.243] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: deallocated dynamic object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.244] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: dead object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.245] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer outside object bounds in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.246] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92162 dereference failure: invalid integer address in p->nField; [sqlite3VdbeRecordUnpack.assigns.30] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 Check that p->nField is assignable; [sqlite3VdbeRecordUnpack.pointer_dereference.247] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer NULL in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.248] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer invalid in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.249] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: deallocated dynamic object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.250] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: dead object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.251] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer outside object bounds in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.252] file /home/zpconn/code/proving-sqlite-wt/merge/proofs/C-15/build/mutants/M-051/sqlite3.c line 92167 dereference failure: invalid integer address in p->nField
+  MUTANT M-063 sqlite3VdbeRecordUnpack:92134 '(u32)nKey'->'(u32)nKey+1' KILLED by C-15/unpack lp64-le: 4 failed: [serialGet.precondition.1] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.3] Check requires clause of serialGet in sqlite3VdbeSerialGet; [sqlite3GetVarint32.precondition.3] Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack; [sqlite3GetVarint32.precondition.5] Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack
+  RESULT mutate C-15 PASS 3/3 killed 0 equivalent
+==== mutants C-15 PASS (846s)
+==== summary
+  check_overlay            PASS    1s  RESULT check_overlay PASS 2 spans
+  lock                     PASS    0s  RESULT lock PASS 60 files
+  scan                     PASS    1s  RESULT scan PASS 0 problems
+  probe                    PASS   20s  RESULT probe all PASS
+  includes C-15            PASS    0s  RESULT includes C-15 all PASS
+  prove C-15               PASS  988s  RESULT prove C-15 all PASS 989s 10380 properties 0 failed
+  coverage C-15            PASS  993s  RESULT coverage C-15 all PASS 174/180 lines 6 uncovered 0 unexplained
+  native C-15              PASS   21s  RESULT native C-15 PASS 1 tests 0 failed
+  mutants C-15             PASS  847s  RESULT mutate C-15 PASS 3/3 killed 0 equivalent
+RESULT gate C-15 PASS 2871s 0 failed
