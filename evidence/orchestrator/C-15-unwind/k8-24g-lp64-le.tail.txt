@@ -1,0 +1,9 @@
+[harness_unwind.pointer_dereference.18] line 38 dereference failure: invalid integer address in record->nField: ERROR
+
+<builtin-library-malloc> function malloc
+[malloc.assertion.1] line 31 max allocation size exceeded: SUCCESS
+[malloc.assertion.2] line 36 max allocation may fail: SUCCESS
+
+** 0 of 4452 failed (1 iterations)
+VERIFICATION ERROR
+3961

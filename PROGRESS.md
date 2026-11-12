@@ -1,42 +1,34 @@
 # PROGRESS
 
-## Status (2026-11-11 16:30, campaign session: §3 and §4)
+## Status (2026-11-12 00:40, campaign session: §3 and §4)
 
-**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named. 15 cards are merged (C-01 to C-14, C-16; C-01 again after its A-005 reopening). C-15 is in its measurement round 4 (J0093) for a bounded P1, as Zach decided in advance. C-17 is in round 4 (J0092), on main's B2. C-01 is reopened for A-005 (J0094). C-18 to C-20 wait on C-17. §4's ledger agent ran (J0079; reports/ledger-2026-11-10.md). The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** C-17 round 4; C-15's measurement round (proof times over nField and nKey), then K and N proposed to Zach; then C-18 to C-20, the second ledger run, and §5.
+**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named. 16 cards are merged: C-01 to C-16, with C-15 bounded at nField <= 4 and nKey <= 256 (merged 2026-11-11 23:33, card gate PASS 2871 s). C-17 is parked until its bounded package lands: J0118, with the full gate running. Then come round 5, C-18 to C-20, the second ledger run (evidence/orchestrator/ledger-run-2.md) and §5. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md.
 
 **B2 is on main** in two parts (LANDING.md): part A 69a1b4e, part B 2e2eeee. Part B's full gate: RESULT gate all PASS 3494s 0 failed; `lock.py check` on main: PASS, 58 files, which also repairs the stale lock of 00:19. Its land trailer names `tools/sessions.toml keys changed: vendors.claude.resume, vendors.claude.start`. From now on every Claude session runs with `--tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch`. The daemon was restarted on main's campaign.py at 15:55 (T-008).
 
 **CLI versions:** codex-cli 0.167.1 and Claude Code 2.1.322 since 2026-11-10 22:22–22:25; rechecked under T-011 and cleared by Zach.
 
 **Open questions for Zach:**
-1. **C-15's bounded P1: the approval request is ready** (evidence/approvals/C-15-bounded/README.md, with `patch.diff` from the local branch wip/bounds). It waits for the auditor's OK, which you relay. C-15 stays parked until it lands.
-   - **Your decisions, 2026-11-11, all met in the patch:**
-     - K=4, N=256: your diagnostic found no option that reaches K=8 within 600 s;
-     - two allocation shapes, end-exact and start-exact, with scan rule 16 allowing exactly those, and a planted underread that passes end-exact and fails start-exact;
-     - for C-15, T-015 as proposed: assigns as whole Mem cells, argued by the reviewer, with a pin test;
-     - for C-17, prove.py's frame check, shown on T-015's toy;
-     - RESULTS.md's Assigns column;
-     - A-007;
-     - the native suite. The builder's prototype passes native.py (1,414 cases); because of T-013 it lands through C-15's round 5, not in this patch.
-   - **The diagnostic** (K=8, N=256, lp64-le, 12 GB):
-     - default solver: PASS in 1,036 s at 7.6 GiB;
-     - `--refine-arrays`: SUCCESSFUL in 984 s at 7.9 GiB;
-     - cadical: out of memory after 30 s;
-     - `--arrays-uf-always`: CBMC crash (T-016).
-   - **Start-exact measurement** (K=4, N=256): 203, 108 and 182 s, each with 1,757 properties and 0 failed.
-   - **Tests:** tool tests 311/311, selftest 110/110.
-2. **C-17, round 4: your decisions, being carried out** (reports/C-17-b4.md). C-17 stays parked until its frozen change lands.
-   - **The bound:** K = 8 in the gate; K = 16 measured once, recorded in proofs/C-17/NOTES.md as "measured once, not gated"; no length bound.
-   - **One frozen change**, with an approval record and patch.diff for the auditor:
-     - prove.py's legacy-unwind pass, always with `--unwinding-assertions` and its `--unwindset`, refusing a legacy `LOOPS := unwind` proof without one;
-     - scan's narrow aColl rule;
-     - rule 16 allowing exact `malloc(<local>)` and `malloc(sizeof(T) * <local>)` for an input local, so C-17 needs no allocation shapes;
-     - the strict F-001 exception table, also in mutate.py;
-     - the label carried into C-18 to C-20 through their BOUNDS entries.
-   - **The one-off Codex session for F-002 and F-001-b:** yes. campaign.py has no Codex one-off role for findings, so a small `finding-review` role rides with the T-015 follow-up's part 2, for the auditor's OK.
-   - **Later:** once the legacy-unwind pass exists, C-15 is measured once on it, at K = 4 and 8, with exact symbolic-size allocations and no nKey bound. If that fits 600 s on all configurations, it replaces N = 256 in a later frozen change.
+1. **T-018: legacy-unwind coverage reports reached lines as uncovered** (evidence/orchestrator/tool-issues.md T-018).
+   - **The problem:** goto-instrument unwinds before `cbmc --cover` adds its goals. The last unwound copy's continuing path, which can't run when nField <= K, then counts against lines that earlier copies cover.
+   - **Who meets it:** all 15 of C-17's round-5 proofs.
+   - **Options:**
+     - (a) prove.py matches the unwound copies of each block (a frozen change, with toys for a dead tail in the last copy and a branch dead in every copy);
+     - (b) builders explain those lines in NOTES.md, with the per-goal table in the report for the reviewer to check.
+   - **Recommended: (a).** (b) would also explain away a line dead in every copy.
+   - **Until you decide:** C-17's round 5 runs under (b), with entries marked T-018, so it isn't held up.
+2. **Item 7, C-15 on legacy-unwind** (evidence/orchestrator/C-15-unwind/README.md; exact symbolic allocations, no nKey bound):
+   - **K=4 passes on all three configurations:** lp64-le 80 s, ilp32-le 78 s, lp64-be 104 s.
+   - **K=8 doesn't fit:** out of memory under prove.py's 12 GB cap on all three, and no verdict once under 24 GB (22.2 GB peak).
+   - **Checks at K=4:** both planted bugs KILLED (`pMem+=2`; `&aKey[d+1]`, which only an end-exact key catches), and the unwinding assertion holds.
+   - **What it would buy:** dropping nKey <= 256, with one caveat. On ilp32-le, CBMC's 2^24-byte object limit gives nKey < 2^24 - 8.
+   - **What it would take:** a later frozen change (BOUNDS, rule 16 accepting these two allocation sizes, PROPERTIES.md, the label), after T-018, then a builder round for C-15. Do you want it?
 
 Answered on 2026-11-11:
+- **C-15's bounded P1 and C-17's round-4 decisions:**
+  - C-15's package landed in J0108, the T-015 follow-up in J0112 and part 2 in J0114.
+  - C-15 was merged at round 5.
+  - The C-17 package is landing in J0118, with the full gate (evidence/approvals/C-17-bounded/). C-17's round 5 starts once it lands.
 - **F-002 and F-001-b, judged by Codex:** the one-off finding-review session (J0117, gpt-6-astra) gave APPROVE on both (reviews/finding-r1.md). It rebuilt and ran F-002's repro and its clean control, and all six F-001-b runs, and they matched campaign.py's and my runs. F-002 is in FINDINGS.md, with tests/repro/F-002.c.
 - **C-15's planted bug:** `tools/mutate.py --adhoc "sqlite3VdbeRecordUnpack 92146 'pMem++' 'pMem+=2'"`, run on the approved commit (card/C-15 5e1f5db) before the merge gate finished, was KILLED by C-15/unpack on lp64-le ("Check that loop invariant is preserved"; evidence/orchestrator/C-15-adhoc/). With M-050, M-051 and M-063 killed and the reviewer's T-012 check, Zach's merge conditions for C-15 are met.
 - **The auditor on part 2:** OK, with one prompt change, now made: the finding-review session rebuilds and runs F-002's repro and its clean control itself, in $TMPDIR in the foreground, and compares them with campaign.py's runs. If Codex's content filter stops it (T-005), it is parked for Zach, with no fallback to Claude, the finders' vendor.
@@ -139,3 +131,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-11 19:08 C-15's bounded package approved and queued to land (full gate). F-001-b added and reproduced. C-17's fallback recorded. The follow-ups are on wip/t015-followup.
 - 2026-11-11 20:04 C-17 round 4 NEEDS-DECISION: B1 holds under legacy. Measured: K = 16 on legacy-unwind (a tools change), K = 5 on DFCC, L = none; F-001 fails inside every bounded run. C-17 parked (Open questions 2).
 - 2026-11-11 22:55 Part 1 and part 2 landed (full gates PASS 4139 s and 3954 s), and the daemon was restarted on main's code. C-15 round 5 was approved and is merging; its planted bug was caught first. The finding-review session approved F-002 and F-001-b, and F-002 is in FINDINGS.md. The C-17 package is applied and queued to land.
+- 2026-11-12 00:40 C-15 merged (card gate PASS 2871 s). The C-17 package is landing (J0118, full gate). Item 7 measured: C-15 on legacy-unwind passes at K=4 on all three configurations, at most 104 s, with no nKey bound, and K=8 runs out of memory. T-018 found there: legacy-unwind coverage counts the last unwound copy's dead goals as uncovered (Open questions 1 and 2).

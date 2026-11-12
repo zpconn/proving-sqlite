@@ -1,0 +1,8 @@
+Starting Bounded Model Checking
+Passing problem to propositional reduction
+converting SSA
+Running propositional reduction
+SAT checker ran out of memory
+Solver ran out of memory during propositional reduction.
+Try reducing the problem size or increasing available memory.
+Out of memory

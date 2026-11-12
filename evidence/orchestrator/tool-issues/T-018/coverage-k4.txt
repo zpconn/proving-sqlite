@@ -1,0 +1,5 @@
+  coverage unwind lp64-le sqlite3VdbeRecordUnpack: 26/30 lines; uncovered sqlite3.c:92134, sqlite3.c:92135, sqlite3.c:92146, sqlite3.c:92147; NOT EXPLAINED under "## Unreached lines" in NOTES.md: sqlite3.c:92135, sqlite3.c:92146, sqlite3.c:92147
+  coverage unwind ilp32-le sqlite3VdbeRecordUnpack: 26/30 lines; uncovered sqlite3.c:92134, sqlite3.c:92135, sqlite3.c:92146, sqlite3.c:92147; NOT EXPLAINED under "## Unreached lines" in NOTES.md: sqlite3.c:92135, sqlite3.c:92146, sqlite3.c:92147
+  coverage unwind lp64-be sqlite3VdbeRecordUnpack: 26/30 lines; uncovered sqlite3.c:92134, sqlite3.c:92135, sqlite3.c:92146, sqlite3.c:92147; NOT EXPLAINED under "## Unreached lines" in NOTES.md: sqlite3.c:92135, sqlite3.c:92146, sqlite3.c:92147
+RESULT coverage C-15 all FAIL 78/90 lines 12 uncovered 9 unexplained
+exit 1
