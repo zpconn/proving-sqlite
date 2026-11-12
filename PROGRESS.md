@@ -1,33 +1,39 @@
 # PROGRESS
 
-## Status (2026-11-12 00:35, campaign session: §3 and §4)
+## Status (2026-11-12 08:15, campaign session stopped and handed off: Zach's decision)
 
-**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named. 16 cards are merged: C-01 to C-16, with C-15 bounded at nField <= 4 and nKey <= 256 (merged 2026-11-11 23:33, card gate PASS 2871 s). C-17 is parked until its bounded package lands: J0118, with the full gate running. Then come round 5, C-18 to C-20, the second ledger run (evidence/orchestrator/ledger-run-2.md) and §5. The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md.
+**Stopped (Zach, 2026-11-12, on the budget):** the campaign is stopped and handed off. Every queued land finished, and `tools/campaign.py stop` was run at 08:08, so no session starts.
+- **Cards:** 16 of 20 are merged (C-01 to C-16; C-15 bounded at nField <= 4 and nKey <= 256).
+- **Main:** f20fe36, lock PASS 60 files. Last full gate: RESULT gate all PASS 6030s 0 failed, at 01:13, on the C-17 package's land (J0118).
+- **Not started:** C-17's round 5, C-18 to C-20, the second ledger run (evidence/orchestrator/ledger-run-2.md) and §5.
+- **Tokens:** 855.8M of the milestone's 1B. This orchestrator session used 725.5M (evidence/orchestrator/tokens.csv), and the campaign's sessions 130.3M (evidence/tokens.csv).
+- **To resume:** `python3 ../proving-sqlite-wt/main/tools/campaign.py start` from the primary checkout (on orch). `tools/campaign.py finish` ends the campaign instead.
 
 **B2 is on main** in two parts (LANDING.md): part A 69a1b4e, part B 2e2eeee. Part B's full gate: RESULT gate all PASS 3494s 0 failed; `lock.py check` on main: PASS, 58 files, which also repairs the stale lock of 00:19. Its land trailer names `tools/sessions.toml keys changed: vendors.claude.resume, vendors.claude.start`. From now on every Claude session runs with `--tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch`. The daemon was restarted on main's campaign.py at 15:55 (T-008).
 
 **CLI versions:** codex-cli 0.167.1 and Claude Code 2.1.322 since 2026-11-10 22:22–22:25; rechecked under T-011 and cleared by Zach.
 
-**Budget, first:** the milestone has used 843M of its 1B tokens (GOAL.md §0.8).
-- **Where it went:** this orchestrator session 713M (evidence/orchestrator/tokens.csv, nearly all cache reads), and the campaign's sessions 130M (evidence/tokens.csv).
-- **What it means for C-17:** its builder has used 53.5M of its 80M cap, so the builder's 80% STUCK rule leaves about 10.5M. Round 4 alone used 45.3M.
-- C-17's round 5 is held until you answer.
+**Open questions for Zach (every unmerged card, with its question):**
+1. **C-17: parked.** Its round 5 is ready to start: the package it waited for landed (evidence/approvals/C-17-bounded/), and the card's round-5 notes say what to build.
+   - **Held by:** its builder cap. 53.5M of 80M is used, so the 80% STUCK rule leaves about 10.5M, and round 4 alone used 45.3M. You decided: keep 80M and hold.
+   - **To start it:** a higher cap (GOAL.md Appendix B and the card, a frozen change) or a new milestone budget, then `tools/campaign.py retry C-17`.
+   - **Before round 5, the T-018 fix** (your decision (a), below), so its 15 legacy-unwind proofs get correct coverage.
+2. **C-18, C-19 and C-20: waiting on C-17.** campaign.py parks a card only from triage, so they show as waiting. Their question is C-17's.
+   - Their BOUNDS entries and labels (nField <= 8 through C-17's contract) are already on main.
 
-**Open questions for Zach:**
-1. **T-018: legacy-unwind coverage reports reached lines as uncovered** (evidence/orchestrator/tool-issues.md T-018).
-   - **The problem:** goto-instrument unwinds before `cbmc --cover` adds its goals. The last unwound copy's continuing path, which can't run when nField <= K, then counts against lines that earlier copies cover.
-   - **Who meets it:** all 15 of C-17's round-5 proofs.
-   - **Options:**
-     - (a) prove.py matches the unwound copies of each block (a frozen change, with toys for a dead tail in the last copy and a branch dead in every copy);
-     - (b) builders explain those lines in NOTES.md, with the per-goal table in the report for the reviewer to check.
-   - **Recommended: (a).** (b) would also explain away a line dead in every copy.
-   - **Until you decide:** C-17's round 5 runs under (b), with entries marked T-018, so it isn't held up.
-2. **Item 7, C-15 on legacy-unwind** (evidence/orchestrator/C-15-unwind/README.md; exact symbolic allocations, no nKey bound):
-   - **K=4 passes on all three configurations:** lp64-le 80 s, ilp32-le 78 s, lp64-be 104 s.
-   - **K=8 doesn't fit:** out of memory under prove.py's 12 GB cap on all three, and no verdict once under 24 GB (22.2 GB peak).
-   - **Checks at K=4:** both planted bugs KILLED (`pMem+=2`; `&aKey[d+1]`, which only an end-exact key catches), and the unwinding assertion holds.
-   - **What it would buy:** dropping nKey <= 256, with one caveat. On ilp32-le, CBMC's 2^24-byte object limit gives nKey < 2^24 - 8.
-   - **What it would take:** a later frozen change (BOUNDS, rule 16 accepting these two allocation sizes, PROPERTIES.md, the label), after T-018, then a builder round for C-15. Do you want it?
+**Decided, not yet done:**
+- **T-018, option (a):** prove.py's coverage matches the unwound copies of each block on legacy-unwind proofs.
+  - It's a frozen change with an approval record. Toy tests: a tail dead only in the last copy counts as covered; a branch dead in every copy still counts as uncovered; the exit test after the last copy is reported as such.
+  - **What's ruled out:** cbmc can't unwind for coverage, because legacy enforcement refuses loops; there are no source columns to match copies on; and grouping by line set hides dead ternary branches. So copies are matched by their repeating block structure and the UNWINDSET bound (tool-issues.md T-018).
+- **Item 7, yes, after T-018:** C-15 on legacy-unwind at K=4, with exact symbolic allocations and no nKey bound. On ilp32-le, nKey < 2^24 - 8, from CBMC's object limit.
+  - It needs a frozen change: C-15's BOUNDS entry, rule 16 accepting the two allocation sizes, PROPERTIES.md and the label.
+  - Then C-15 is reopened for a builder round. The measurement and its checks are in evidence/orchestrator/C-15-unwind/README.md.
+
+Answered on 2026-11-12 (Zach):
+- **Budget:** stop and hand off. The lands finished, no session started, and the daemon is stopped.
+- **C-17's cap:** keep 80M and hold C-17.
+- **T-018:** option (a), a prove.py fix.
+- **Item 7:** yes, after T-018.
 
 Answered on 2026-11-11:
 - **C-15's bounded P1 and C-17's round-4 decisions:**
@@ -137,3 +143,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-11 20:04 C-17 round 4 NEEDS-DECISION: B1 holds under legacy. Measured: K = 16 on legacy-unwind (a tools change), K = 5 on DFCC, L = none; F-001 fails inside every bounded run. C-17 parked (Open questions 2).
 - 2026-11-11 22:55 Part 1 and part 2 landed (full gates PASS 4139 s and 3954 s), and the daemon was restarted on main's code. C-15 round 5 was approved and is merging; its planted bug was caught first. The finding-review session approved F-002 and F-001-b, and F-002 is in FINDINGS.md. The C-17 package is applied and queued to land.
 - 2026-11-12 00:30 C-15 merged (card gate PASS 2871 s). The C-17 package is landing (J0118, full gate). Item 7 measured: C-15 on legacy-unwind passes at K=4 on all three configurations, at most 104 s, with no nKey bound, and K=8 runs out of memory. T-018 found there: legacy-unwind coverage counts the last unwound copy's dead goals as uncovered (Open questions 1 and 2).
+- 2026-11-12 08:15 Zach: stop and hand off on the budget; keep C-17's cap and hold it; T-018 option (a); item 7 after T-018. The C-17 package and every queued land are on main (full gate PASS 6030 s). The daemon is stopped. Tokens 855.8M of 1B.
