@@ -2,7 +2,7 @@
 
 ## Status (2026-11-11 16:30, campaign session: §3 and §4)
 
-**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named. 15 cards are merged (C-01 to C-14, C-16). C-15 is in its measurement round 4 (J0093) for a bounded P1, as Zach decided in advance. C-17 is in round 4 (J0092), on main's B2. C-01 is reopened for A-005 (J0094). C-18 to C-20 wait on C-17. §4's ledger agent ran (J0079; reports/ledger-2026-11-10.md). The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** C-17 round 4; C-15's measurement round (proof times over nField and nKey), then K and N proposed to Zach; then C-18 to C-20, the second ledger run, and §5.
+**In progress:** §3, started 2026-11-10 15:26 with all 20 cards named. 15 cards are merged (C-01 to C-14, C-16; C-01 again after its A-005 reopening). C-15 is in its measurement round 4 (J0093) for a bounded P1, as Zach decided in advance. C-17 is in round 4 (J0092), on main's B2. C-01 is reopened for A-005 (J0094). C-18 to C-20 wait on C-17. §4's ledger agent ran (J0079; reports/ledger-2026-11-10.md). The card-by-card record is `tools/campaign.py status` and CAMPAIGN.md. **Next:** C-17 round 4; C-15's measurement round (proof times over nField and nKey), then K and N proposed to Zach; then C-18 to C-20, the second ledger run, and §5.
 
 **B2 is on main** in two parts (LANDING.md): part A 69a1b4e, part B 2e2eeee. Part B's full gate: RESULT gate all PASS 3494s 0 failed; `lock.py check` on main: PASS, 58 files, which also repairs the stale lock of 00:19. Its land trailer names `tools/sessions.toml keys changed: vendors.claude.resume, vendors.claude.start`. From now on every Claude session runs with `--tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch`. The daemon was restarted on main's campaign.py at 15:55 (T-008).
 
@@ -29,7 +29,7 @@
 Answered on 2026-11-11:
 - **A-001:** "violated at callers"; the clause stays as the proof's assumption. LEDGER.md lists the five caller paths, each with whether its record can come from the file. Paths 1 and 2 (preupdate_old, preupdate_new) are F-002. Your hypothesis for path 3, xferOptimization carrying file records into the SAVEPOSITION insert, goes to the ledger agent's second run as a repro to try. My source reading so far says xfer's inserts don't set SAVEPOSITION, but nothing has tested that.
 - **F-002** goes into FINDINGS.md after C-17's round-4 Codex reviewer judges it.
-- **A-005:** C-01 reopened (J0094) for a footprint that depends on the value written. A-002 to A-004 are marked tested from the ledger run.
+- **A-005:** C-01 reopened for a footprint that depends on the value written; round 4 merged it (min(sqlite3VarintLen(v), 9) bytes), and LEDGER.md A-005 is restated to match. A-002 to A-004 are marked tested from the ledger run.
 - **Correction:** the 22:45 entry's verdict rested on a probe bounded to 64 bytes and 4 fields; it's corrected in the log, in T-012 and in T-006's record. Every claim that something reaches a verdict now states the harness bounds.
 
 Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUSTED.md plus exact allocation), T-004 (auditor OK; landed), C-17 (option (b): Claude builds and Codex reviews; INT_MIN at 92793 is a finding candidate). Tool issues are in evidence/orchestrator/tool-issues.md (T-001 to T-014).
