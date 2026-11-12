@@ -1,0 +1,3 @@
+prove: /home/zpconn/code/proving-sqlite-wt/wip-c15-unwind/proofs/C-15-k8/Makefile: CARD C-15 does not match its directory
+RESULT prove C-15-k8 all FAIL 0s 0 properties 0 failed
+exit 1

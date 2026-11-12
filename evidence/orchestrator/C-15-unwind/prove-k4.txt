@@ -1,0 +1,8 @@
+RESULT prove C-15/unwind lp64-le PASS 80s 2508 properties 0 failed
+RESULT prove C-15 lp64-le PASS 80s 2508 properties 0 failed
+RESULT prove C-15/unwind ilp32-le PASS 78s 2508 properties 0 failed
+RESULT prove C-15 ilp32-le PASS 78s 2508 properties 0 failed
+RESULT prove C-15/unwind lp64-be PASS 104s 2508 properties 0 failed
+RESULT prove C-15 lp64-be PASS 104s 2508 properties 0 failed
+RESULT prove C-15 all PASS 262s 7524 properties 0 failed
+exit 0
