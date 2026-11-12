@@ -39,10 +39,10 @@ index 525023c..d215bf1 100644
  
  - **GCC 13.3.0's preprocessor**, which goto-cc runs (`gcc (goto-cc 6.11.0 (cbmc-6.11.0)) 13.3.0`), with the system headers of Ubuntu 24.04 and gcc-multilib for ilp32-le. The include check (`prove.py includes`, in the gate) shows each harness pulls in nothing but overlay/sqlite3.c, proofs/{include,contracts,spec}/*.h and system headers. Which code survives `#if` is the preprocessor's decision under the default compile options (UB-CLASSES.md, Out of scope).
 diff --git a/cards/C-17.md b/cards/C-17.md
-index c89423c..98ea7fb 100644
+index c89423c..01b143a 100644
 --- a/cards/C-17.md
 +++ b/cards/C-17.md
-@@ -5,7 +5,7 @@
+@@ -5,7 +5,9 @@
  - Boundary callees, with ledger entries: vdbeCompareMemString (upstream/sqlite3.c:92350), LEDGER.md A-003; sqlite3CorruptError (upstream/sqlite3.c:191373), LEDGER.md A-004
  - In-scope callers, whose call sites must satisfy the requires: sqlite3VdbeRecordCompare at 92832 (C-18), with bSkip 0; vdbeRecordCompareString at 92985 and vdbeRecordCompareInt at 92922 (C-19, C-20), with bSkip 1 after comparing the first field
  - Depends on: C-04, C-05, C-06, C-07, C-08, C-10, C-11, C-12
@@ -50,7 +50,9 @@ index c89423c..98ea7fb 100644
 +- May change: proofs/C-17/harness.c, proofs/C-17/Makefile, proofs/C-17/NOTES.md, proofs/contracts/sqlite3VdbeRecordCompareWithSkip.h, overlay/sqlite3.c, proofs/include/preds.h, tests/repro/F-draft-C-17-1.c, tests/repro/F-draft-C-17-2.c, tests/repro/F-draft-C-17-3.c, reports/C-17-b1.md, reports/C-17-b2.md, reports/C-17-b3.md, reports/C-17-b4.md, reports/C-17-b5.md, reports/C-17-b6.md, tests/bounded/C-17-1.c, tests/bounded/C-17-2.c, tests/bounded/C-17-3.c, tests/bounded/C-17-4.c
  - Cap: builder 80M; reviewer half that. Tier: high
 -- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. The two boundary contracts, proofs/contracts/vdbeCompareMemString.h and proofs/contracts/sqlite3CorruptError.h, are already written: LEDGER.md A-003's and A-004's clauses word for word, with the lines "Ledger: A-003" and "Ledger: A-004" (scan.py checks they match, and proof.lock freezes them). Replace the calls with them; if a clause doesn't work, say why in your report, since neither the headers nor LEDGER.md are yours to change. Its `while(1)` loop exits by break or return, at most once per field of pPKey2 (nField), so it needs a loop contract (PROOF span). It checks d1 against nKey1 (92645, 92724, 92756, 92805) and idx1 against szHdr1 (92807), but the varint at aKey1[idx1] and the 8-byte reads at aKey1[d1] (serialGet7, vdbeRecordDecodeInt) can extend past nKey1: if that needs slack, use A-001 and determine the smallest. With bSkip set it skips the first field (92625-92635): state what that requires of pPKey2, since C-18 passes 0 and C-19 and C-20 pass 1. KeyInfo's aColl is a flexible array member (92730, 92736), which CBMC 6.11 bounds-checks only at an element's start (evidence/orchestrator/tool-issues.md (T-003)): state its footprint as `r_ok(pKeyInfo, SZ_KEYINFO(n))` in whole entries; show minus one entry fails in CBMC and minus one byte overflows natively under ASan; the reviewer checks every such footprint is whole entries. Zach's addition (2026-11-10, evidence/approvals/T-003-flexarray-bounds/APPROVED.md): whole-entry footprints are sound only if the harness allocates the KeyInfo at exactly SZ_KEYINFO(n) bytes (`__CPROVER_is_fresh` or `malloc` of that size, never larger). Then a read of aColl[n] starts out of bounds and CBMC catches it. NOTES.md shows that a read one entry past the end fails. The reviewer checks both the whole-entry footprint and the exact allocation. Decision (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): for this card only, Claude builds and Codex reviews, because the Codex service's content filter stopped rounds 1 and 2 (T-005). If the Codex reviewer is flagged too, the card is parked again. Nothing is reworded to get past the filter. Finding candidate (Zach): A-003's contract puts no bound on vdbeCompareMemString's result, which is the collation's xCmp result (92344, 92359), and 92793 negates rc for a DESC key, so a result of INT_MIN would be a signed overflow. Settle it either with a native repro on unmodified upstream (tests/repro/F-draft-C-17-<k>.c, reported as FINDING), or with a ledger statement and its justification, reported as NEEDS-DECISION with the draft. The loop carries `pRhs` (`pRhs++`, 92803), the pattern behind T-006 (CBMC 6.11's DFCC encoding blow-up, evidence/orchestrator/tool-issues.md). If your proof hits it, set `<name>_CONTRACTS := legacy` for that proof (Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/; TRUSTED.md) and record the DFCC run that showed it in NOTES.md. Under legacy, a replaced callee with a static local must keep its body (T-012). F-002 (Zach, 2026-11-11): this round's Codex reviewer also judges the ledger agent's finding draft F-002, from evidence/orchestrator/F-002/ (campaign.py's sandboxed run and its control) and reports/ledger-2026-11-10.md §4. Judge whether it fails as claimed on unmodified upstream, whether it is reachable through the public API with SQLITE_ENABLE_PREUPDATE_HOOK, and whether it is A-001's caller obligation unmet (a finding) rather than a proof's issue. Give F-002 its own numbered issue in the review. Mutants: M-054 to M-056 (card=C-17). F-001's second repro (Zach and the auditor, 2026-11-11): tests/repro/F-001-b.c shows the overflow at 92793 giving wrong query results and integrity_check failures on a DESC index with a legal collation, at gcc -O2 and -O0 with no sanitizers (FINDINGS.md F-001). This card's Codex reviewer reproduces it together with F-002: build and run it as FINDINGS.md says, controls included, and compare with evidence/orchestrator/F-001-b/run.txt. Fallback if P1 isn't proved unbounded (Zach, 2026-11-11): a bounded P1 at whatever the measurements support, the largest bounds whose proofs pass within the gate's 600 s on all three configurations, in both allocation shapes (start-exact and end-exact; see C-15). The bounds take effect once Zach approves the BOUNDS entry and the auditor OKs it. The bound is carried into the labels of C-18, C-19 and C-20, which replace this card's function with its contract. T-015 (the auditor, 2026-11-11): prove.py's frame check is textual. It refuses a loop target that matches the function's assigns verbatim when the body assigns a variable the target names. It doesn't catch the body writing through a member or an address the target depends on, such as `p->a = x` before a loop whose target is `p->a[0].x`, or `g(&p)`. So this card's reviewer checks that for every legacy loop. The auditor notes it doesn't arise here: the body writes only pPKey2->errCode and pPKey2->eqSeen, and takes no parameter's address. Round 5 (Zach, 2026-11-11, on round 4's NEEDS-DECISION): K = 8 in the gate, as one proof per (bSkip, nField) on the legacy-unwind pass, with no length bound and no fixed allocation shapes. Allocate exactly, at symbolic sizes: `malloc(<local>)` or `malloc(sizeof(T) * <local>)`. Record K = 16 in NOTES.md as "measured once, not gated", from round 4's numbers (b0n16 171 s, 3.46 GB, lp64-le). F-001's failure at 92793 is excepted by prove.py's frozen table, and only that one. The card and RESULTS.md say "proved except F-001 at 92793". This round starts once that frozen change lands.
-+- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. The two boundary contracts, proofs/contracts/vdbeCompareMemString.h and proofs/contracts/sqlite3CorruptError.h, are already written: LEDGER.md A-003's and A-004's clauses word for word, with the lines "Ledger: A-003" and "Ledger: A-004" (scan.py checks they match, and proof.lock freezes them). Replace the calls with them; if a clause doesn't work, say why in your report, since neither the headers nor LEDGER.md are yours to change. Its `while(1)` loop exits by break or return, at most once per field of pPKey2 (nField), so it needs a loop contract (PROOF span). It checks d1 against nKey1 (92645, 92724, 92756, 92805) and idx1 against szHdr1 (92807), but the varint at aKey1[idx1] and the 8-byte reads at aKey1[d1] (serialGet7, vdbeRecordDecodeInt) can extend past nKey1: if that needs slack, use A-001 and determine the smallest. With bSkip set it skips the first field (92625-92635): state what that requires of pPKey2, since C-18 passes 0 and C-19 and C-20 pass 1. KeyInfo's aColl is a flexible array member (92730, 92736), which CBMC 6.11 bounds-checks only at an element's start (evidence/orchestrator/tool-issues.md (T-003)): state its footprint as `r_ok(pKeyInfo, SZ_KEYINFO(n))` in whole entries; show minus one entry fails in CBMC and minus one byte overflows natively under ASan; the reviewer checks every such footprint is whole entries. Zach's addition (2026-11-10, evidence/approvals/T-003-flexarray-bounds/APPROVED.md): whole-entry footprints are sound only if the harness allocates the KeyInfo at exactly SZ_KEYINFO(n) bytes (`__CPROVER_is_fresh` or `malloc` of that size, never larger). Then a read of aColl[n] starts out of bounds and CBMC catches it. NOTES.md shows that a read one entry past the end fails. The reviewer checks both the whole-entry footprint and the exact allocation. Decision (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): for this card only, Claude builds and Codex reviews, because the Codex service's content filter stopped rounds 1 and 2 (T-005). If the Codex reviewer is flagged too, the card is parked again. Nothing is reworded to get past the filter. Finding candidate (Zach): A-003's contract puts no bound on vdbeCompareMemString's result, which is the collation's xCmp result (92344, 92359), and 92793 negates rc for a DESC key, so a result of INT_MIN would be a signed overflow. Settle it either with a native repro on unmodified upstream (tests/repro/F-draft-C-17-<k>.c, reported as FINDING), or with a ledger statement and its justification, reported as NEEDS-DECISION with the draft. The loop carries `pRhs` (`pRhs++`, 92803), the pattern behind T-006 (CBMC 6.11's DFCC encoding blow-up, evidence/orchestrator/tool-issues.md). If your proof hits it, set `<name>_CONTRACTS := legacy` for that proof (Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/; TRUSTED.md) and record the DFCC run that showed it in NOTES.md. Under legacy, a replaced callee with a static local must keep its body (T-012). F-002 (Zach, 2026-11-11): this round's Codex reviewer also judges the ledger agent's finding draft F-002, from evidence/orchestrator/F-002/ (campaign.py's sandboxed run and its control) and reports/ledger-2026-11-10.md §4. Judge whether it fails as claimed on unmodified upstream, whether it is reachable through the public API with SQLITE_ENABLE_PREUPDATE_HOOK, and whether it is A-001's caller obligation unmet (a finding) rather than a proof's issue. Give F-002 its own numbered issue in the review. Mutants: M-054 to M-056 (card=C-17). F-001's second repro (Zach and the auditor, 2026-11-11): tests/repro/F-001-b.c shows the overflow at 92793 giving wrong query results and integrity_check failures on a DESC index with a legal collation, at gcc -O2 and -O0 with no sanitizers (FINDINGS.md F-001). This card's Codex reviewer reproduces it together with F-002: build and run it as FINDINGS.md says, controls included, and compare with evidence/orchestrator/F-001-b/run.txt. Fallback if P1 isn't proved unbounded (Zach, 2026-11-11): a bounded P1 at whatever the measurements support, the largest bounds whose proofs pass within the gate's 600 s on all three configurations, in both allocation shapes (start-exact and end-exact; see C-15). The bounds take effect once Zach approves the BOUNDS entry and the auditor OKs it. The bound is carried into the labels of C-18, C-19 and C-20, which replace this card's function with its contract. T-015 (the auditor, 2026-11-11): prove.py's frame check is textual. It refuses a loop target that matches the function's assigns verbatim when the body assigns a variable the target names. It doesn't catch the body writing through a member or an address the target depends on, such as `p->a = x` before a loop whose target is `p->a[0].x`, or `g(&p)`. So this card's reviewer checks that for every legacy loop. The auditor notes it doesn't arise here: the body writes only pPKey2->errCode and pPKey2->eqSeen, and takes no parameter's address. Round 5 (Zach, 2026-11-11, on round 4's NEEDS-DECISION): K = 8 in the gate, as one proof per (bSkip, nField) on the legacy-unwind pass, with no length bound and no fixed allocation shapes. Allocate exactly, at symbolic sizes: `malloc(<local>)` or `malloc(sizeof(T) * <local>)`. Record K = 16 in NOTES.md as "measured once, not gated", from round 4's numbers (b0n16 171 s, 3.46 GB, lp64-le). F-001's failure at 92793 is excepted by prove.py's frozen table, and only that one. The card and RESULTS.md say "proved except F-001 at 92793". This round starts once that frozen change lands. Label (PROPERTIES.md change 9): C-17: bounded: pPKey2->nField <= 8, one proof for each nField and for bSkip 0 and 1. The fifteen proofs are named b0n1 to b0n8 (bSkip 0) and b1n2 to b1n8 (bSkip 1), each with `LOOPS := unwind`, `CONTRACTS := legacy` and an UNWINDSET. Each fixes its inputs in SETUP as exactly `nField = <n>;` and `bSkip = <b>;`, locals of those names: tools/prove.py BOUNDS, scan rule 16. The native tests past the bound go in tests/bounded/C-17-<k>.c; round 4's past.c is in evidence/orchestrator/C-17-b4/native/.
++- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. The two boundary contracts, proofs/contracts/vdbeCompareMemString.h and proofs/contracts/sqlite3CorruptError.h, are already written: LEDGER.md A-003's and A-004's clauses word for word, with the lines "Ledger: A-003" and "Ledger: A-004" (scan.py checks they match, and proof.lock freezes them). Replace the calls with them; if a clause doesn't work, say why in your report, since neither the headers nor LEDGER.md are yours to change. Its `while(1)` loop exits by break or return, at most once per field of pPKey2 (nField), so it needs a loop contract (PROOF span). It checks d1 against nKey1 (92645, 92724, 92756, 92805) and idx1 against szHdr1 (92807), but the varint at aKey1[idx1] and the 8-byte reads at aKey1[d1] (serialGet7, vdbeRecordDecodeInt) can extend past nKey1: if that needs slack, use A-001 and determine the smallest. With bSkip set it skips the first field (92625-92635): state what that requires of pPKey2, since C-18 passes 0 and C-19 and C-20 pass 1. KeyInfo's aColl is a flexible array member (92730, 92736), which CBMC 6.11 bounds-checks only at an element's start (evidence/orchestrator/tool-issues.md (T-003)): state its footprint as `r_ok(pKeyInfo, SZ_KEYINFO(n))` in whole entries; show minus one entry fails in CBMC and minus one byte overflows natively under ASan; the reviewer checks every such footprint is whole entries. Zach's addition (2026-11-10, evidence/approvals/T-003-flexarray-bounds/APPROVED.md): whole-entry footprints are sound only if the harness allocates the KeyInfo at exactly SZ_KEYINFO(n) bytes (`__CPROVER_is_fresh` or `malloc` of that size, never larger). Then a read of aColl[n] starts out of bounds and CBMC catches it. NOTES.md shows that a read one entry past the end fails. The reviewer checks both the whole-entry footprint and the exact allocation. Decision (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): for this card only, Claude builds and Codex reviews, because the Codex service's content filter stopped rounds 1 and 2 (T-005). If the Codex reviewer is flagged too, the card is parked again. Nothing is reworded to get past the filter. Finding candidate (Zach): A-003's contract puts no bound on vdbeCompareMemString's result, which is the collation's xCmp result (92344, 92359), and 92793 negates rc for a DESC key, so a result of INT_MIN would be a signed overflow. Settle it either with a native repro on unmodified upstream (tests/repro/F-draft-C-17-<k>.c, reported as FINDING), or with a ledger statement and its justification, reported as NEEDS-DECISION with the draft. The loop carries `pRhs` (`pRhs++`, 92803), the pattern behind T-006 (CBMC 6.11's DFCC encoding blow-up, evidence/orchestrator/tool-issues.md). If your proof hits it, set `<name>_CONTRACTS := legacy` for that proof (Zach, 2026-11-10, evidence/approvals/T-006-dfcc-loop-pointer/; TRUSTED.md) and record the DFCC run that showed it in NOTES.md. Under legacy, a replaced callee with a static local must keep its body (T-012). F-002 (Zach, 2026-11-11): this round's Codex reviewer also judges the ledger agent's finding draft F-002, from evidence/orchestrator/F-002/ (campaign.py's sandboxed run and its control) and reports/ledger-2026-11-10.md §4. Judge whether it fails as claimed on unmodified upstream, whether it is reachable through the public API with SQLITE_ENABLE_PREUPDATE_HOOK, and whether it is A-001's caller obligation unmet (a finding) rather than a proof's issue. Give F-002 its own numbered issue in the review. Mutants: M-054 to M-056 (card=C-17). F-001's second repro (Zach and the auditor, 2026-11-11): tests/repro/F-001-b.c shows the overflow at 92793 giving wrong query results and integrity_check failures on a DESC index with a legal collation, at gcc -O2 and -O0 with no sanitizers (FINDINGS.md F-001). This card's Codex reviewer reproduces it together with F-002: build and run it as FINDINGS.md says, controls included, and compare with evidence/orchestrator/F-001-b/run.txt. Fallback if P1 isn't proved unbounded (Zach, 2026-11-11): a bounded P1 at whatever the measurements support, the largest bounds whose proofs pass within the gate's 600 s on all three configurations, in both allocation shapes (start-exact and end-exact; see C-15). The bounds take effect once Zach approves the BOUNDS entry and the auditor OKs it. The bound is carried into the labels of C-18, C-19 and C-20, which replace this card's function with its contract. T-015 (the auditor, 2026-11-11): prove.py's frame check is textual. It refuses a loop target that matches the function's assigns verbatim when the body assigns a variable the target names. It doesn't catch the body writing through a member or an address the target depends on, such as `p->a = x` before a loop whose target is `p->a[0].x`, or `g(&p)`. So this card's reviewer checks that for every legacy loop. The auditor notes it doesn't arise here: the body writes only pPKey2->errCode and pPKey2->eqSeen, and takes no parameter's address. Round 5 (Zach, 2026-11-11, on round 4's NEEDS-DECISION): K = 8 in the gate, as one proof per (bSkip, nField) on the legacy-unwind pass, with no length bound and no fixed allocation shapes. Allocate exactly, at symbolic sizes: `malloc(<local>)` or `malloc(sizeof(T) * <local>)`. Record K = 16 in NOTES.md as "measured once, not gated", from round 4's numbers (b0n16 171 s, 3.46 GB, lp64-le). F-001's failure at 92793 is excepted by prove.py's frozen table, and only that one. The card and RESULTS.md say "proved except F-001 at 92793". This round starts once that frozen change lands. Label (PROPERTIES.md change 9): C-17: bounded: pPKey2->nField <= 8, one proof for each nField and for bSkip 0 and 1. The fifteen proofs are named b0n1 to b0n8 (bSkip 0) and b1n2 to b1n8 (bSkip 1), each with `LOOPS := unwind`, `CONTRACTS := legacy` and an UNWINDSET. Each fixes its inputs in SETUP as exactly `nField = <n>;` and `bSkip = <b>;`, locals of those names: tools/prove.py BOUNDS, scan rule 16. The native tests past the bound go in tests/bounded/C-17-<k>.c; round 4's past.c is in evidence/orchestrator/C-17-b4/native/. Also for round 5 (the auditor, 2026-11-11):
++  - The contract requires `bSkip == 0 || bSkip == 1`, matching the 15 proofs, which fix bSkip to 0 and 1, since C-18 to C-20 replace their calls with it.
++  - The reviewer checks that each symbolic allocation's size is the same local as the extent the requires reads, such as `z_k = malloc(n_k)` with `m_k->n = n_k`, and aMem and aSortFlags sized from nField. Scan checks only that the size is an input.
  
 diff --git a/cards/C-18.md b/cards/C-18.md
 index 170951b..2822e02 100644
@@ -95,7 +97,7 @@ index e90c7d8..b6b99fc 100644
 +- Notes: Read PROPERTIES.md (P1), proofs/HOWTO.md (how proofs are built here, the harness rules scan.py and prove.py enforce) and an approved card's directory (proofs/C-01) first. Line numbers are the line naming each function (evidence/bringup/01-lines.txt); GOAL.md Appendix A gives the same. It reads the first field at offset `*(const u8*)pKey1 & 0x3F` (92849), up to 8 bytes, without comparing it to nKey1, so it reads up to 71 bytes from pKey1 whatever nKey1 is. FindCompare's comment (93011-93023) says callers guarantee at least 74 bytes of padding and limit such headers to 64 bytes: express that as A-001 for this function, the smallest that works. Its requires on pPKey2 rest on what C-16 ensures when it returns this function (aMem[0] an integer, u.i equal to aMem[0].u.i). Mutants: M-061 and M-062 (card=C-20). C-17's bound (Zach, 2026-11-11): if C-17's P1 is bounded, this card's proofs, which replace sqlite3VdbeRecordCompareWithSkip with C-17's contract, carry that bound in their labels (RESULTS.md, this card and PROPERTIES.md). They hold only for the inputs C-17's contract was proved for. Label (PROPERTIES.md change 9): C-20: bounded: pPKey2->nField <= 8 (through C-17's contract). Every proof of this card holds `__CPROVER_assume(nField <= 8);` once in SETUP, nField being the local given to pPKey2->nField: tools/prove.py BOUNDS, scan rule 16. Native tests past the bound go in tests/bounded/C-20-<k>.c.
 +
 diff --git a/proof.lock b/proof.lock
-index 9405a0b..b475d87 100644
+index 81b0b3f..d9db9f5 100644
 --- a/proof.lock
 +++ b/proof.lock
 @@ -3,8 +3,8 @@ c449f12658c78e89e6b67c7d924e672229a542e409276c123d6d80fa46e7c734  AGENTS.md
@@ -114,7 +116,7 @@ index 9405a0b..b475d87 100644
  34bf42060964afbbf52b2ff2d30c77061133f9b9d19c0692ef3cc1a317189920  proofs/CHECKS
  6ad9d5924a3c11c36b11a33c5dbd32c637a0decba0c53ffcc94fd08054692399  proofs/CONFIGS
 -87603cfe4be41ac6ef5370c0035fe0669197151b2192b2659699ab653aa2709f  proofs/HOWTO.md
-+d1ac0161dd643ca26b98278a1c6ae4d4e10b85dd4611a93560bd1ab7584dc6a5  proofs/HOWTO.md
++a9fd85ee44e5ec1cdbea9d51654d3d61ae0073a87df2861c3ce633a511f7d49b  proofs/HOWTO.md
  9cf75306a48da7d2829baca095af30c87d9338f57561f042b0bf2652cc3a850c  proofs/MUTANTS
  3d900297e0883eeaed9ab452aa9dfbce911b0781e38e29d5670157c873aac56b  proofs/Makefile.common
  ecf22912bd99a291fb9b7979d2855a0b971815bfeb12b4029f56f7f3ce3a7c26  proofs/contracts/memcmp.h
@@ -127,7 +129,7 @@ index 9405a0b..b475d87 100644
 -bf4083a81ad15d9ce3733b87429afb147f8aeaffb270ad0b23f54019f5912b21  tools/scan.py
 +5611e09e1ce23680dd3d0eceb8a487ed8a519941842826ea86d90b2c5e8f86e8  tools/prove.py
 +be749f83c04ee15c283e832307e9008297667407375149c09b7a827264be5bc2  tools/results.py
-+49b24d096dc93a60c6554c4d10fe4f7d1860713375fc4ad9ab03363c17d5e443  tools/scan.py
++6ea8791768a34439a3da563746772ac6a7a6757c3f5ad8c19b310465553cb66c  tools/scan.py
  97c9a7c742e5dbcf8b8edf315411e37d160773d48c42a6ca2c641b662d820a1b  tools/tests/legacy/harness.c
  a6955cb66f4bec234268713f8caf3db5d11e652fc303d81891a56564004892b3  tools/tests/legacy/heads/keep.h
  0a1facd9192307970841372073db9831883429f20b17cef480fa13cf30a88f19  tools/tests/legacy/heads/reset.h
@@ -135,13 +137,13 @@ index 9405a0b..b475d87 100644
  8252ec564fdc5cb31fb9e14c17354a8caf57664040e5b953fde11761d237989e  tools/tests/legacy/heads/t_static.h
  12f5fb25fb2b29a5f58c8b17ceff4aac33891a52faaff1a52fce513b4e5479ea  tools/tests/legacy/heads/two.h
  3a77111d017b5e004129c10635b9d67fa6575c3fd6fdffa5177680fe49270c6b  tools/tests/legacy/toys.c
--998c4e84fe48fdd27b22fae6d1b6abbf4682b445d57887c942a1c09f0a0567d7  tools/tests/test_tools.py
-+5d0f42763c915098a72a16a010a74ac4319b3d7024ce1b0dcfb05ed482568935  tools/tests/test_tools.py
+-976ad99556adcbafd3ba3fa76bdf30e86db75efba64aca12a7e7277397ff541f  tools/tests/test_tools.py
++c7b08b517c57fbf7369eb0e6fb7101724c63409899b30a4d35bb554026470ad3  tools/tests/test_tools.py
  d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b  upstream/sqlite-src-3530400.zip
  b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189  upstream/sqlite3.c
  919e7f2e8ed1d8f56ac17b412b8971c76aa5d1a879752cc6058f75e7d5910e1d  upstream/sqlite3.h
 diff --git a/proofs/HOWTO.md b/proofs/HOWTO.md
-index 8a0672c..5b118da 100644
+index 8a0672c..9edda4d 100644
 --- a/proofs/HOWTO.md
 +++ b/proofs/HOWTO.md
 @@ -54,7 +54,12 @@ Only Zach makes a proof bounded, through tools/prove.py's `BOUNDS`, a frozen fil
@@ -154,7 +156,7 @@ index 8a0672c..5b118da 100644
 +- **The label:** `<card> <proof>: bounded: <what> <= K, ...` appears word for word in the card and in PROPERTIES.md, and RESULTS.md prints it in its Bounds column. A card whose BOUNDS has a `_label` carries `<card>: <label>` instead, once. A `*` entry binds every proof of the card, as for C-18 to C-20, which carry C-17's bound through its contract.
 +- **An excepted failure:** C-17's every bounded proof fails F-001's overflow at 92793, which tools/prove.py's EXCEPTED_FAILURES excepts, strictly. Any other failure fails the proof. So does a configuration in which the excepted failure doesn't occur. Mutants count as killed only by another failure. The card and RESULTS.md say "proved except F-001 at 92793".
 +- **Legacy loops unwound:** with `<name>_CONTRACTS := legacy` and `<name>_LOOPS := unwind`, prove.py unwinds the loops with `--unwinding-assertions` before enforcement (legacy-unwind), and needs an UNWINDSET.
-+- **SETUP's one subscripted store:** `p->aColl[k] = c`, a KeyInfo's collation pointer. k is a local, and c is a local set exactly once to `malloc(sizeof(CollSeq))` or `0` and stored nowhere else.
++- **SETUP's one subscripted store:** `p->aColl[k] = c`, a KeyInfo's collation pointer. k is a local, and c is a local set exactly once to `malloc(sizeof(CollSeq))` and stored nowhere else. Not `0`: that would fix the entry as NULL, while `--malloc-may-fail` already gives NULL or a valid CollSeq.
  - **Native tests past the bound:** `tests/bounded/<card>-<k>.c` (k 1 to 9) `#include "sqlite3.c"` from unmodified upstream and test the card's functions past the bounds. tools/native.py builds and runs them with campaign.py's repro command (ASan and UBSan) in its sandbox, as a step of every gate that runs the card. A test passes if it exits 0 with no sanitizer report. Sessions don't run the gate, and inside one the sandbox can't start. Compile and run a test yourself to develop it.
  
  ## Running
@@ -366,7 +368,7 @@ index af164ad..1d6e20b 100755
          mu = '%s/%s%s' % (r['mutants_killed'], r['mutants_total'], (' (+%s equiv.)' % r['mutants_equivalent']) if r['mutants_equivalent'] else '')
          lines.append('| %s |' % ' | '.join(str(x) for x in [r['card'], r['property'], r['proof'], r['functions'], r['config'],
 diff --git a/tools/scan.py b/tools/scan.py
-index 1cf18bc..4f945a2 100755
+index 1cf18bc..e611a3f 100755
 --- a/tools/scan.py
 +++ b/tools/scan.py
 @@ -38,7 +38,8 @@ Rejects:
@@ -375,7 +377,7 @@ index 1cf18bc..4f945a2 100755
       other snapshot loop, and neither appears in the call's statement or in SETUP; in SETUP,
 -     taking an address, `->` but in `p->field = value`, string literals, casts to pointer types but on malloc,
 +     taking an address, `->` but in `p->field = value` and in a KeyInfo's collation pointer `p->aColl[k] = c` (k a
-+     local, c a local set once to malloc(sizeof(CollSeq)) or 0 and stored nowhere else; C-17, Zach 2026-11-11), string literals, casts to pointer types but on malloc,
++     local, c a local set once to malloc(sizeof(CollSeq)) and stored nowhere else; C-17, Zach 2026-11-11), string literals, casts to pointer types but on malloc,
       naming a local array outside sizeof, and a data pointer assigned anything but a malloc result, pointer
       arithmetic on one, or 0; anywhere in a harness, any preprocessor directive but #include (so no macro hides a
       statement from these rules), line splices, digraphs and trigraphs, loop and function contract clauses
@@ -398,7 +400,7 @@ index 1cf18bc..4f945a2 100755
                           r'(?:\s+[A-Za-z_]\w*)*[\s*]*\*[\s*]*\)')
  LHS_ARROW_RX = re.compile(r'[A-Za-z_]\w*\s*->\s*[A-Za-z_]\w*(?:\s*\.\s*[A-Za-z_]\w*)*')
 +# C-17 (Zach, 2026-11-11): the one subscripted store SETUP allows, a KeyInfo's collation pointer, `p->aColl[k] = c`, with
-+# k a local and c a local set once to malloc(sizeof(CollSeq)) or 0 and stored nowhere else (acoll_problems)
++# k a local and c a local set once to malloc(sizeof(CollSeq)), not 0 (the auditor), and stored nowhere else (acoll_problems)
 +ACOLL_LHS_RX = re.compile(r'\s*([A-Za-z_]\w*)\s*->\s*aColl\s*\[\s*([A-Za-z_]\w*)\s*\]\s*')
  TOKEN_RX = re.compile(r'[A-Za-z_]\w*|0[xX][0-9a-fA-F]+\w*|\d+\w*|->|&&|\|\||\+\+|--|[<>=!]=|<<|>>|.', re.S)
  CARD_DIR_FILES = {'harness.c', 'Makefile', 'NOTES.md'}
@@ -422,13 +424,13 @@ index 1cf18bc..4f945a2 100755
          targets = proof.enforced or (card.functions if card else [])
          if not targets:
              continue
-@@ -1086,6 +1102,35 @@ def malloc_sizes(text):
+@@ -1086,6 +1102,36 @@ def malloc_sizes(text):
      return out
  
  
 +def acoll_problems(setup_stmts, local, ptrs):
 +    """[(statement, why)] for SETUP's `p->aColl[k] = c` stores: p a local pointer, k a local, c a local set exactly once
-+    in SETUP to malloc(sizeof(CollSeq)) or 0, and the right-hand side of no other store."""
++    in SETUP to malloc(sizeof(CollSeq)), and the right-hand side of no other store."""
 +    sets, stores = {}, []
 +    for _, st in setup_stmts:
 +        a = top_assignment(st)
@@ -447,9 +449,10 @@ index 1cf18bc..4f945a2 100755
 +            out.append((st, '%s is not a local pointer of the entry function' % p))
 +        elif k not in local:
 +            out.append((st, 'the index %s is not a local of the entry function' % k))
-+        elif c not in local or len(sets.get(c, [])) != 1 or sets[c][0] not in ('malloc(sizeof(CollSeq))', '0'):
-+            out.append((st, '%s must be a local set exactly once in SETUP to malloc(sizeof(CollSeq)) or 0 (it builds a '
-+                            'pointer table entry, never data)' % c))
++        elif c not in local or len(sets.get(c, [])) != 1 or sets[c][0] != 'malloc(sizeof(CollSeq))':
++            out.append((st, '%s must be a local set exactly once in SETUP to malloc(sizeof(CollSeq)) (it builds a pointer '
++                            'table entry, never data; --malloc-may-fail already gives NULL or a valid CollSeq, and a 0 '
++                            'would fix the entry as NULL)' % c))
 +        elif used[c] != 1:
 +            out.append((st, '%s is stored into aColl %d times; each collation pointer may be stored once' % (c, used[c])))
 +    return out
@@ -458,7 +461,7 @@ index 1cf18bc..4f945a2 100755
  def check_bounds(s, where, raw, code, proofs, card, cid):
      """Rule 16, for each proof's ENTRY function."""
      defs = {name: (b, e) for name, _, b, e in top_level_functions(code)}
-@@ -1105,8 +1150,9 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
+@@ -1105,8 +1151,9 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
              local.update(declared_names(st))
              if is_declaration(st) or top_assignment(st):
                  ptrs |= pointer_names(st)
@@ -470,7 +473,7 @@ index 1cf18bc..4f945a2 100755
          inputs = set()
          targets = proof.enforced or (card.functions if card else [])
          m = re.compile(r'\b(%s)\s*\(' % '|'.join(re.escape(x) for x in targets)).search(code, ends[0].end(), e) if targets else None
-@@ -1135,19 +1181,27 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
+@@ -1135,19 +1182,27 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
                  base = pm.group(1) if pm and pm.group(1) in local else None
                  value = base or ''
              names = set(re.findall(_ID, value)) & local
@@ -511,7 +514,7 @@ index 1cf18bc..4f945a2 100755
          declared = {}
          for local_name, kk, what in (bounds or ()):
              rx = re.compile(r'__CPROVER_assume\s*\(\s*%s\s*<=\s*%d\s*\)' % (re.escape(local_name), kk))
-@@ -1158,6 +1212,14 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
+@@ -1158,6 +1213,14 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
              elif local_name not in inputs:
                  s.bad(where, '%s: the bounded local %s is no input of the call under proof' % (proof.name, local_name))
              declared.update({off: local_name for off in hits})
@@ -526,7 +529,7 @@ index 1cf18bc..4f945a2 100755
          for off, st in setup:
              t = st.strip()
              ln = code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1
-@@ -1168,15 +1230,26 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
+@@ -1168,15 +1231,26 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
                  for names, conj in bound_conjuncts(t[t.index('(') + 1:k - 1] if k > 0 else '', inputs, local):
                      s.bad(where, 'line %d: a constant upper bound on %s, an input of the call under proof, that tools/prove.py '
                                   'BOUNDS does not give (a bounded proof needs Zach\'s approval): %s' % (ln, ', '.join(names), conj[:80]))
@@ -555,7 +558,7 @@ index 1cf18bc..4f945a2 100755
      """Rule 16: a bounded proof allocates single objects (`sizeof(T)`) and its BOUNDS buffers only, each used only as
      `<buffer> + <offset>` then the tail terms BOUNDS names, its offset set once to 0 ('start': an underread fails) or `(<size>) - (<extent>)` ('end': an
      overread fails)."""
-@@ -1197,9 +1270,16 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
+@@ -1197,9 +1271,16 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
          for size in malloc_sizes(st):
              if target in bufs and _nospace(size) == _nospace(bufs[target][1]) and '->' not in a[0]:
                  continue
@@ -575,7 +578,7 @@ index 1cf18bc..4f945a2 100755
      for name, size, offname, extent, tails in spec.get('buffers', ()):
          allocs = [1 for _, st in setup if _nospace(st) == _nospace('%s = malloc(%s)' % (name, size))]
          named = set(re.findall(_ID, re.sub(r'\bsizeof\s*\([^()]*\)', ' ', size)))
-@@ -1209,7 +1289,7 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
+@@ -1209,7 +1290,7 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
          if len(allocs) != 1:
              s.bad(where, '%s: tools/prove.py BOUNDS gives the buffer `%s = malloc(%s);`, which SETUP must hold exactly once '
                           '(found %d)' % (pname, name, size, len(allocs)))
@@ -584,7 +587,7 @@ index 1cf18bc..4f945a2 100755
          sets = [(off, st) for off, st in setup if top_assignment(st)
                  and (re.findall(_ID, top_assignment(st)[0]) or [''])[-1] == offname and '->' not in top_assignment(st)[0]]
          if len(sets) != 1 or _nospace(top_assignment(sets[0][1])[1]) != _nospace(want):
-@@ -1252,10 +1332,11 @@ def check_bounded_cards(s, card_proofs):
+@@ -1252,10 +1333,11 @@ def check_bounded_cards(s, card_proofs):
              continue                                   # a tree without the card has nothing to label
          ctext = open(cpath, errors='replace').read()
          merged = os.path.exists(os.path.join(s.root, 'proofs', cid, 'Makefile'))
@@ -598,7 +601,7 @@ index 1cf18bc..4f945a2 100755
              for where, text in (('cards/%s.md' % cid, ctext), ('PROPERTIES.md', ptext)):
                  if line not in text:
                      s.bad(where, 'a bounded proof is labelled here, word for word: %s' % line)
-@@ -1264,6 +1345,18 @@ def check_bounded_cards(s, card_proofs):
+@@ -1264,6 +1346,18 @@ def check_bounded_cards(s, card_proofs):
                                      'tests/bounded/%s-<k>.c' % (cid, cid))
  
  
@@ -617,7 +620,7 @@ index 1cf18bc..4f945a2 100755
  def check_harness_text(s, where, code):
      """Rule 11, anywhere in a harness (checkpoint 0 follow-up 2): no directive but #include, so no macro can hide a
      statement from the other rules; no line splices, digraphs or trigraphs, which spell tokens these rules look for
-@@ -1613,6 +1706,7 @@ def main():
+@@ -1613,6 +1707,7 @@ def main():
      check_overlay_spans(s, overlay_path, all_cards, a.card, a.base)
      check_tree_files(s)
      check_bounded_cards(s, card_proofs)
@@ -626,7 +629,7 @@ index 1cf18bc..4f945a2 100755
          check_preds_growth(s, a.base)
      for p in s.problems:
 diff --git a/tools/tests/test_tools.py b/tools/tests/test_tools.py
-index 0400c83..4c1a226 100755
+index a9e24d0..19cb9b7 100755
 --- a/tools/tests/test_tools.py
 +++ b/tools/tests/test_tools.py
 @@ -589,6 +589,97 @@ def t015_repo(t, card, frame, write, pre='', head=None):
@@ -746,7 +749,7 @@ index 0400c83..4c1a226 100755
                  ('a bound on an allocation\'s size', None, ('  buf = malloc(64);', '  size_t ext;\n  __CPROVER_assume(ext <= 80);\n  buf = malloc(ext);'),
                   'a constant upper bound on ext,'),
                  ('an end-exact offset of 0', None, ('  off = (64) - (n);', '  off = 0;'), 'an end-exact proof sets off exactly once, to `(64) - (n)`'),
-@@ -1930,6 +2024,131 @@ def main():
+@@ -1930,6 +2024,132 @@ def main():
          t.expect('bounds shift: a constant +1 shift fails coverage (every input lacks a byte the requires asks for, so the '
                   'proof passes vacuously)', prc == 0 and 'PASS' in pres and crc != 0 and 'FAIL' in cres, pout[-600:] + cout[-800:])
  
@@ -785,14 +788,15 @@ index 0400c83..4c1a226 100755
 +        # scan's aColl rule
 +        for name, change, ok, needle in (
 +                ('the aColl store of a CollSeq', None, True, ''),
-+                ('the aColl store of 0', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = 0;'), True, ''),
++                ('the aColl store of 0 (it fixes the entry as NULL; --malloc-may-fail already gives NULL or valid)',
++                 ('  c0 = malloc(sizeof(CollSeq));', '  c0 = 0;'), False, 'malloc(sizeof(CollSeq))'),
 +                ('another member', ('  key->aColl[i0] = c0;', '  key->aSortFlags[i0] = c0;'), False, 'key->aSortFlags[i0] = c0'),
-+                ('a data value', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = malloc(8);'), False, 'malloc(sizeof(CollSeq)) or 0'),
++                ('a data value', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = malloc(8);'), False, 'malloc(sizeof(CollSeq))'),
 +                ('a literal on the right', ('  key->aColl[i0] = c0;', '  key->aColl[i0] = 0;'), False, 'key->aColl[i0] = 0'),
 +                ('a shared right-hand side', ('  key->aColl[i0] = c0;', '  key->aColl[i0] = c0;\n  key->aColl[i0] = c0;'), False,
 +                 'stored into aColl 2 times'),
 +                ('its right-hand side set twice', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = malloc(sizeof(CollSeq));\n  c0 = 0;'),
-+                 False, 'malloc(sizeof(CollSeq)) or 0')):
++                 False, 'malloc(sizeof(CollSeq))')):
 +            rr = k_repo(t)
 +            if change:
 +                edit(rr, 'proofs/C-96/harness.c', change[0], change[1])

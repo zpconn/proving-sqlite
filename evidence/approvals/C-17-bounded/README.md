@@ -22,3 +22,14 @@
 - **Tool tests:** `RESULT tool-tests PASS 347/347` on 644b754: `-k c17` 26, `-k bounds` 53. One expectation changed during the work, for a BOUNDS buffer at a variable size: malloc(n) alone is now an allowed exact allocation, so the refusal is that the declared buffer must appear once.
 - **Selftest:** `RESULT selftest PASS 110/110`, guarded; the tmux sessions were intact.
 - **scan.py on the branch:** `RESULT scan PASS 0 problems`. **lock check:** PASS, 60 files.
+
+## The auditor's OK, and the fixes made in the package (2026-11-11)
+- "C-17 package (wip/c17-pkg 644b754): OK to land after part 2. Verified: the patch applied to wip/part2 + orch dc02be4 gives the branch tree; lock PASS 60, scan PASS (all merged cards), -k c17 26/26, bounds 53/53, finding 1/1, legacy 21/21. The constant-input rule is a good addition."
+- **Three fixes, in the package** (the auditor: "in this package if it's cheap"):
+  1. **The aColl rule** allows c set only to `malloc(sizeof(CollSeq))`. A `0` would fix the entry as NULL, and `--malloc-may-fail` already gives NULL or a valid CollSeq. A test refuses `c = 0`. scan.py, HOWTO.md and the test change accordingly.
+  2. **C-17's card, for the round-5 reviewer:** each symbolic allocation's size is the same local as the extent the requires reads (`z_k = malloc(n_k)` with `m_k->n = n_k`; aMem and aSortFlags sized from nField). Scan checks only that the size is an input.
+  3. **C-17's card, for the round-5 builder:** the contract requires `bSkip == 0 || bSkip == 1`, matching the 15 proofs, since C-18 to C-20 replace calls with it. The contract header is the builder's file.
+- **The branch now sits on part 2's final state** (wip/part2 1c0a4c9, with the auditor's prompt change), merged into wip/c17-pkg. proof.lock was rewritten.
+- **patch.diff** is wip/c17-pkg 5a5ee6a against wip/part2 1c0a4c9 merged with orch dc02be4 (b9930a6): 12 files, 464 insertions, 50 deletions. patch-644b754.diff is the one approved.
+- **Results on 5a5ee6a:** `RESULT tool-tests PASS 347/347` (`-k c17` 26/26 with `c = 0` refused), `RESULT selftest PASS 110/110` (guarded; tmux intact), scan PASS, lock PASS 60 files.
+- **When it's applied on orch,** proof.lock is rewritten after the commit, as for every frozen land.

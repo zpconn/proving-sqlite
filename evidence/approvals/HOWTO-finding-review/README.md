@@ -15,3 +15,9 @@ The session itself is started with `tools/campaign.py session finding-review`, b
 - **Tool tests:** `RESULT tool-tests PASS 321/321`, including `-k finding`.
 - **Selftest:** `RESULT selftest PASS 110/110`, run as `env -u TMUX TMUX_TMPDIR=<scratch>`; the live tmux sessions were intact.
 - **lock check** on the branch: PASS, 60 files.
+
+## The auditor's OK, and its one change (2026-11-11)
+- "Part 2 (wip/part2 6248d88): OK to land with one prompt change." In the finding-review prompt's item 1 (F-002), the reviewer also rebuilds and runs F-002's repro and its clean control itself, in $TMPDIR in the foreground, and compares them with evidence/orchestrator/F-002/. If Codex's content filter stops the session (T-005), it is parked for Zach, with no fallback to Claude, the finders' vendor.
+- **Done in 97f8a65:** the prompt gives the exact command, `cc -std=gnu11 -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined -I upstream -o $TMPDIR/f002 evidence/orchestrator/F-002/repro.c -lm -lpthread -ldl`. It then runs `$TMPDIR/f002` and `$TMPDIR/f002 clean` and compares them with campaign-run.txt and campaign-control.txt. The `-k finding` test checks for it. 1c0a4c9 is proof.lock.
+- **patch.diff** is now wip/part2 1c0a4c9 against wip/t015-followup. patch-6248d88.diff is the one approved, and the two differ only by that prompt change, its test, and proof.lock.
+- **Results on 1c0a4c9:** `RESULT tool-tests PASS 321/321`, `RESULT selftest PASS 110/110` (guarded; tmux intact).
