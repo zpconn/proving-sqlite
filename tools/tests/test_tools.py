@@ -1770,6 +1770,12 @@ def main():
             rc, out, res = bscan(rr)
             t.expect('bounds: scan rejects a bounded proof with %s' % name, rc != 0 and want_text in out, out)
         rr = bounds_repo(t)
+        shutil.rmtree(os.path.join(rr, 'proofs', 'C-92'))
+        os.remove(os.path.join(rr, 'tests', 'bounded', 'C-92-1.c'))
+        rc, out, res = bscan(rr)
+        t.expect('bounds: a bounded card with no proofs yet (before its builder\'s round) needs only its labels',
+                 rc == 0 and 'PASS' in res, out)
+        rr = bounds_repo(t)
         edit(rr, H, '  p = buf + off;', '  Rec *one;\n  one = malloc(sizeof(Rec));\n  p = buf + off;')
         rc, out, res = bscan(rr)
         t.expect('bounds: a bounded proof may also allocate one object, sizeof(T)', rc == 0 and 'PASS' in res, out)

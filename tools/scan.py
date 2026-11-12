@@ -70,8 +70,8 @@ Rejects:
      places the pointer in its allocation). A bounded proof's SETUP holds each of its BOUNDS as exactly
      `__CPROVER_assume(<local> <= K);`, once, on an input; it allocates no fixed size but one object
      (`sizeof(T)`), since a fixed buffer would bound an input through a requires; cards/<card>.md and PROPERTIES.md
-     carry `<card> <proof>: bounded: <what> <= K, ...`; and tests/bounded/ holds at least one
-     `<card>-<k>.c` (k 1 to 9), regular files only, which tools/native.py builds and runs.
+     carry `<card> <proof>: bounded: <what> <= K, ...`; and, once proofs/<card>/ exists, tests/bounded/ holds at
+     least one `<card>-<k>.c` (k 1 to 9), regular files only, which tools/native.py builds and runs.
      This rule is a mechanical floor, not a complete one: an input narrowed some other way (a non-constant bound,
      arithmetic that hides the comparison) is the reviewer's to find, as before.
 
@@ -1230,8 +1230,9 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
 
 
 def check_bounded_cards(s, card_proofs):
-    """Rule 16, across the tree: BOUNDS names real proofs (once the card has proofs/<card>/); the label is in the card and
-    PROPERTIES.md; tests/bounded/ holds each bounded card's native tests and nothing else."""
+    """Rule 16, across the tree: the label is in the card and PROPERTIES.md; once the card has proofs/<card>/ (its
+    builder's round, or after it merges), BOUNDS names its proofs and tests/bounded/ holds at least one native test for
+    it; tests/bounded/ holds nothing else."""
     props = os.path.join(s.root, 'PROPERTIES.md')
     ptext = open(props, errors='replace').read() if os.path.exists(props) else ''
     d = os.path.join(s.root, 'tests', 'bounded')
@@ -1253,7 +1254,7 @@ def check_bounded_cards(s, card_proofs):
             for where, text in (('cards/%s.md' % cid, ctext), ('PROPERTIES.md', ptext)):
                 if line not in text:
                     s.bad(where, 'a bounded proof is labelled here, word for word: %s' % line)
-        if not any(BOUND_FILE_RX.match(n) and BOUND_FILE_RX.match(n).group(1) == cid for n in files):
+        if merged and not any(BOUND_FILE_RX.match(n) and BOUND_FILE_RX.match(n).group(1) == cid for n in files):
             s.bad('tests/bounded/', '%s is bounded (tools/prove.py BOUNDS), so it needs a native test past the bound, '
                                     'tests/bounded/%s-<k>.c' % (cid, cid))
 
