@@ -1,0 +1,392 @@
+diff --git a/proof.lock b/proof.lock
+index cb7f5e2..db5e73a 100644
+--- a/proof.lock
++++ b/proof.lock
+@@ -12,6 +12,7 @@ e0c275b9768ec45c7e0ad2c5661e74ff185b4fd0729a32d4d9296e06f3bfe3b3  agents/builder
+ 44b9b26bcff2ff0ff1a12c83169e6e3087b1d9ab4b8de23afc8f57e46fcb04d4  pin.txt
+ 34bf42060964afbbf52b2ff2d30c77061133f9b9d19c0692ef3cc1a317189920  proofs/CHECKS
+ 6ad9d5924a3c11c36b11a33c5dbd32c637a0decba0c53ffcc94fd08054692399  proofs/CONFIGS
++69c2abc85b585e759bad9a4335c0ca32ea025a61ff41af65e8d3dd1c202678f9  proofs/HOWTO.md
+ 9cf75306a48da7d2829baca095af30c87d9338f57561f042b0bf2652cc3a850c  proofs/MUTANTS
+ 3d900297e0883eeaed9ab452aa9dfbce911b0781e38e29d5670157c873aac56b  proofs/Makefile.common
+ ecf22912bd99a291fb9b7979d2855a0b971815bfeb12b4029f56f7f3ce3a7c26  proofs/contracts/memcmp.h
+@@ -27,14 +28,14 @@ d28062752b6b77219f3b5c9ffb0fa3dfbd31a6008ecb80212174bb9ae53eed37  tools/cards.py
+ 0640c2ca3d49f22f8587d3ea97eb7a6453f50bd509a9ef60771babc46f78eb80  tools/fakecli/codex
+ 2ca2da9301c5c196bab1979a3bc91829fb513349dcabfe18326a003a6cce2314  tools/fakecli/fake.py
+ a2b07e7c20e37b6299f84681b88d753fe1b5977eb3a3182231f46d72203bffc1  tools/gate.py
+-db640faba7594aaaccac78609e920410f9dfa6364567adad844555cdd602730e  tools/lock.py
++67f34cd127cf9b2a905a0e0b3d5c82d51620bfa3472d54ca672fa0bee49c27f2  tools/lock.py
+ 86e78969183b2f279086dbffffa4c7401a97f0e24a017446921f5fd3728ac1ca  tools/mutate.py
+ 39d9f0a5c91b9086cc7d78d2c627bca38f67e2781ed8203cee48f8292227260c  tools/native.py
+ 34e0fb1c269cb4e3ecb035a3ef5968e03e8d886b9cf7e360e0525738f5575ddb  tools/overlay.py
+ 49c150b7237dda1d00c1807d4ca25e19de49b4d5509bcdc224591d21cef8fc02  tools/probe/config_probe.c
+-40831d47c532b0aac385a17676c2dc74ecd70574052fff294be63433b1bceca8  tools/prove.py
++960b25bb303d377d23a4d536aaf324854778f6c09b35c63c1c5abd28e58f54d1  tools/prove.py
+ 34628145fafa445e6911215a448ec7b8d312b64a4740f3e135276ba985eff87b  tools/results.py
+-779fc853d2707e0cba56117ef41ceb966aed10d7b12a2ed8f5a6411bb68e21f7  tools/scan.py
++bf4083a81ad15d9ce3733b87429afb147f8aeaffb270ad0b23f54019f5912b21  tools/scan.py
+ 97c9a7c742e5dbcf8b8edf315411e37d160773d48c42a6ca2c641b662d820a1b  tools/tests/legacy/harness.c
+ a6955cb66f4bec234268713f8caf3db5d11e652fc303d81891a56564004892b3  tools/tests/legacy/heads/keep.h
+ 0a1facd9192307970841372073db9831883429f20b17cef480fa13cf30a88f19  tools/tests/legacy/heads/reset.h
+@@ -54,7 +55,7 @@ fa0e01827ff186be3de18907d8b98e291bedf194fe7364cfd2cf34d262075a22  tools/tests/le
+ 8252ec564fdc5cb31fb9e14c17354a8caf57664040e5b953fde11761d237989e  tools/tests/legacy/heads/t_static.h
+ 12f5fb25fb2b29a5f58c8b17ceff4aac33891a52faaff1a52fce513b4e5479ea  tools/tests/legacy/heads/two.h
+ 3a77111d017b5e004129c10635b9d67fa6575c3fd6fdffa5177680fe49270c6b  tools/tests/legacy/toys.c
+-6de1da05c2fb02ed13b470f5651a1aa9d868e8fef7d0c7fbca76ed086f1c5afb  tools/tests/test_tools.py
++b762bfa8695d78b7e98177e7241be6c2fe925f952d72fc7ca5ad33565fefdcbd  tools/tests/test_tools.py
+ d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b  upstream/sqlite-src-3530400.zip
+ b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189  upstream/sqlite3.c
+ 919e7f2e8ed1d8f56ac17b412b8971c76aa5d1a879752cc6058f75e7d5910e1d  upstream/sqlite3.h
+diff --git a/tools/lock.py b/tools/lock.py
+index 1540f46..b1be1e2 100755
+--- a/tools/lock.py
++++ b/tools/lock.py
+@@ -25,7 +25,9 @@ FROZEN = ['pin.txt', 'upstream/', 'GOAL.md', 'AGENTS.md', 'CLAUDE.md', 'agents/'
+           'proofs/contracts/sqlite3DbMallocRaw.h', 'proofs/contracts/vdbeCompareMemString.h',
+           'proofs/contracts/sqlite3CorruptError.h',
+           # B2 (Zach, 2026-11-10): memcmp's boundary contract, LEDGER.md A-006 word for word
+-          'proofs/contracts/memcmp.h']
++          'proofs/contracts/memcmp.h',
++          # T-017 (Zach, 2026-11-11): builder guidance the prompts point to, so a change carries an approval record
++          'proofs/HOWTO.md']
+ EXEMPT = {'tools/sessions.toml'}
+ 
+ 
+diff --git a/tools/prove.py b/tools/prove.py
+index aa17d4e..b93e6a3 100755
+--- a/tools/prove.py
++++ b/tools/prove.py
+@@ -86,20 +86,27 @@ FLOAT2INT_DIRECTIVE = '%float-to-int'
+ LEGACY_CARDS = ('C-15', 'C-17')
+ # Bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/): a proof named here proves its property only for
+ # inputs within these bounds. {card: {proof: {'bounds': ((local, K, what), ...), 'exact': 'end' | 'start',
+-# 'buffers': ((buffer, size, offset, extent), ...)}}}:
++# 'buffers': ((buffer, size, offset, extent, tails), ...)}}}:
+ #   - bounds: the entry function's SETUP holds exactly `__CPROVER_assume(<local> <= K);` for each, where <local> is the
+ #     harness variable that stands for `what`, the input as the function under proof names it;
+ #   - buffers: a bounded proof allocates nothing but single objects (`sizeof(T)`) and these constant-size buffers,
+-#     `<buffer> = malloc(<size>);`, each used only as `<buffer> + <offset>`. Its offset local is set once, to 0 when
+-#     'exact' is 'start' (an underread fails), or to `(<size>) - (<extent>)` when it is 'end' (an overread fails),
+-#     <extent> being the exact extent the contract requires there. A card proves both shapes, as two proofs.
++#     `<buffer> = malloc(<size>);`, each used only as `<buffer> + <offset>`, then only the tail terms named in
++#     `tails` (`+ t`, each a constant local of SETUP). Its offset local is set once, to 0 when 'exact' is 'start' (an
++#     underread fails), or to `(<size>) - (<extent>)` when it is 'end' (an overread fails), <extent> being the exact
++#     extent the contract requires there. A card proves both shapes, as two proofs.
++#   - Each buffer's size must equal the largest extent its bounds allow. Larger, the end-exact offset is never 0 and
++#     the start-exact pointer never ends at the buffer's end, so neither shape is exact for the largest inputs; and a
++#     constant shift of the pointer is caught only because some input uses the whole buffer: −1 then makes pointer
++#     arithmetic leave the buffer (the proof fails), and +1 leaves fewer bytes than the requires asks for every input
++#     (the proof passes vacuously, and coverage fails). Tool tests `-k bounds` show both.
+ # tools/scan.py (rule 16) checks all of this, refuses any other constant upper bound on an input of the call under
+ # proof, and requires the label in the card and PROPERTIES.md; tools/results.py prints the label in RESULTS.md and
+ # results.csv; tools/native.py builds and runs the card's native tests past the bound (tests/bounded/<card>-<k>.c), a
+ # step of every gate that runs the card. Fixed here, in a frozen file, so no card can add, widen or drop a bound.
+ _C15_BOUNDS = (('capacity', 4, 'p->nField'), ('nKey', 256, 'nKey'))
+-_C15_BUFFERS = (('bytes', '256 + 8', 'key_offset', '(size_t)(nKey > 0 ? nKey : 1) + 8'),
+-                ('allocation', 'mem_offset + sizeof(Mem) * 4', 'record_offset', 'mem_offset + sizeof(Mem) * capacity'))
++_C15_BUFFERS = (('bytes', '256 + 8', 'key_offset', '(size_t)(nKey > 0 ? nKey : 1) + 8', ()),
++                ('allocation', 'mem_offset + sizeof(Mem) * 4', 'record_offset', 'mem_offset + sizeof(Mem) * capacity',
++                 ('mem_offset',)))
+ BOUNDS = {
+     'C-15': {'unpack': {'bounds': _C15_BOUNDS, 'exact': 'end', 'buffers': _C15_BUFFERS},
+              'unpack_start': {'bounds': _C15_BOUNDS, 'exact': 'start', 'buffers': _C15_BUFFERS}},
+@@ -107,8 +114,9 @@ BOUNDS = {
+ # T-015 (Zach, 2026-11-11): the legacy engine checks a write inside a contracted loop against that loop's assigns only,
+ # never the loop's frame against the function's. So a legacy build fails unless every assigns target of a loop in an
+ # enforced function is a local or parameter of that function, or appears verbatim (spacing aside) among the targets of
+-# its contract's assigns. A card named here argues the inclusion instead (its reviewer checks it), and RESULTS.md
+-# labels its assigns "reviewed (T-015)", not proved.
++# its contract's assigns: a conditional one (`c: x`) only under the same condition, and only if the function's body
++# assigns none of the names the target or its condition uses. A card named here argues the inclusion instead (its
++# reviewer checks it), and RESULTS.md labels its assigns "reviewed (T-015)", not proved.
+ LEGACY_FRAME_ARGUED = {'C-15': 'its function frame is whole Mem cells, aMem[0..nField), and the loop frame '
+                                'object_from(pMem) lies inside them by the exact layout'}
+ CONTRACT_CLAUSE_RX = re.compile(r'__CPROVER_(requires|ensures|assigns|frees)\b')
+@@ -123,8 +131,9 @@ def bounds_label(card, proof):
+ 
+ 
+ def assigns_clause_targets(text):
+-    """The targets of every __CPROVER_assigns(...) in text, each with its spacing removed: a group's `cond:` prefix
+-    dropped, groups split at ';' and targets at ',' outside parentheses and brackets."""
++    """(condition, target) for every target of every __CPROVER_assigns(...) in text, each with its spacing removed:
++    groups split at ';', a group's `cond:` prefix its condition ('' for none, and for the constant 1), targets split at
++    ',' outside parentheses and brackets."""
+     out = []
+     for m in re.finditer(r'__CPROVER_assigns\s*\(', text):
+         depth, i = 1, m.end()
+@@ -134,11 +143,26 @@ def assigns_clause_targets(text):
+         body = text[m.end():i - 1]
+         for group in _split_top(body, ';'):
+             parts = _split_top(group, ':')
+-            group = parts[-1] if len(parts) > 1 else group
+-            out += [re.sub(r'\s+', '', t) for t in _split_top(group, ',') if t.strip()]
++            cond = re.sub(r'\s+', '', ':'.join(parts[:-1])) if len(parts) > 1 else ''
++            cond = '' if cond == '1' else cond
++            out += [(cond, re.sub(r'\s+', '', t)) for t in _split_top(parts[-1], ',') if t.strip()]
+     return out
+ 
+ 
++_NOT_NAMES = {'sizeof', 'unsigned', 'signed', 'char', 'short', 'int', 'long', 'const', 'struct', 'union', 'void'}
++
++
++def named_identifiers(expr):
++    """The identifiers an assigns target or condition names: not members (after `.` or `->`), not __CPROVER_ names."""
++    return {n for n in re.findall(r'(?<![\w.>])(%s)' % IDENT, expr) if not n.startswith('__CPROVER') and n not in _NOT_NAMES}
++
++
++def assigned_in(body, name):
++    """Whether body assigns name: `name =` or a compound assignment, or `name++`, `++name` and the like."""
++    return re.search(r'(?<![\w.>])%s\s*(?:(?:[-+*/%%&|^]|<<|>>)?=(?!=)|\+\+|--)|(?:\+\+|--)\s*%s\b' % (
++        re.escape(name), re.escape(name)), body) is not None
++
++
+ def _split_top(text, sep):
+     out, depth, start = [], 0, 0
+     for i, ch in enumerate(text):
+@@ -156,7 +180,8 @@ def _split_top(text, sep):
+ def legacy_frame_problems(functions_json, overlay_text, fn, header_text):
+     """T-015: each loop assigns target in fn's body, read from the overlay with its preprocessor lines removed (a PROOF
+     span holds none: scan rule 7), must be a local or parameter of fn (from the goto program) or one of the targets of
+-    contract_<fn>'s assigns."""
++    contract_<fn>'s assigns: under the same condition if the function's is conditional, and naming nothing fn's body
++    assigns."""
+     d = json.loads(functions_json)
+     locals_ = set()
+     for item in d if isinstance(d, list) else []:
+@@ -172,13 +197,26 @@ def legacy_frame_problems(functions_json, overlay_text, fn, header_text):
+         return ['T-015 frame check: %s is not defined in the overlay' % fn]
+     lines = overlay_text.split('\n')[rng[0] - 1:rng[1]]
+     body = _strip_comments('\n'.join(ln for ln in lines if not ln.lstrip().startswith('#')))
+-    allowed = set(assigns_clause_targets(contract_declaration(header_text, fn)[2]))
++    allowed = assigns_clause_targets(contract_declaration(header_text, fn)[2])
+     probs = []
+-    for t in assigns_clause_targets(body):
+-        if t in allowed or t in locals_:
++    for cond, t in assigns_clause_targets(body):
++        if not cond and t in locals_:
++            continue
++        # an unconditional function target covers the loop's under any condition; a conditional one (`c: x`) covers
++        # only a loop target under the same condition (follow-up 1, the auditor and Zach, 2026-11-11)
++        match = [(c, x) for c, x in allowed if x == t and (c == '' or c == cond)]
++        if not match:
++            probs.append('%s\'s loop assigns %s%s, which is neither a local of %s nor one of contract_%s\'s assigns targets%s '
++                         '(T-015: the legacy engine never checks a loop\'s frame against the function\'s)' % (
++                             fn, (cond + ': ') if cond else '', t, fn, fn,
++                             ' under the same condition' if any(x == t for _, x in allowed) else ''))
+             continue
+-        probs.append('%s\'s loop assigns %s, which is neither a local of %s nor one of contract_%s\'s assigns targets '
+-                     '(T-015: the legacy engine never checks a loop\'s frame against the function\'s)' % (fn, t, fn, fn))
++        # a target's meaning moves if the body assigns a name in it or in its condition (a parameter reassigned before
++        # the loop): then the verbatim match proves nothing
++        moved = sorted(n for n in named_identifiers(t) | named_identifiers(match[0][0] + ' ' + cond) if assigned_in(body, n))
++        if moved:
++            probs.append('%s\'s loop assigns %s, which matches contract_%s\'s target, but %s assigns %s, which it names '
++                         '(T-015: the match holds only if the names mean the same at the loop)' % (fn, t, fn, fn, ', '.join(moved)))
+     return probs
+ 
+ 
+diff --git a/tools/scan.py b/tools/scan.py
+index 15b93bc..1cf18bc 100755
+--- a/tools/scan.py
++++ b/tools/scan.py
+@@ -68,8 +68,9 @@ Rejects:
+      assume, `!` aside, comparing an expression that names an input with one that names no local: `x <= K`,
+      `x < K`, `x == K`, `K >= x`, `K > x`, and their negations. A pointer's offset in `x + y` is not an input (it
+      places the pointer in its allocation). A bounded proof's SETUP holds each of its BOUNDS as exactly
+-     `__CPROVER_assume(<local> <= K);`, once, on an input; it allocates no fixed size but one object
+-     (`sizeof(T)`), since a fixed buffer would bound an input through a requires; cards/<card>.md and PROPERTIES.md
++     `__CPROVER_assume(<local> <= K);`, once, on an input; it allocates only single objects (`sizeof(T)`) and
++     the constant-size buffers BOUNDS names, each used only as `<buffer> + <offset>` then the tail terms BOUNDS
++     names, its offset set once to 0 (start-exact) or to `(<size>) - (<extent>)` (end-exact); cards/<card>.md and PROPERTIES.md
+      carry `<card> <proof>: bounded: <what> <= K, ...`; and, once proofs/<card>/ exists, tests/bounded/ holds at
+      least one `<card>-<k>.c` (k 1 to 9), regular files only, which tools/native.py builds and runs.
+      This rule is a mechanical floor, not a complete one: an input narrowed some other way (a non-constant bound,
+@@ -1177,7 +1178,7 @@ def _nospace(x):
+ 
+ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
+     """Rule 16: a bounded proof allocates single objects (`sizeof(T)`) and its BOUNDS buffers only, each used only as
+-    `<buffer> + <offset>`, its offset set once to 0 ('start': an underread fails) or `(<size>) - (<extent>)` ('end': an
++    `<buffer> + <offset>` then the tail terms BOUNDS names, its offset set once to 0 ('start': an underread fails) or `(<size>) - (<extent>)` ('end': an
+     overread fails)."""
+     bufs = {b[0]: b for b in spec.get('buffers', ())}
+     # a constant local: set once in SETUP, from an expression that names no local (sizeof and literals only)
+@@ -1199,7 +1200,7 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
+             if not re.fullmatch(r'\s*sizeof\s*\(\s*[A-Za-z_][\w\s]*\)\s*', size):
+                 s.bad(where, 'line %d: a bounded proof allocates only single objects, sizeof(T), and its BOUNDS buffers '
+                              '(tools/prove.py): malloc(%s)' % (line(off, st), ' '.join(size.split())[:60]))
+-    for name, size, offname, extent in spec.get('buffers', ()):
++    for name, size, offname, extent, tails in spec.get('buffers', ()):
+         allocs = [1 for _, st in setup if _nospace(st) == _nospace('%s = malloc(%s)' % (name, size))]
+         named = set(re.findall(_ID, re.sub(r'\bsizeof\s*\([^()]*\)', ' ', size)))
+         if named - const:
+@@ -1222,11 +1223,13 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs):
+                 continue
+             r = _nospace(a[1])
+             rest = r[len(prefix):] if r.startswith(prefix) else None
+-            ok = rest == '' or (rest is not None and rest.startswith('+') and set(re.findall(_ID, rest)) <= const)
++            terms = rest.split('+')[1:] if rest is not None and rest.startswith('+') else None
++            ok = rest == '' or (terms is not None and all(x in tails and x in const for x in terms))
+             selfs += (re.findall(_ID, a[0]) or [''])[-1] == name
+             if not ok or selfs > 1:
+-                s.bad(where, 'line %d: %s, a BOUNDS buffer, is used only as `%s + %s` (then constant locals), once '
+-                             'if it is reassigned: %s' % (line(off, st), name, name, offname, ' '.join(st.split())[:80]))
++                s.bad(where, 'line %d: %s, a BOUNDS buffer, is used only as `%s + %s`, then the tail terms BOUNDS names (%s), '
++                             'once if it is reassigned: %s' % (line(off, st), name, name, offname,
++                                                                ', '.join(tails) or 'none', ' '.join(st.split())[:80]))
+ 
+ 
+ def check_bounded_cards(s, card_proofs):
+diff --git a/tools/tests/test_tools.py b/tools/tests/test_tools.py
+index bbb470e..073fb27 100755
+--- a/tools/tests/test_tools.py
++++ b/tools/tests/test_tools.py
+@@ -459,9 +459,9 @@ UNB_MK = ('CARD := C-92\nPROOFS := sum rec\nsum_ENTRY := harness_toySum\nsum_LOO
+           'sum_COVER := toySum\n' + REC_MK + 'include ../Makefile.common\n')
+ 
+ 
+-def bspec(k=64, size='64', extent='n'):
+-    one = lambda exact: "{'bounds': (('n', %d, 'n'),), 'exact': '%s', 'buffers': (('buf', '%s', 'off', '%s'),)}" % (  # noqa: E731
+-        k, exact, size, extent)
++def bspec(k=64, size='64', extent='n', tails='()'):
++    one = lambda exact: "{'bounds': (('n', %d, 'n'),), 'exact': '%s', 'buffers': (('buf', '%s', 'off', '%s', %s),)}" % (  # noqa: E731
++        k, exact, size, extent, tails)
+     return "{'sum': %s, 'sum_start': %s}" % (one('end'), one('start'))
+ 
+ 
+@@ -521,7 +521,7 @@ def peek_repo(t):
+     for d, pre in (('upstream', ''), ('overlay', ''), ('overlay-under', '#define PLANT_UNDER\n'), ('overlay-over', '#define PLANT_OVER\n')):
+         t.write(r, d + '/sqlite3.c', pre + BOUNDS_TOY)
+     t.write(r, 'pin.txt', 'upstream/sqlite3.c: %s\n' % hashlib.sha256(BOUNDS_TOY.encode()).hexdigest())
+-    one = lambda exact: "{'bounds': (('n', 8, 'n'),), 'exact': '%s', 'buffers': (('buf', '8', 'off', 'n'),)}" % exact  # noqa: E731
++    one = lambda exact: "{'bounds': (('n', 8, 'n'),), 'exact': '%s', 'buffers': (('buf', '8', 'off', 'n', ()),)}" % exact  # noqa: E731
+     set_bounds(t, r, "{'C-93': {'peek': %s, 'peek_start': %s}}" % (one('end'), one('start')))
+     lines = ['C-93 peek: bounded: n <= 8', 'C-93 peek_start: bounded: n <= 8']
+     t.write(r, 'cards/C-93.md', card_md('C-93', ['toyPeek'], src=BOUNDS_TOY).replace('- Notes: toy\n', '- Notes: toy. %s\n' % '; '.join(lines)))
+@@ -532,6 +532,28 @@ def peek_repo(t):
+     return r
+ 
+ 
++# Follow-up 2 (the auditor and Zach, 2026-11-11): a buffer as large as the largest extent its bounds allow makes a
++# constant shift of the pointer visible. toySum is enforced against a contract that requires exactly n readable bytes.
++SHIFT_HEAD = ('int contract_toySum(const u8 *p, int n)\n'
++              '  __CPROVER_requires(n >= 1 && n <= 8 && __CPROVER_r_ok(p, n))\n'
++              '  __CPROVER_assigns();\n')
++SHIFT_HARNESS = ('#include "sqlite3.c"\n#include "contracts/toySum.h"\n#include <stdlib.h>\n'
++                 'void harness_shift(void) {\n  int n;\n  size_t off;\n  u8 *buf, *p;\n  /* SETUP */\n'
++                 '  __CPROVER_assume(n >= 1);\n  __CPROVER_assume(n <= 8);\n  off = (8) - (n);\n  buf = malloc(8);\n'
++                 '  __CPROVER_assume(buf != 0);\n  p = buf + off SHIFT;\n  /* END SETUP */\n  toySum(p, n);\n}\n')
++
++
++def shift_repo(t, shift):
++    r = t.fresh()
++    t.write(r, 'proofs/contracts/toySum.h', SHIFT_HEAD)
++    t.write(r, 'cards/C-94.md', card_md('C-94', ['toySum'], extra_may='proofs/contracts/toySum.h, '))
++    t.write(r, 'proofs/C-94/harness.c', SHIFT_HARNESS.replace(' SHIFT', shift))
++    t.write(r, 'proofs/C-94/Makefile', 'CARD := C-94\nPROOFS := shift\nshift_ENTRY := harness_shift\n'
++            'shift_ENFORCE := toySum/contract_toySum\nshift_LOOPS := unwind\nshift_UNWINDSET := toySum_wrapped_for_contract_checking.0:9\n'
++            'include ../Makefile.common\n')
++    return r
++
++
+ # T-015: the legacy frame check. f may assign cells[0].a and cells[n-1].a; the loop's frame is either object_from(p),
+ # which isn't among f's targets (the check refuses it), or exactly f's targets (the check passes, and CBMC then checks
+ # the body's writes against it)
+@@ -540,7 +562,7 @@ typedef struct { unsigned a, b; } Cell;
+ void f(Cell *cells, unsigned n) {
+   unsigned i=0;
+   Cell *p=cells;
+-  while(i<n)
++PRE  while(i<n)
+     __CPROVER_assigns(i, p, FRAME)
+     __CPROVER_loop_invariant(i<=n && p==cells+i)
+     __CPROVER_decreases(n-i)
+@@ -555,12 +577,12 @@ T015_HARNESS = ('#include "sqlite3.c"\n#include "contracts/f.h"\n#include <stdli
+                 '  c = malloc(sizeof(Cell) * n);\n  __CPROVER_assume(c != 0);\n  /* END SETUP */\n  f(c, n);\n}\n')
+ 
+ 
+-def t015_repo(t, card, frame, write):
++def t015_repo(t, card, frame, write, pre='', head=None):
+     r = t.fresh()
+-    src = T015_TOY.replace('FRAME', frame).replace('WRITE', write)
++    src = T015_TOY.replace('FRAME', frame).replace('WRITE', write).replace('PRE', pre)
+     for d in ('upstream', 'overlay'):
+         t.write(r, d + '/sqlite3.c', src)
+-    t.write(r, 'proofs/contracts/f.h', T015_HEAD)
++    t.write(r, 'proofs/contracts/f.h', head or T015_HEAD)
+     t.write(r, 'cards/%s.md' % card, card_md(card, ['f'], src=src))
+     t.write(r, 'proofs/%s/harness.c' % card, T015_HARNESS)
+     t.write(r, 'proofs/%s/Makefile' % card, 'CARD := %s\nPROOFS := f\nf_ENTRY := h_f\nf_ENFORCE := f/contract_f\n'
+@@ -1675,6 +1697,14 @@ def main():
+                  "KEYS ['roles.builder.high.model', 'vendors.codex.usage_limit_patterns']" in out2, out2)
+         t.expect('b2: memcmp.h is frozen and lands only with an approval record and proof.lock; tools/sessions.toml may land (T-007)',
+                  'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out and 'TOML []' in out, out)
++        # T-017 (Zach, 2026-11-11): proofs/HOWTO.md is frozen; it lands only with an approval record and proof.lock
++        code = ('import sys; sys.path.insert(0, "tools"); import lock, campaign\n'
++                'print("FROZEN", "proofs/HOWTO.md" in lock.FROZEN)\n'
++                'print("BARE", campaign.land_paths_problems(["proofs/HOWTO.md"], [])[0])\n'
++                'print("OK", campaign.land_paths_problems(["proofs/HOWTO.md", "proof.lock", "evidence/approvals/x/APPROVED.md"], ["evidence/approvals/x/APPROVED.md"])[0])\n')
++        rc, out, res = t.run(t.fresh(), [py, '-c', code])
++        t.expect('T-017: proofs/HOWTO.md is frozen, and lands only with an approval record and proof.lock',
++                 'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out, out)
+ 
+     # ---- bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/): scan rule 16, results, native, gate
+     if want('bounds'):
+@@ -1839,8 +1869,8 @@ def main():
+         t.expect('bounds: make gate CARD=C-92 runs its native tests as a step (native C-92 PASS)',
+                  re.search(r'^  native C-92\s+PASS', out, re.M) is not None, out)
+         # T-015: prove.py's legacy frame check, on T-015's toy
+-        def t015(card, frame, write):
+-            rr = t015_repo(t, card, frame, write)
++        def t015(card, frame, write, pre='', head=None):
++            rr = t015_repo(t, card, frame, write, pre, head)
+             rc_, out_, res_ = t.run(rr, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + card, '--config', 'lp64-le',
+                                          '--build-dir', 'proofs/%s/build' % card])
+             return rc_, out_, res_, legacy_failures(rr, card, 'f')
+@@ -1858,6 +1888,47 @@ def main():
+         t.expect('T-015 pin: for a card that argues its frame (C-15, LEGACY_FRAME_ARGUED), the legacy engine still passes a '
+                  'write outside the function\'s assigns inside a wider loop frame; a CBMC that catches it fails this test',
+                  rc == 0 and 'PASS' in res, out[-1200:])
++        # follow-up 1: a conditional target matches only under the same condition; a name the body reassigns refuses a match
++        HC = T015_HEAD.replace('__CPROVER_assigns(cells[0].a, cells[n-1].a)', '__CPROVER_assigns(cells[0].a; n > 1: cells[1].a)')
++        rc, out, res, _ = t015('C-17', 'cells[0].a, cells[1].a', 'a', head=HC)
++        t.expect('T-015 follow-up: a loop target matching a conditional function target (`n > 1: cells[1].a`) without '
++                 'its condition fails the build', rc != 0 and 'legacy loop frame (T-015)' in out
++                 and 'under the same condition' in out, out[-1200:])
++        rc, out, res, _ = t015('C-17', 'cells[0].a; n > 1: cells[1].a', 'a', head=HC)
++        t.expect('T-015 follow-up: the same target under the same condition passes the check',
++                 'legacy loop frame (T-015)' not in out, out[-1200:])
++        rc, out, res, _ = t015('C-17', 'cells[0].a, cells[n-1].a', 'a', pre='  if( n>1 ) n = 1;\n')
++        t.expect('T-015 follow-up: a verbatim match fails the build when the body reassigns a name it uses '
++                 '(the parameter n, before the loop)', rc != 0 and 'legacy loop frame (T-015)' in out
++                 and 'assigns n, which it names' in out, out[-1200:])
++        # follow-up 2: named tail terms, and why each buffer is exactly as large as the largest extent
++        rr = bounds_repo(t)
++        edit(rr, H, '  p = buf + off;', '  size_t z0;\n  z0 = 0;\n  p = buf + off + z0;')
++        rc, out, res = bscan(rr)
++        t.expect('T-015 follow-up: a tail term after buffer + offset that BOUNDS doesn\'t name fails scan, even a constant',
++                 rc != 0 and 'then the tail terms BOUNDS names (none)' in out, out)
++        rr = bounds_repo(t, "{'C-92': %s}" % bspec(tails="('z0',)"))
++        edit(rr, H, '  p = buf + off;', '  size_t z0;\n  z0 = 0;\n  p = buf + off + z0;')
++        edit(rr, H, '  p = buf + off;', '  size_t z0;\n  z0 = 0;\n  p = buf + off + z0;')
++        rc, out, res = bscan(rr)
++        t.expect('T-015 follow-up: a tail term BOUNDS names, a constant local, passes scan', rc == 0 and 'PASS' in res, out)
++
++        def shift_run(shift):
++            rr = shift_repo(t, shift)
++            pr = t.run(rr, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-94', '--config', 'lp64-le',
++                            '--build-dir', 'proofs/C-94/build'])
++            cv = t.run(rr, [py, 'tools/prove.py', 'coverage', '--card-dir', 'proofs/C-94', '--config', 'lp64-le',
++                            '--build-dir', 'proofs/C-94/build'])
++            return pr, cv
++        (prc, pout, pres), (crc, cout, cres) = shift_run('')
++        t.expect('bounds shift control: the end-exact pointer with no shift proves and covers every line',
++                 prc == 0 and 'PASS' in pres and crc == 0 and 'PASS' in cres, pout[-600:] + cout[-600:])
++        (prc, pout, pres), (crc, cout, cres) = shift_run(' - 1')
++        t.expect('bounds shift: a constant -1 shift fails the proof (at the largest n the pointer leaves the buffer)',
++                 prc != 0 and 'FAIL' in pres, pout[-800:])
++        (prc, pout, pres), (crc, cout, cres) = shift_run(' + 1')
++        t.expect('bounds shift: a constant +1 shift fails coverage (every input lacks a byte the requires asks for, so the '
++                 'proof passes vacuously)', prc == 0 and 'PASS' in pres and crc != 0 and 'FAIL' in cres, pout[-600:] + cout[-800:])
+ 
+     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
+     if want('probe'):

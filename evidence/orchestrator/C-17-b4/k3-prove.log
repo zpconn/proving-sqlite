@@ -1,0 +1,34 @@
+  FAILED b0n1 lp64-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n1 lp64-le FAIL 54s 1366 properties 1 failed
+  FAILED b0n2 lp64-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n2 lp64-le FAIL 51s 1395 properties 1 failed
+  FAILED b0n3 lp64-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n3 lp64-le FAIL 58s 1424 properties 1 failed
+  FAILED b1n2 lp64-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b1n2 lp64-le FAIL 58s 1395 properties 1 failed
+  FAILED b1n3 lp64-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b1n3 lp64-le FAIL 77s 1424 properties 1 failed
+RESULT prove C-17 lp64-le FAIL 298s 7004 properties 5 failed
+  FAILED b0n1 ilp32-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n1 ilp32-le FAIL 55s 1366 properties 1 failed
+  FAILED b0n2 ilp32-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n2 ilp32-le FAIL 53s 1395 properties 1 failed
+  FAILED b0n3 ilp32-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n3 ilp32-le FAIL 56s 1424 properties 1 failed
+  FAILED b1n2 ilp32-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b1n2 ilp32-le FAIL 50s 1395 properties 1 failed
+  FAILED b1n3 ilp32-le [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b1n3 ilp32-le FAIL 58s 1424 properties 1 failed
+RESULT prove C-17 ilp32-le FAIL 272s 7004 properties 5 failed
+  FAILED b0n1 lp64-be [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n1 lp64-be FAIL 58s 1366 properties 1 failed
+  FAILED b0n2 lp64-be [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n2 lp64-be FAIL 57s 1395 properties 1 failed
+  FAILED b0n3 lp64-be [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b0n3 lp64-be FAIL 59s 1424 properties 1 failed
+  FAILED b1n2 lp64-be [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b1n2 lp64-be FAIL 53s 1395 properties 1 failed
+  FAILED b1n3 lp64-be [sqlite3VdbeRecordCompareWithSkip.overflow.6] line 92797 arithmetic overflow on signed unary minus in -rc
+RESULT prove C-17/b1n3 lp64-be FAIL 74s 1424 properties 1 failed
+RESULT prove C-17 lp64-be FAIL 301s 7004 properties 5 failed
+RESULT prove C-17 all FAIL 871s 21012 properties 15 failed

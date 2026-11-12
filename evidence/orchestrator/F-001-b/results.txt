@@ -1,0 +1,30 @@
+== -O2 intmin desc
+  integrity_check: 2000 lines, 2000 errors
+  equality lookups: 2001 rows, 2000 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+== -O2 control desc
+  integrity_check: 1 lines, 0 errors
+  equality lookups: 2001 rows, 0 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+== -O2 intmin asc
+  integrity_check: 1 lines, 0 errors
+  equality lookups: 2001 rows, 0 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+== -O0 intmin desc
+  integrity_check: 2000 lines, 2000 errors
+  equality lookups: 2001 rows, 2000 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+== -O0 control desc
+  integrity_check: 1 lines, 0 errors
+  equality lookups: 2001 rows, 0 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+== -O0 intmin asc
+  integrity_check: 1 lines, 0 errors
+  equality lookups: 2001 rows, 0 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1

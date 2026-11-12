@@ -1,0 +1,14 @@
+# Pin for proving-sqlite milestone 1. SHA-256 unless noted.
+sqlite_version: 3.53.4
+sqlite_source_id: 2026-07-24 19:02:57 bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e09459bcc
+checkin: bf7c7f30031888f4e796e429ab3978879485813aaca6f641c7b33e4e09459bcc
+amalgamation_url: https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip
+amalgamation_zip_sha256: 1e71ddf93849c6a6ecf58b827c0692073d2dd7ee40196158068f7b29f422e87d
+source_release_url: https://www.sqlite.org/2026/sqlite-src-3530400.zip
+upstream/sqlite3.c: b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189
+upstream/sqlite3.c sha3-256: 67f423e9ebbbdc473cbc4772c872ee6b89f31fde4ed0279a5c25d5f65c043a16 (matches "SHA3-256 for sqlite3.c" in sqlite.org/releaselog/3_53_4.html)
+upstream/sqlite3.h: 919e7f2e8ed1d8f56ac17b412b8971c76aa5d1a879752cc6058f75e7d5910e1d
+upstream/sqlite-src-3530400.zip: d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b (manifest.uuid inside = checkin above)
+cbmc: 6.11.0 (cbmc-6.11.0)
+cbmc_solvers: built-in SAT minisat2 (default), cadical, glucose, ipasir (--sat-solver); external SMT z3 4.8.12 via --z3/--smt2; cvc5, bitwuzla, cprover-smt2 not installed
+newer_sqlite_release_seen: 3.54.1 (sqlite.org/download.html, 2026-11-08); pin stays 3.53.4 per GOAL.md §1.1
