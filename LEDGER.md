@@ -99,17 +99,20 @@ Lines are upstream/sqlite3.c's.
 - Evidence: tested (ledger agent run 2026-11-10, J0079: 945 or more checks, 0 violations; site reached; reports/ledger-2026-11-10.md). Not tested: an application log callback, which no run installed, so a callback that writes where it shouldn't is untested.
 - Status: tested
 
-## A-005 Nine writable bytes at a varint's output
-- Function(s): sqlite3PutVarint (37991), and putVarint64 (37967) called directly (C-01's contracts).
-- Clause, as CBMC states it: `__CPROVER_requires(__CPROVER_w_ok(p, 9))`. This is proofs/contracts/sqlite3PutVarint.h's requires, as merged in C-01; putVarint64's contract has the same.
-- Plain English: callers provide nine writable bytes starting at the output pointer. The bytes' contents and the u64 value are unrestricted.
-- Why the proof needs it:
-  - Without it, putVarint64 stores p[8] outside the object (extent 3, offset 3, v = 9223372037123211264; 37971).
-  - Without it, sqlite3PutVarint stores p[0] outside an empty one (extent 8, offset 8; 37993).
-  - Eight bytes are not enough, because the ninth-byte store exceeds the object. (reports/C-01-b2.md; C-01's builder proposed this entry.)
-- Who must make it true: callers in later milestones: the record and b-tree writers, and the sorter (balance_nonroot, fillInCell, sqlite3BtreeTransferRow, sqlite3VdbeExec, vdbePmaWriteVarint). One example is vdbePmaWriteVarint's `aByte[10]` (108087–108088); that one example does not establish the obligation for the others. In milestone 1, C-02's harness supplies `buffer[9]`.
-- Evidence: tested (ledger agent run 2026-11-10, J0079): no write overflowed in about 125M calls. But callers give `sqlite3VarintLen(v)` bytes, not 9 (OP_MakeRecord), so this requires isn't met at real calls, though the writes are safe (reports/ledger-2026-11-10.md).
-- Status: draft. Zach (2026-11-11): C-01 is reopened for a footprint that depends on the value written; this entry is restated when that contract is approved.
+## A-005 Writable bytes at a varint's output, as many as the value needs
+- Function(s): sqlite3PutVarint (37991), and putVarint64 (37967) called directly (C-01's contracts, restated in C-01's round 4, merged 2026-11-11).
+- Clause, as CBMC states it (proofs/contracts/sqlite3PutVarint.h's requires; putVarint64's is the same):
+  ~~~
+  __CPROVER_requires(__CPROVER_w_ok(p, (1 + (v >= ((u64)1 << 7)) + (v >= ((u64)1 << 14))
+      + (v >= ((u64)1 << 21)) + (v >= ((u64)1 << 28))
+      + (v >= ((u64)1 << 35)) + (v >= ((u64)1 << 42))
+      + (v >= ((u64)1 << 49)) + (v >= ((u64)1 << 56)))))
+  ~~~
+- Plain English: a caller writing v provides that many writable bytes at p: one byte below 2^7, k bytes from 2^(7(k−1)) through 2^(7k)−1 for k = 2..8, and nine bytes for every v >= 2^56. That is min(sqlite3VarintLen(v), 9), so sqlite3VarintLen(v) bytes always suffice. The bytes' contents are unrestricted.
+- Why the proof needs it: without it, the writers store outside the object. C-01 proves exactly k bytes suffice in each length band, on all three configurations, and that one byte less gives a bounds counterexample in every band (reports/C-01-b4.md).
+- Who must make it true: callers in later milestones: the record and b-tree writers and the sorter. OP_MakeRecord budgets sqlite3VarintLen per serial type; vdbePmaWriteVarint supplies `aByte[10]`; C-02's harness supplies `buffer[9]`. Those examples don't establish it for every call.
+- Evidence: tested against the old nine-byte clause (ledger agent run 2026-11-10, J0079): no write overflowed in about 125M calls, while 6,518 + 363 calls had fewer than nine addressable bytes, which this restatement allows. The second ledger run retests it as restated (evidence/orchestrator/ledger-run-2.md).
+- Status: draft. Restated (Zach, 2026-11-11: C-01 reopened for a footprint that depends on the value written); the old nine-byte clause was not met at real calls.
 
 ## A-006 memcmp reads n bytes of each argument, writes nothing, and returns a value in [-255, 255]
 - Function(s): memcmp, the C library's, a boundary callee of sqlite3VdbeRecordCompareWithSkip (C-17: 92739, 92767) and vdbeRecordCompareString (C-19: 92975).
