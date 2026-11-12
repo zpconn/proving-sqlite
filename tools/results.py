@@ -22,7 +22,7 @@ import prove  # noqa: E402
 
 COLS = ['card', 'property', 'proof', 'functions', 'config', 'status', 'cbmc_seconds', 'properties', 'failed',
         'lines_covered', 'lines_total', 'uncovered_lines', 'mutants_killed', 'mutants_total', 'mutants_equivalent',
-        'review', 'ledger_entries', 'argued', 'bounds', 'assigns', 'prove_from', 'coverage_from', 'mutants_from']
+        'review', 'ledger_entries', 'argued', 'bounds', 'assigns', 'excepted', 'prove_from', 'coverage_from', 'mutants_from']
 
 # Inputs a proof leaves to argument, by function (Zach's decision on C-11, 2026-11-10,
 # evidence/approvals/C-11-f2i-exact-min/; PROPERTIES.md change 7). Fixed here, in a frozen file, so no card can drop it.
@@ -121,6 +121,7 @@ def rows(root):
                         'review': rv, 'ledger_entries': ledger_entries(root, pr) if pr else '',
                         'argued': argued_notes(pr), 'bounds': prove.bounds_label(cid, r['proof']),
                         'assigns': assigns_status(cid, pr),
+                        'excepted': prove.EXCEPTED_FAILURES[cid][0]['label'] if r.get('excepted') and cid in prove.EXCEPTED_FAILURES else '',
                         'prove_from': frm['prove_summary'], 'coverage_from': frm['coverage_summary'], 'mutants_from': frm['mutants']})
     return out
 
@@ -140,11 +141,14 @@ def results_md(rs):
              'its Argued column names, which is *argued* in UB-CLASSES.md and *tested*. A row with a Bounds column is '
              'proved only for inputs within those bounds, and *tested* past them by tests/bounded/ (PROPERTIES.md, '
              'bounded proofs). The Assigns column says how the contract\'s frame is established: *proved*, or *reviewed* where '
-             'CBMC\'s legacy engine leaves a loop\'s frame unchecked against it (T-015, TRUSTED.md). Ledger entries are '
+             'CBMC\'s legacy engine leaves a loop\'s frame unchecked against it (T-015, TRUSTED.md). A status of "PASS (proved '
+             'except F-001 at 92793)" means the only failure is that finding\'s, which tools/prove.py excepts '
+             '(PROPERTIES.md change 9). Ledger entries are '
              '*assumed*; see LEDGER.md. CBMC itself is *trusted*; see TRUSTED.md.', '',
              '| Card | Prop | Proof | Functions | Config | Status | CBMC s | Properties | Failed | Coverage | Mutants killed | Review | Ledger | Argued | Bounds | Assigns |',
              '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|']
     for r in rs:
+        r = dict(r, status=r['status'] + (' (%s)' % r['excepted'] if r.get('excepted') else ''))
         cov = '%s/%s' % (r['lines_covered'], r['lines_total']) if r['lines_total'] != '' else ''
         mu = '%s/%s%s' % (r['mutants_killed'], r['mutants_total'], (' (+%s equiv.)' % r['mutants_equivalent']) if r['mutants_equivalent'] else '')
         lines.append('| %s |' % ' | '.join(str(x) for x in [r['card'], r['property'], r['proof'], r['functions'], r['config'],
