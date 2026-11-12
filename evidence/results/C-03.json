@@ -311,7 +311,7 @@
     }
    },
    "proof": "separate",
-   "seconds": 0
+   "seconds": 1
   },
   {
    "card": "C-03",
@@ -667,7 +667,7 @@
    "float_to_int_properties": 0,
    "proof": "separate",
    "properties": 331,
-   "seconds": 23,
+   "seconds": 28,
    "status": "PASS"
   },
   {
@@ -680,39 +680,13 @@
    "float_to_int_properties": 0,
    "proof": "shared",
    "properties": 339,
-   "seconds": 20,
+   "seconds": 22,
    "status": "PASS"
   },
   {
    "card": "C-03",
    "cbmc_seconds": 0,
    "config": "ilp32-le",
-   "error": null,
-   "failed": 0,
-   "failures": [],
-   "float_to_int_properties": 0,
-   "proof": "separate",
-   "properties": 331,
-   "seconds": 24,
-   "status": "PASS"
-  },
-  {
-   "card": "C-03",
-   "cbmc_seconds": 1,
-   "config": "ilp32-le",
-   "error": null,
-   "failed": 0,
-   "failures": [],
-   "float_to_int_properties": 0,
-   "proof": "shared",
-   "properties": 339,
-   "seconds": 15,
-   "status": "PASS"
-  },
-  {
-   "card": "C-03",
-   "cbmc_seconds": 0,
-   "config": "lp64-be",
    "error": null,
    "failed": 0,
    "failures": [],
@@ -725,6 +699,32 @@
   {
    "card": "C-03",
    "cbmc_seconds": 1,
+   "config": "ilp32-le",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "shared",
+   "properties": 339,
+   "seconds": 21,
+   "status": "PASS"
+  },
+  {
+   "card": "C-03",
+   "cbmc_seconds": 0,
+   "config": "lp64-be",
+   "error": null,
+   "failed": 0,
+   "failures": [],
+   "float_to_int_properties": 0,
+   "proof": "separate",
+   "properties": 331,
+   "seconds": 27,
+   "status": "PASS"
+  },
+  {
+   "card": "C-03",
+   "cbmc_seconds": 1,
    "config": "lp64-be",
    "error": null,
    "failed": 0,
@@ -732,15 +732,15 @@
    "float_to_int_properties": 0,
    "proof": "shared",
    "properties": 339,
-   "seconds": 22,
+   "seconds": 23,
    "status": "PASS"
   }
  ],
  "provenance": {
   "coverage_summary": {
-   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
-   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
-   "gate_log": "evidence/gate/C-04-r1.log"
+   "commit": "eca6106c9181f032d4419019f5579fcae0773261",
+   "gate": "make gate CARD=C-01 (merge of C-01 r4)",
+   "gate_log": "evidence/gate/C-01-r4.log"
   },
   "mutants": {
    "commit": "994880ea6ae3a384e8052512381745124f0bf5cb",
@@ -748,9 +748,9 @@
    "gate_log": "evidence/gate/C-03-r1.log"
   },
   "prove_summary": {
-   "commit": "15459af7f0d4e9ee1a3ff18e01fcb4cb077d98aa",
-   "gate": "make gate CARD=C-04 (merge of C-04 r1)",
-   "gate_log": "evidence/gate/C-04-r1.log"
+   "commit": "eca6106c9181f032d4419019f5579fcae0773261",
+   "gate": "make gate CARD=C-01 (merge of C-01 r4)",
+   "gate_log": "evidence/gate/C-01-r4.log"
   }
  }
 }
