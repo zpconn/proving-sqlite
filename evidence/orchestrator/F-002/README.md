@@ -5,4 +5,4 @@
 - **`campaign-run.txt`:** campaign.py's `run_repros` (tools/campaign.py) built and ran it against main's upstream/sqlite3.c (b1dd5d74…), in its sandbox with no network, no $HOME and an empty environment. Build exit 0, run exit 1: ASan heap-buffer-overflow READ in serialGet 91950, via sqlite3VdbeSerialGet 92064, sqlite3VdbeRecordUnpack 92143, vdbeUnpackRecord 95888 and sqlite3_preupdate_old 95944.
 - **`campaign-control.txt`:** the same fixed build and sandbox, run with argument `clean` (no corruption): exit 0, no report.
 - **The auditor** reproduced it natively too (Zach, 2026-11-11): gcc -O1 ASan, only `-DSQLITE_ENABLE_PREUPDATE_HOOK`, the same stack, and the control clean.
-- **Status:** reproduced, waiting for a reviewer on the other vendor from the ledger agent (Claude). That is C-17's round-4 Codex reviewer (cards/C-17.md). Then it goes into FINDINGS.md as F-002, with tests/repro/F-002.c.
+- **Status:** reproduced. Judged by a one-off Codex session (J0117, reviews/finding-r1.md: APPROVE, 2026-11-11), which rebuilt and reran the repro and its control. It is FINDINGS.md F-002, with tests/repro/F-002.c, which is repro.c.

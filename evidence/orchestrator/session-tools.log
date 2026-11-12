@@ -12,3 +12,4 @@
 2026-11-11T20:03:53 J0092-builder claude OK | Bash=200 Edit=4 Monitor=1 Read=2 TaskStop=7 ToolSearch=1 Write=2
 2026-11-11T21:57:23 J0111-builder codex OK | exec=30 tools.exec_command=43 tools.write_stdin=12
 2026-11-11T22:29:53 J0115-reviewer claude OK | Bash=67 Monitor=1 ToolSearch=1 Write=2
+2026-11-11T22:52:24 J0117-oneoff codex OK | exec=29 tools.apply_patch=1 tools.exec_command=24 tools.write_stdin=6
