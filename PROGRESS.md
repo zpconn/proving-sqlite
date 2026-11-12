@@ -25,6 +25,26 @@
      - `--arrays-uf-always`: CBMC crash (T-016).
    - **Start-exact measurement** (K=4, N=256): 203, 108 and 182 s, each with 1,757 properties and 0 failed.
    - **Tests:** tool tests 311/311, selftest 110/110.
+2. **C-17, round 4 NEEDS-DECISION** (reports/C-17-b4.md on card/C-17). B1 holds under legacy, so your advance decision applies: a bounded P1. The measurements:
+   - String and blob lengths need no bound (L = none), since memcmp, A-003 and isAllZero are all contracts.
+   - Today's tools (DFCC): K ≤ 5 for the proof, K ≤ 3 for coverage. Memory grows about 2.5 GB per field, and nField = 6 needs 13.3 GB.
+   - Legacy with the loop unwound before enforcement: K = 16, worst 171 s and 3.5 GB, on lp64-le only. K = 24 takes 594 s, at the timeout; K = 32 takes 27 min and 16.4 GB.
+   - The cost per configuration: K = 16 is 31 proofs and 39.5 min of CBMC; K = 8 is 15 proofs and 4.4 min.
+
+   Its decisions, with my recommendations:
+   - **(a) The bound. Recommended: K = 8 in the gate,** with K = 16 measured once, not gated, as for C-15.
+     - K = 16 in the gate would add about 4 hours to every full gate: 39.5 min × 3 configurations × 2 allocation shapes.
+     - K = 8 adds about 26 minutes.
+     - L = none either way.
+   - **(b) A prove.py pass for legacy proofs with `LOOPS := unwind`:** goto-instrument `--unwindset ... --unwinding-assertions` between legacy-replace and legacy-enforce. It's needed for any K > 5. **Recommended: yes**, a frozen change, with toys showing a planted assigns bug caught and the unwinding assertion kept. With no loop contract, T-015 doesn't arise.
+   - **(c) Scan SETUP:** allow `p->aColl[k] = c`, with p and c malloc results (c may be 0) and k a local size_t. It builds a pointer table entry, not data bytes; without it, no harness can give a field a collation. **Recommended: yes, with tests.**
+   - **(d) F-001 inside the proof:** every bounded run fails exactly the 92793 negation, through A-003's unbounded result. **Recommended: the builder's (a) with (c):** a frozen table names that one property, by name and line, as F-001's. The gate accepts it, and RESULTS.md says "proved but for F-001 at 92793". A ledger bound on xCmp's result would assume away a reproduced finding.
+   - **(e)** C-18 to C-20 inherit the bound and the per-field clauses, as you decided. The label mechanism comes with C-17's BOUNDS entry.
+   - **Also:**
+     - both allocation shapes, start-exact and end-exact, apply to C-17 (your fallback); round 4 predates that, so round 5 measures both, on all three configurations;
+     - the native test past the bound goes in tests/bounded/C-17-<k>.c, a mechanism that now exists. The builder's past.c ran 300,000 trials up to nField 120 with no sanitizer report;
+     - the builder's new ledger draft becomes A-008: each compared field is a well-formed Mem, and each collation pointer is NULL or a CollSeq.
+   - **F-002 and F-001-b's Codex judgement:** J0092 reported NEEDS-DECISION, so no reviewer ran. The next C-17 reviewer is far off, behind the tool changes above. **Recommended: the separate one-off Codex session now.**
 
 Answered on 2026-11-11:
 - **C-15's bounded package:** the auditor's OK on wip/bounds 5111466; landing with APPROVED.md and proof.lock (59 files), all but proofs/HOWTO.md, which no land can change (T-017). Its section is in the approval record. Zach: K=4, N=256 stays in the gate. The K=8, N=256 PASS (1,036 s) goes in C-15's NOTES.md as "measured once, not gated", with no timeout change. Follow-ups 1 and 2 (T-015 conditions and reassignment; rule 16's named tail terms) are a small frozen change before C-17 merges. Follow-up 3, the reviewer's own check of tests/bounded/C-15-1.c, is in the card.
@@ -119,3 +139,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-11 17:46 C-15 round 4 NEEDS-DECISION: K=4/N=256 passes on all three configurations (slowest 290 s); M-050, M-051 and M-063 are killed. T-015 confirmed by me (legacy doesn't check a loop's frame against the function's assigns). prove.py's legacy coverage bug (my T-006 error) is fixed on wip/bounds. C-15 parked; the encoding diagnostic is running.
 - 2026-11-11 18:37 Zach's C-15 decisions applied on wip/bounds. Diagnostic done: none reaches K=8 within 600 s, so K=4, N=256. The start-exact shape passes on all three configurations. T-016 is the `--arrays-uf-always` crash. The approval request (C-15-bounded) waits for the auditor's OK; tool tests 311/311, selftest 110/110.
 - 2026-11-11 19:08 C-15's bounded package approved and queued to land (full gate). F-001-b added and reproduced. C-17's fallback recorded. The follow-ups are on wip/t015-followup.
+- 2026-11-11 20:04 C-17 round 4 NEEDS-DECISION: B1 holds under legacy. Measured: K = 16 on legacy-unwind (a tools change), K = 5 on DFCC, L = none; F-001 fails inside every bounded run. C-17 parked (Open questions 2).
