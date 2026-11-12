@@ -1,0 +1,42 @@
+CBMC version 6.11.0 (cbmc-6.11.0) 64-bit x86_64 linux
+Reading GOTO program from file tmp/b4/direct-bad/c.goto
+Generating GOTO Program
+Adding CPROVER library (x86_64)
+Removal of function pointers and virtual functions
+Generic Property Instrumentation
+Starting Bounded Model Checking
+Passing problem to propositional reduction
+converting SSA
+Running propositional reduction
+SAT checker: instance is SATISFIABLE
+Running propositional reduction
+SAT checker inconsistent: instance is UNSATISFIABLE
+
+** Results:
+<builtin-library-malloc> function malloc
+[malloc.assertion.1] line 31 max allocation size exceeded: SUCCESS
+[malloc.assertion.2] line 36 max allocation may fail: SUCCESS
+
+tmp/b4/direct-bad/toy.c function f
+[f.pointer_primitives.1] line 4 pointer invalid in W_OK(tmp_cc, sizeof(Cell) /*8ul*/  * (unsigned long int)tmp_cc$0): SUCCESS
+[f.pointer_primitives.2] line 4 deallocated dynamic object in W_OK(tmp_cc, sizeof(Cell) /*8ul*/  * (unsigned long int)tmp_cc$0): SUCCESS
+[f.pointer_primitives.3] line 4 dead object in W_OK(tmp_cc, sizeof(Cell) /*8ul*/  * (unsigned long int)tmp_cc$0): SUCCESS
+[f.pointer_primitives.4] line 4 pointer outside object bounds in W_OK(tmp_cc, sizeof(Cell) /*8ul*/  * (unsigned long int)tmp_cc$0): SUCCESS
+[f.assigns.1] line 5 Check that (cells + (signed long int)0)->a is valid when 1 != 0: SUCCESS
+[f.assigns.2] line 5 Check that (cells + (signed long int)1)->a is valid when n > (unsigned int)1: SUCCESS
+[f.assigns.3] line 7 Check that (cells + (signed long int)0)->b is assignable: FAILURE
+[f.pointer_arithmetic.1] line 7 pointer arithmetic: pointer NULL in cells + (signed long int)0: SUCCESS
+[f.pointer_arithmetic.2] line 7 pointer arithmetic: pointer invalid in cells + (signed long int)0: SUCCESS
+[f.pointer_arithmetic.3] line 7 pointer arithmetic: deallocated dynamic object in cells + (signed long int)0: SUCCESS
+[f.pointer_arithmetic.4] line 7 pointer arithmetic: dead object in cells + (signed long int)0: SUCCESS
+[f.pointer_arithmetic.5] line 7 pointer arithmetic: pointer outside object bounds in cells + (signed long int)0: SUCCESS
+[f.pointer_arithmetic.6] line 7 pointer arithmetic: invalid integer address in cells + (signed long int)0: SUCCESS
+[f.pointer_dereference.1] line 7 dereference failure: pointer NULL in (cells + (signed long int)0)->b: SUCCESS
+[f.pointer_dereference.2] line 7 dereference failure: pointer invalid in (cells + (signed long int)0)->b: SUCCESS
+[f.pointer_dereference.3] line 7 dereference failure: deallocated dynamic object in (cells + (signed long int)0)->b: SUCCESS
+[f.pointer_dereference.4] line 7 dereference failure: dead object in (cells + (signed long int)0)->b: SUCCESS
+[f.pointer_dereference.5] line 7 dereference failure: pointer outside object bounds in (cells + (signed long int)0)->b: SUCCESS
+[f.pointer_dereference.6] line 7 dereference failure: invalid integer address in (cells + (signed long int)0)->b: SUCCESS
+
+** 1 of 21 failed (2 iterations)
+VERIFICATION FAILED

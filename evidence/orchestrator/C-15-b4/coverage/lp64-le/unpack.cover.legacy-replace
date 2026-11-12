@@ -1,0 +1,9 @@
+$ goto-instrument --replace-call-with-contract sqlite3GetVarint32 --replace-call-with-contract sqlite3VdbeSerialTypeLen --replace-call-with-contract sqlite3VdbeMemSetNull --replace-call-with-contract serialGet tmp/b4/coverage/lp64-le/unpack.1.goto tmp/b4/coverage/lp64-le/unpack.2a.goto
+Reading GOTO program from 'tmp/b4/coverage/lp64-le/unpack.1.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Replacing function calls with contracts
+line 24 function __CPROVER_replace_ensures_is_fresh: function 'malloc' is not declared
+Writing GOTO program to 'tmp/b4/coverage/lp64-le/unpack.2a.goto'

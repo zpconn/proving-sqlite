@@ -1,0 +1,54 @@
+Reading GOTO program from 'BAD.a.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Enforcing contracts
+Found CFG SCC with size 5
+        // 30 file toy.c line 21 function f
+        ASSIGN f::1::p := f::1::p + 1
+
+        // 29 file toy.c line 21 function f
+        ASSIGN f::1::i := f::1::i + 1
+
+        // 28 file toy.c line 19 function f
+        ASSIGN *f::1::p.b := cast(0, unsignedbv[32])
+
+        // 27 file toy.c line 11 function f
+     1: IF ¬(f::1::i < f::n) THEN GOTO 2
+
+        // 27 file toy.c line 11 function f
+     1: IF ¬(f::1::i < f::n) THEN GOTO 2
+
+        // 27 file toy.c line 11 function f
+     1: IF ¬(f::1::i < f::n) THEN GOTO 2
+
+        // 27 file toy.c line 11 function f
+     1: IF ¬(f::1::i < f::n) THEN GOTO 2
+
+        // 27 file toy.c line 11 function f
+     1: IF ¬(f::1::i < f::n) THEN GOTO 2
+
+--- begin invariant violation report ---
+Invariant check failed
+File: ../src/goto-instrument/contracts/contracts.cpp:1164 function: check_frame_conditions_function
+Condition: is_loop_free(function_body, ns, log)
+Reason: Loops remain in function 'f', assigns clause checking instrumentation cannot be applied.
+Backtrace:
+goto-instrument(+0x9c04c3) [0x601dfa4424c3]
+goto-instrument(+0x9c15e3) [0x601dfa4435e3]
+goto-instrument(+0x158952) [0x601df9bda952]
+goto-instrument(+0x2510f0) [0x601df9cd30f0]
+goto-instrument(+0x256768) [0x601df9cd8768]
+goto-instrument(+0x257bc9) [0x601df9cd9bc9]
+goto-instrument(+0x15fcbf) [0x601df9be1cbf]
+goto-instrument(+0x163244) [0x601df9be5244]
+goto-instrument(+0x156c6b) [0x601df9bd8c6b]
+goto-instrument(+0x14ac6d) [0x601df9bccc6d]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca) [0x762ac242a1ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b) [0x762ac242a28b]
+goto-instrument(+0x157e75) [0x601df9bd9e75]
+
+
+--- end invariant violation report ---
+Aborted (core dumped)

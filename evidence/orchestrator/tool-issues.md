@@ -188,3 +188,19 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Repro:** evidence/orchestrator/tool-issues/T-014/legacy-slice.c with FRAME set as above; the commands are in C-15-b3.md. The builder's runs; not yet rerun by me.
 - **Effect:** C-15's frame uses the workaround. Even so, its full-domain runs give no verdict (memory, VERIFICATION ERROR or a timeout), while a bounded diagnostic proves (64 bytes, at most 4 fields: 2,017 properties, 0 failed, 128 s). Per Zach's decision in advance, C-15 moves to a bounded P1.
 - **Workaround:** frame from the loop-carried local pointer (`object_from(p)`), not from a dereferenced base and length.
+
+## T-015 CBMC 6.11.0 legacy contracts: a loop's frame isn't checked against the function's assigns (confirmed)
+
+- **Tool:** CBMC 6.11.0, goto-instrument `--apply-loop-contracts` then `--enforce-contract f`, without `--dfcc`: prove.py's legacy path (T-006).
+- **What happened:** C-15's round-4 builder (2026-11-11, reports/C-15-b4.md) found that under legacy contracts, a write inside a contracted loop is checked against the loop's assigns only. Nothing checks that the loop's frame lies inside the function's assigns.
+  - The toy: `f` may assign only `cells[i].a`, the loop's frame is `object_from(p)` and the body writes `p->b`. Legacy gives VERIFICATION SUCCESSFUL with 0 failed.
+  - On C-15's real proof, dropping `p->aMem[i].enc` from the function's assigns still passes on ilp32-le (1,755 properties, 0 failed), though the body stores `pMem->enc` at 92138.
+- **Reproduced by me** (evidence/orchestrator/tool-issues/T-015/: toy.c, run.sh, run.out, orders.sh, orders.out; every step capped at 24 GB):
+  - legacy, bad variant: SUCCESSFUL, 0 failed; legacy, good variant: SUCCESSFUL.
+  - DFCC (`--dfcc entry --enforce-contract f --apply-loop-contracts`): both variants FAIL "Check assigns clause inclusion for loop f.0". DFCC checks the inclusion, and the wide frame fails it even when the body writes only `a`.
+  - Other legacy pass orders don't help: enforce then loops ends in "Numeric exception : 0" (rc 6), and both in one run aborts (rc 134).
+- **Effect:** under legacy, a function's assigns clause is not checked for writes made inside a contracted loop. Every write is still checked for memory safety, so P1's no-UB checks are unaffected. The gap is in the frame a caller relies on when it REPLACEs the function with its contract.
+  - C-15: no in-scope caller replaces sqlite3VdbeRecordUnpack.
+  - C-17: its contract is what C-18 to C-20 replace, so its loop's frame matters.
+  - **My error:** T-006's validation toys (tools/tests/legacy/) had no case of a loop frame wider than the function's. The callee-frame and alias toys check writes against the loop's frame only.
+- **Status:** confirmed. It is a property of the legacy engine at this version, not of SQLite. Options go to Zach with C-15's round-4 decision.

@@ -1,0 +1,16 @@
+Reading GOTO program from 'BAD.a.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Loading CPROVER C library (x86_64)
+Adding the cprover_contracts library (x86_64)
+Instrumenting harness function 'entry'
+Wrapping 'f' with contract 'f' in CHECK mode
+Instrumenting 'malloc'
+Instrumenting 'free'
+Specializing cprover_contracts functions for assigns clauses of at most 3 targets
+Removing unused functions
+Updating init function
+Setting entry point to entry
+Writing GOTO program to 'BAD.d.goto'

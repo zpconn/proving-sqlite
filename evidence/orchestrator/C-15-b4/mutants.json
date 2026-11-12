@@ -1,0 +1,44 @@
+[
+ {
+  "mutant": {
+   "id": "M-050",
+   "function": "sqlite3VdbeRecordUnpack",
+   "line": 92145,
+   "from": ">=p->nField",
+   "to": ">p->nField",
+   "equivalent": null,
+   "review": null,
+   "card": "C-15"
+  },
+  "verdict": "KILLED",
+  "detail": "by C-15/unpack lp64-le: 1 failed: [sqlite3VdbeRecordUnpack.3] file tmp/b4/mutants/M-050/sqlite3.c line 92134 Check that loop invariant is preserved"
+ },
+ {
+  "mutant": {
+   "id": "M-051",
+   "function": "sqlite3VdbeRecordUnpack",
+   "line": 92153,
+   "from": "pMem-(",
+   "to": "pMem+(",
+   "equivalent": null,
+   "review": null,
+   "card": "C-15"
+  },
+  "verdict": "KILLED",
+  "detail": "by C-15/unpack lp64-le: 38 failed: [sqlite3VdbeMemSetNull.pointer_dereference.5] dereference failure: pointer outside object bounds in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.6] dereference failure: invalid integer address in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.assigns.1] Check that (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags is valid; [sqlite3VdbeMemSetNull.pointer_dereference.7] dereference failure: pointer NULL in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.8] dereference failure: pointer invalid in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.9] dereference failure: deallocated dynamic object in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.10] dereference failure: dead object in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.11] dereference failure: pointer outside object bounds in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.12] dereference failure: invalid integer address in *((u16 *)__car_lb); [sqlite3VdbeMemSetNull.pointer_dereference.13] dereference failure: pointer NULL in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.14] dereference failure: pointer invalid in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.15] dereference failure: deallocated dynamic object in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.16] dereference failure: dead object in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.17] dereference failure: pointer outside object bounds in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.pointer_dereference.18] dereference failure: invalid integer address in (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags; [sqlite3VdbeMemSetNull.precondition.1] Check requires clause of sqlite3VdbeMemSetNull in sqlite3VdbeRecordUnpack; [sqlite3VdbeMemSetNull.precondition.2] Check requires clause of sqlite3VdbeMemSetNull in sqlite3VdbeRecordUnpack; [sqlite3VdbeRecordUnpack.assigns.56] file tmp/b4/mutants/M-051/sqlite3.c line 92162 Check that (pMem + (signed long int)((signed int)u < (signed int)p->nField))->flags (assigned by the contract of sqlite3VdbeMemSetNull) is assignable; [sqlite3VdbeRecordUnpack.overflow.9] file tmp/b4/mutants/M-051/sqlite3.c line 92162 arithmetic overflow on signed * in (signed long int)((signed int)u < (signed int)p->nField) * (signed long int)56ul; [sqlite3VdbeRecordUnpack.pointer_arithmetic.103] file tmp/b4/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer NULL in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.104] file tmp/b4/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer invalid in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.105] file tmp/b4/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: deallocated dynamic object in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.106] file tmp/b4/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: dead object in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.107] file tmp/b4/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: pointer outside object bounds in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_arithmetic.108] file tmp/b4/mutants/M-051/sqlite3.c line 92162 pointer arithmetic: invalid integer address in pMem + (signed long int)((signed int)u < (signed int)p->nField); [sqlite3VdbeRecordUnpack.pointer_dereference.241] file tmp/b4/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer NULL in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.242] file tmp/b4/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer invalid in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.243] file tmp/b4/mutants/M-051/sqlite3.c line 92162 dereference failure: deallocated dynamic object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.244] file tmp/b4/mutants/M-051/sqlite3.c line 92162 dereference failure: dead object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.245] file tmp/b4/mutants/M-051/sqlite3.c line 92162 dereference failure: pointer outside object bounds in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.246] file tmp/b4/mutants/M-051/sqlite3.c line 92162 dereference failure: invalid integer address in p->nField; [sqlite3VdbeRecordUnpack.assigns.57] file tmp/b4/mutants/M-051/sqlite3.c line 92167 Check that p->nField is assignable; [sqlite3VdbeRecordUnpack.pointer_dereference.247] file tmp/b4/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer NULL in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.248] file tmp/b4/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer invalid in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.249] file tmp/b4/mutants/M-051/sqlite3.c line 92167 dereference failure: deallocated dynamic object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.250] file tmp/b4/mutants/M-051/sqlite3.c line 92167 dereference failure: dead object in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.251] file tmp/b4/mutants/M-051/sqlite3.c line 92167 dereference failure: pointer outside object bounds in p->nField; [sqlite3VdbeRecordUnpack.pointer_dereference.252] file tmp/b4/mutants/M-051/sqlite3.c line 92167 dereference failure: invalid integer address in p->nField"
+ },
+ {
+  "mutant": {
+   "id": "M-063",
+   "function": "sqlite3VdbeRecordUnpack",
+   "line": 92134,
+   "from": "(u32)nKey",
+   "to": "(u32)nKey+1",
+   "equivalent": null,
+   "review": null,
+   "card": "C-15"
+  },
+  "verdict": "KILLED",
+  "detail": "by C-15/unpack lp64-le: 4 failed: [serialGet.precondition.1] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.3] Check requires clause of serialGet in sqlite3VdbeSerialGet; [sqlite3GetVarint32.precondition.3] Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack; [sqlite3GetVarint32.precondition.5] Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack"
+ }
+]

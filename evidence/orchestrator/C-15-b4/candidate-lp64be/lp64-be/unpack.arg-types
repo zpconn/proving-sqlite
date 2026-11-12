@@ -1,0 +1,1 @@
+$ goto-instrument --show-goto-functions --json-ui tmp/b4/candidate-lp64be/lp64-be/unpack.1.goto
