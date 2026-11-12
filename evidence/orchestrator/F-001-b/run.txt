@@ -1,0 +1,53 @@
+upstream/sqlite3.c sha256 b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189
+$ cc -std=gnu11 -O2 -I /tmp/repro/upstream -o /tmp/repro/out/m /tmp/repro/src/repro.c /tmp/repro/upstream/sqlite3.c -lm -lpthread -ldl
+build exit 0 
+== -O2 intmin desc
+collation returns -2147483648 for less
+index direction DESC
+  integrity_check: 2000 lines, 2000 errors
+  equality lookups: 2001 rows, 2000 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+(exit 0)
+== -O2 control
+collation returns -1 for less
+index direction DESC
+  integrity_check: 1 lines, 0 errors
+  equality lookups: 2001 rows, 0 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+(exit 0)
+== -O2 intmin asc
+collation returns -2147483648 for less
+index direction ASC
+  integrity_check: 1 lines, 0 errors
+  equality lookups: 2001 rows, 0 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+(exit 0)
+$ cc -std=gnu11 -O0 -I /tmp/repro/upstream -o /tmp/repro/out/m /tmp/repro/src/repro.c /tmp/repro/upstream/sqlite3.c -lm -lpthread -ldl
+build exit 0 
+== -O0 intmin desc
+collation returns -2147483648 for less
+index direction DESC
+  integrity_check: 2000 lines, 2000 errors
+  equality lookups: 2001 rows, 2000 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+(exit 0)
+== -O0 control
+collation returns -1 for less
+index direction DESC
+  integrity_check: 1 lines, 0 errors
+  equality lookups: 2001 rows, 0 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+(exit 0)
+== -O0 intmin asc
+collation returns -2147483648 for less
+index direction ASC
+  integrity_check: 1 lines, 0 errors
+  equality lookups: 2001 rows, 0 where the index count differs from a table scan
+  indexed lookup of probe-value (expect 1): 1
+  table scan of probe-value (expect 1): 1
+(exit 0)
