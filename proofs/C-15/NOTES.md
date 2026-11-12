@@ -1,57 +1,60 @@
-# C-15: bounded measurement candidate, round 4
+# C-15: sqlite3VdbeRecordUnpack, bounded P1 (round 5)
 
-NEEDS-DECISION: proposed K=4, N=256; neither bound is approved.
-Proved: bounded CBMC runs return PASS on all three configurations, 1,759
-properties each, zero failures. This is not an approved P1 claim: Tested
-negative controls expose a legacy function/loop framing gap (report b4).
-Tested: native ASan/UBSan, 1,414 cases, 1,362 beyond the proposed bounds.
-Assumed: A-001 exact readable extent and A-002 native eight-byte alignment.
-Trusted: legacy contracts T-006, CBMC/C/models/preprocessor; b4 requests
-triage of the observed framing gap before this contract is used by callers.
+Proved: both shapes, all three configurations, 1,730 properties per proof,
+zero failures under unchanged CHECKS; no float-to-integer properties.
+C-15 unpack: bounded: p->nField <= 4, nKey <= 256
+C-15 unpack_start: bounded: p->nField <= 4, nKey <= 256
+Assumed: A-001 readable slack, A-007 layout/lifetime, A-002 alignment.
+Trusted: CBMC/C/models/preprocessor and legacy contracts, T-006/T-012.
+The whole-cell function frame is reviewed, not Proved, under T-015.
 
-Requires writable record and incoming nField Mems, positive capacity,
-readable KeyInfo prefix through db, C-14's shared layout, eight-byte aMem
-alignment, and input/KeyInfo objects distinct from the output object.
-A-001 is verbatim: nKey>=0 and max(nKey,1)+8 readable bytes at pKey.
-Ensures default_rc=0 and output nField<=incoming capacity. Assigns names
-only default_rc,nField and each eligible cell's u,z,n,flags,enc,db,szMalloc.
-Four guarded cell groups describe only the proposed bounded domain.
-The broader loop frame is retained as instructed; it currently prevents
-claiming the narrower function frame was checked soundly (b4's toy).
-| Requires | Negative evidence | Caller justification |
+Requires live writable record/cells, live KeyInfo through db, A-007's
+positive capacity, shared rounded layout, input/output separation and
+8-byte alignment. A-001 is verbatim: nKey>=0 and max(nKey,1)+8 readable
+bytes. Ensures default_rc=0 and nField<=old(nField). Assigns default_rc,
+nField and all bytes of the incoming nField Mem cells (object_upto).
+| Requires | Negative evidence / reason | Caller justification |
 | --- | --- | --- |
-| writable record | Deletion unrun. | C-14 success, upstream 92102-92108. |
-| readable KeyInfo prefix through db | Deletion unrun here; C-14 checked prefix minimality. | C-14 retains pKeyInfo; external callers preserve lifetime. |
-| writable nField Mems; nField>0 | Zero-capacity deletion still unrun. | C-14 ensures nKeyField+1 with nKeyField<65535. |
-| aMem at ROUND8P(sizeof(UnpackedRecord)) after p | Layout deletion unrun. | C-14 source 92105; its contract does not state this equality. |
-| input and KeyInfo distinct from output object | Alias deletion unrun. | Fresh allocation in C-14/A-002; external lifetime obligation. |
-| eight-byte alignment | Not a CBMC native-alignment check. | Assumed A-002 and C-14's rounded offset; UB-CLASSES.md. |
-| A-001 exact clause | +7 fails: nKey=0, one varint precondition; nKey=2, four callee preconditions. Native ASan confirms both real overreads. | Assumed A-001; external b-tree/sorter callers. |
+| w_ok(p,sizeof(UnpackedRecord)) | Needed for aMem/pKeyInfo loads and default_rc/nField stores; SETUP already supplies it. | C-14 success, upstream 92102-92108. |
+| r_ok(pKeyInfo,offsetof(KeyInfo,db)+sizeof(sqlite3 *)) | enc/db read at 92138-92139; C-14's prefix minimality evidence applies; SETUP supplies full KeyInfo. | C-14 retains pKeyInfo; A-007 lifetime. |
+| w_ok(aMem,sizeof(Mem)*nField) | Last cell is written before capacity break; end-exact SETUP supplies the extent. | C-14 ensures extent; A-007 keeps it live. |
+| nField>0 | Deleting this requires: capacity=0,nKey=56, out-of-bounds enc store at 92138 (b5). | C-14's nKeyField<65535 and nField=nKeyField+1; A-007. |
+| rounded aMem offset; distinct output/input objects | Needed for frame geometry and stable inputs; not independently minimized. | A-007; C-14 source 92105, not its contract. |
+| eight-byte aMem alignment | Native-alignment obligation, not a CBMC alignment check. | A-002/A-007; C-14 rounds its offset. |
+| A-001 exact clause | +7 fails at nKey=0 (header) and nKey=2 (serial/varint); b4 CBMC traces and native ASan. | Assumed A-001, still conditional despite known caller violations. |
 
-SETUP proposes nKey<=256 and capacity<=4; requires filters out capacity=0.
-Constant-sized malloc objects have variable leading offsets: the remaining
-input extent is exactly max(nKey,1)+8, and the shared record/Mem suffix is
-exactly ROUND8P(sizeof(UnpackedRecord))+capacity*sizeof(Mem). KeyInfo is
-separately allocated. Bytes and initial Mem/KeyInfo contents stay nondet.
-C-14's relative layout is preserved. Leading padding is not accessed by
-SQLite: input indices are unsigned; pMem is aMem+u, with its final backward
-step guarded by u>0. See b4 for grid recipes and the padding limitation.
+Both SETUPs use approved separate bounds and constant backing objects;
+record bytes, initial Mem bytes and KeyInfo fields remain nondeterministic.
+unpack's offsets leave exactly max(nKey,1)+8 bytes and rounded-record+
+capacity*sizeof(Mem) bytes to the ends. unpack_start uses zero offsets,
+checking the lower boundaries; it has unused trailing space below maxima.
+Malloc failure is excluded before arithmetic; no input bytes are narrowed.
 
 Loop 92134: assigns idx,d,u,pMem,object_from(pMem); decreases nField-u.
-Invariant u==0 || u<nField bounds the next slot; same_object and
-pMem==aMem+u locate it; idx>=1 && szHdr<=d support A-001; when u>0 the
-preceding flags exclude MEM_Agg|MEM_Dyn, supplying MemSetNull's premise.
-Only unpack uses legacy. SerialGet's body stays for T-012; its writes are
-u,flags,n,z. Its serialGet helper is replaced by C-07's unchanged contract.
-Unpack adds enc,db,szMalloc. T-014 forbids the dereferencing-length frame.
+Invariant u==0 || u<nField bounds the next cell (capacity is positive).
+Invariant same_object(pMem,aMem) and pMem==aMem+u locate that cell.
+Invariant idx>=1 && szHdr<=d supports A-001 with the loop guard d<=nKey.
+Invariant u==0 || !VdbeMemDynamic(pMem-1) supports the final MemSetNull.
+T-015 inclusion: in unpack's end-exact layout, the object ends at
+&aMem[capacity], so object_from(pMem) is cells [u,capacity), wholly inside
+the function's [0,capacity) frame. It excludes the preceding record.
+The start-exact helper's havoc also includes unused trailing backing bytes;
+its frame inclusion is not independently claimed. Real writes are to the
+current cell with u<capacity; the final NULL write is in cell u-1 when
+u<capacity or capacity-1 on break. This also argues the frame for larger
+caller allocations. The only record writes are default_rc and nField.
+SerialGet keeps its body (T-012 static aFlag); it writes u,flags,n,z;
+its replaced serialGet helper writes u,flags. Unpack adds enc,db,szMalloc.
+Both proofs use legacy (T-006); T-014 requires the pointer-tail loop frame.
+Tested: native seven-member preservation, 1,414 cases, 1,362 past bounds;
+M-050/M-051/M-063 killed by unpack on lp64-le. Full details are in b5.
+Tested diagnostic, measured once, not gated: K=8,N=256, lp64-le, 1,036 s,
+default solver, timeout 3600 s, 1,787 properties/0 failed (approval evidence).
+The approved gate remains K=4,N=256 and 600 s; full-range P1 is not claimed.
 
 ## Unreached lines
+- sqlite3.c:92134: Legacy's duplicate preheader havoc is skipped by an unconditional jump (blocks 28-32); block 118 requires non-base mode in the base copy, and block 209 requires base mode after it is set false for induction. The condition, body, break and live induction checks are reached; coverage conservatively marks the line uncovered if any mapped block is unreached.
 
 ## Open questions
-Coverage runner fails on all configurations: it seeks DFCC's body name,
-not legacy's __CPROVER_contracts_original_sqlite3VdbeRecordUnpack. Raw
-results have seven uncovered instrumentation goals at 92134; no accepted
-coverage claim or invented gap explanation. M-050/M-051/M-063 are killed.
-Approve the bounded scope and labels, resolve the framing/coverage tool
-issues, complete remaining requires-deletion evidence, and rerun the gate.
-The orchestrator's separate pre-merge --adhoc planted-bug check remains.
+None for the builder. The reviewer checks T-015 and both shapes; the
+orchestrator performs the separate --adhoc planted-bug check before merge.
