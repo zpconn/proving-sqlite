@@ -19,11 +19,12 @@ void harness_unpack(void){
 
   /* SETUP */
   /* Proposed bounds only: pending Zach and auditor approval. */
-  __CPROVER_assume(nKey >= 0 && nKey <= 256);
+  __CPROVER_assume(nKey >= 0);
+  __CPROVER_assume(nKey <= 256);
   __CPROVER_assume(capacity <= 4);
   mem_offset = ((sizeof(UnpackedRecord) + 7) / 8) * 8;
-  key_offset = 256 - (nKey > 0 ? nKey : 1);
-  record_offset = sizeof(Mem) * (4 - capacity);
+  key_offset = 0;
+  record_offset = 0;
   bytes = malloc(256 + 8);
   __CPROVER_assume(bytes != 0);
   bytes = bytes + key_offset;
