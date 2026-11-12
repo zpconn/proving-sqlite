@@ -218,3 +218,22 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **What happened:** the C-15-bounded land (2026-11-11) was refused: "a land may touch only cards/, tests/repro/, evidence/approvals/, evidence/orchestrator/, PROGRESS.md, LEDGER.md, FINDINGS.md, tools/sessions.toml; this one touches proofs/HOWTO.md". proofs/HOWTO.md is neither frozen (lock.py FROZEN) nor on LAND_ALLOWED, so no land can change it, with or without an approval record.
 - **Effect:** the "Bounded proofs" section approved in patch.diff lives at evidence/approvals/C-15-bounded/HOWTO-bounded-proofs.md, and C-15's card points there. The rest of patch.diff landed as approved.
 - **Fix, for Zach:** add proofs/HOWTO.md to LAND_ALLOWED in campaign.py (a frozen change). Like T-007, a land that changes the land rules is judged by the old ones (T-013), so the section would follow in a second land.
+
+## T-018 tools/prove.py (frozen): coverage under legacy-unwind counts the last unwound copy's dead goals as uncovered lines
+
+- **Tool:** prove.py's coverage (`cover_one`) on a proof with `LOOPS := unwind` and `CONTRACTS := legacy`, the pass added by the C-17 package (2026-11-11).
+- **What happened:** measuring C-15 on legacy-unwind for Zach's item 7 (2026-11-12; evidence/orchestrator/C-15-unwind/ on the local branch wip/c15-unwind):
+  - At K=4 every configuration proves, but coverage gives 26 of 30 lines. Uncovered: 92134, 92135, 92146 and 92147 (upstream lines).
+  - Each of those lines is covered in unwound copies 1 to 3 (evidence/orchestrator/tool-issues/T-018/coverage-k4-goals.txt).
+- **Cause:**
+  - goto-instrument unwinds the loop before `cbmc --cover location` adds its goals, so each unwound copy of a block gets its own goal.
+  - With nField ≤ K, the K-th copy always takes the `break`. Its continuing path and the exit test after it can't run: blocks 352 and 353, and 354 after the last copy, are unmet.
+  - prove.py marks a line uncovered if any goal on it is unmet.
+  - With LOOPS := contracts, or with cbmc doing the unwinding (DFCC), each block has one goal, so this doesn't arise.
+- **What doesn't fix it:**
+  - Letting cbmc unwind the coverage build: legacy enforcement refuses a function with a loop, "Loops remain in function 'sqlite3VdbeRecordUnpack', assigns clause checking instrumentation cannot be applied" (contracts.cpp:1164; T-018/enforce-with-loop.txt).
+  - Merging goals by line set: distinct blocks share line sets. The getVarint32 ternary gives 4 blocks with line set {92146} in each copy, so a branch dead in every copy would be hidden.
+  - Matching copies by source column: `cbmc --cover location --json-ui` gives a goal's file, function, line and block lines, but no column.
+  - What's left is matching the copies by their repeating block structure (copy 1 is blocks 22 to 104, copy 2 is 105 to 187, and so on, with identical line sets in order), with the unwind bound from UNWINDSET.
+- **Effect:** every legacy-unwind proof's coverage reports lines that are reached. C-17's round 5 has 15 such proofs. Until prove.py matches the copies, the gaps have to be explained in NOTES.md, which also explains away a line dead in every copy.
+- **Status:** confirmed. A fix (matching the unwound copies of each block) is for Zach, as a frozen change.

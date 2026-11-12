@@ -1,0 +1,26 @@
+SAT checker ran out of memory
+Command exited with non-zero status 6
+	Command being timed: "timeout 1800 nice -n 10 cbmc /home/zpconn/code/proving-sqlite-wt/wip-c15-unwind-k8/build-k8/lp64-le/unwind.goto --bounds-check --pointer-check --pointer-overflow-check --pointer-primitive-check --signed-overflow-check --undefined-shift-check --div-by-zero-check --float-div-by-zero-check --malloc-may-fail --malloc-fail-null --unwinding-assertions"
+	User time (seconds): 108.36
+	System time (seconds): 12.53
+	Percent of CPU this job got: 92%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:10.45
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 22155576
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 370
+	Minor (reclaiming a frame) page faults: 6343227
+	Voluntary context switches: 88341
+	Involuntary context switches: 384
+	Swaps: 0
+	File system inputs: 1394496
+	File system outputs: 1288
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 6
+exit 6

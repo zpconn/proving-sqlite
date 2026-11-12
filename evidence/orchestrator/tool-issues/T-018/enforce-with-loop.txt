@@ -1,0 +1,6 @@
+--- begin invariant violation report ---
+Invariant check failed
+File: ../src/goto-instrument/contracts/contracts.cpp:1164 function: check_frame_conditions_function
+Condition: is_loop_free(function_body, ns, log)
+Reason: Loops remain in function 'sqlite3VdbeRecordUnpack', assigns clause checking instrumentation cannot be applied.
+Backtrace:

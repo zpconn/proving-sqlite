@@ -1,0 +1,2 @@
+MUTANT M-adhoc sqlite3VdbeRecordUnpack:92143 '&aKey[d]'->'&aKey[d+1]' KILLED by C-15/unwind lp64-le: 4 failed: [serialGet.precondition.1] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.3] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.5] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.7] Check requires clause of serialGet in sqlite3VdbeSerialGet
+RESULT mutate C-15 PASS 1/1 killed 0 equivalent

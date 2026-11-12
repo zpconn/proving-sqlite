@@ -1,0 +1,16 @@
+[
+ {
+  "mutant": {
+   "id": "M-adhoc",
+   "function": "sqlite3VdbeRecordUnpack",
+   "line": 92143,
+   "from": "&aKey[d]",
+   "to": "&aKey[d+1]",
+   "equivalent": null,
+   "review": null,
+   "card": "C-15"
+  },
+  "verdict": "KILLED",
+  "detail": "by C-15/unwind lp64-le: 4 failed: [serialGet.precondition.1] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.3] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.5] Check requires clause of serialGet in sqlite3VdbeSerialGet; [serialGet.precondition.7] Check requires clause of serialGet in sqlite3VdbeSerialGet"
+ }
+]

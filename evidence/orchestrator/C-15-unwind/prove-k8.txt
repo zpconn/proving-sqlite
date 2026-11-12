@@ -1,0 +1,11 @@
+  ERROR unwind lp64-le: cbmc gave no verdict (rc 6); see /home/zpconn/code/proving-sqlite-wt/wip-c15-unwind-k8/build-k8/lp64-le/unwind.cbmc
+RESULT prove C-15/unwind lp64-le FAIL 62s 0 properties 0 failed
+RESULT prove C-15 lp64-le FAIL 62s 0 properties 0 failed
+  ERROR unwind ilp32-le: cbmc gave no verdict (rc 6); see /home/zpconn/code/proving-sqlite-wt/wip-c15-unwind-k8/build-k8/ilp32-le/unwind.cbmc
+RESULT prove C-15/unwind ilp32-le FAIL 59s 0 properties 0 failed
+RESULT prove C-15 ilp32-le FAIL 59s 0 properties 0 failed
+  ERROR unwind lp64-be: cbmc gave no verdict (rc 6); see /home/zpconn/code/proving-sqlite-wt/wip-c15-unwind-k8/build-k8/lp64-be/unwind.cbmc
+RESULT prove C-15/unwind lp64-be FAIL 65s 0 properties 0 failed
+RESULT prove C-15 lp64-be FAIL 65s 0 properties 0 failed
+RESULT prove C-15 all FAIL 186s 0 properties 0 failed
+exit 1

@@ -1,0 +1,87 @@
+Coverage goals in __CPROVER_contracts_original_sqlite3VdbeRecordUnpack, K=4, lp64-le, overlay lines (block, status, line set)
+92144 block 22 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92144,92146
+92146 block 23 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 24 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 25 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 32 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 34 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 35 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24,25; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 36 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 37 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146,92147
+92147 block 38 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92147,92148
+92148 block 39 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92148,92150
+92150 block 40 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92150,92151
+92151 block 41 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92151,92152; sqlite3.c:sqlite3VdbeSerialGet:91998
+92152 block 42 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:91999
+92152 block 43 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:92000
+92152 block 44 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:92002,92003
+92153 block 100 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92153,92154
+92154 block 101 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92154
+92154 block 102 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92144,92154
+92155 block 103 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92155
+92155 block 104 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92134,92144,92155,92156
+92144 block 105 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92144,92146
+92146 block 106 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 107 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 108 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 115 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 117 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 118 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24,25; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 119 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 120 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146,92147
+92147 block 121 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92147,92148
+92148 block 122 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92148,92150
+92150 block 123 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92150,92151
+92151 block 124 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92151,92152; sqlite3.c:sqlite3VdbeSerialGet:91998
+92152 block 125 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:91999
+92152 block 126 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:92000
+92152 block 127 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:92002,92003
+92153 block 183 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92153,92154
+92154 block 184 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92154
+92154 block 185 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92144,92154
+92155 block 186 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92155
+92155 block 187 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92134,92144,92155,92156
+92144 block 188 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92144,92146
+92146 block 189 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 190 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 191 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 198 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 200 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 201 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24,25; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 202 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 203 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146,92147
+92147 block 204 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92147,92148
+92148 block 205 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92148,92150
+92150 block 206 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92150,92151
+92151 block 207 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92151,92152; sqlite3.c:sqlite3VdbeSerialGet:91998
+92152 block 208 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:91999
+92152 block 209 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:92000
+92152 block 210 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:92002,92003
+92153 block 266 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92153,92154
+92154 block 267 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92154
+92154 block 268 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92144,92154
+92155 block 269 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92155
+92155 block 270 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92134,92144,92155,92156
+92144 block 271 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92144,92146
+92146 block 272 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 273 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 274 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 281 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 283 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 284 SATISFIED unwind.legacy.c:sqlite3GetVarint32:24,25; sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 285 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146
+92146 block 286 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92146,92147
+92147 block 287 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92147,92148
+92148 block 288 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92148,92150
+92150 block 289 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92150,92151
+92151 block 290 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92151,92152; sqlite3.c:sqlite3VdbeSerialGet:91998
+92152 block 291 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:91999
+92152 block 292 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:92000
+92152 block 293 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92152; sqlite3.c:sqlite3VdbeSerialGet:92002,92003
+92153 block 349 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92153,92154
+92154 block 350 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92154
+92154 block 351 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92144,92154
+92155 block 352 FAILED sqlite3.c:sqlite3VdbeRecordUnpack:92155
+92155 block 353 FAILED sqlite3.c:sqlite3VdbeRecordUnpack:92134,92144,92155,92156
+92134 block 354 FAILED sqlite3.c:sqlite3VdbeRecordUnpack:92134
+92157 block 355 SATISFIED sqlite3.c:sqlite3VdbeRecordUnpack:92157
