@@ -1,0 +1,4 @@
+default: elapsed_s=1036.42 peak_rss_kib=7960576 exit=0 | RESULT prove C-15 lp64-le PASS 1036s 1787 properties 0 failed
+sat-solver-cadical: elapsed_s=29.86 peak_rss_kib=12247840 exit=6 | VERIFICATION ERROR | 0 FAILURE, 1095 ERROR, 692 SUCCESS | Solver ran out of memory during propositional reduction.
+arrays-uf-always: elapsed_s=1.08 peak_rss_kib=82984 exit=0 | no verdict | 0 FAILURE, 0 ERROR, 0 SUCCESS | 
+refine-arrays: elapsed_s=984.39 peak_rss_kib=8265444 exit=0 | VERIFICATION SUCCESSFUL | 0 FAILURE, 0 ERROR, 1787 SUCCESS | 

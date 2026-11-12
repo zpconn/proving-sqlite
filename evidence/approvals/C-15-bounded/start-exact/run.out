@@ -1,0 +1,3 @@
+lp64-le: elapsed_s=202.98 peak_rss_kib=3831456 exit=0 | RESULT prove C-15 lp64-le PASS 203s 1757 properties 0 failed
+ilp32-le: elapsed_s=107.76 peak_rss_kib=2521428 exit=0 | RESULT prove C-15 ilp32-le PASS 108s 1757 properties 0 failed
+lp64-be: elapsed_s=181.85 peak_rss_kib=3833636 exit=0 | RESULT prove C-15 lp64-be PASS 182s 1757 properties 0 failed

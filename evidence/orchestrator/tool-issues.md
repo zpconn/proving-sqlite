@@ -204,3 +204,11 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
   - C-17: its contract is what C-18 to C-20 replace, so its loop's frame matters.
   - **My error:** T-006's validation toys (tools/tests/legacy/) had no case of a loop frame wider than the function's. The callee-frame and alias toys check writes against the loop's frame only.
 - **Status:** confirmed. It is a property of the legacy engine at this version, not of SQLite. Options go to Zach with C-15's round-4 decision.
+
+## T-016 CBMC 6.11.0: `--arrays-uf-always` crashes on C-15's program (confirmed)
+
+- **Tool:** cbmc 6.11.0 with `--arrays-uf-always`, on C-15's legacy-instrumented goto program (K=8, N=256, lp64-le), under a 12 GB cap.
+- **What happened:** in Zach's encoding diagnostic (2026-11-11), CBMC stopped after 1 s with "Invariant check failed, File: ../src/solvers/flattening/arrays.cpp:211 function: collect_arrays, Reason: unexpected array expression: member with 'struct'", and dumped core. It gave no verdict.
+- **Repro:** the local branch wip/c15-encoding, `diag/run.sh` (diag/arrays-uf-always.cbmc; the command in diag/base-command.txt plus the option).
+- **Effect:** none on the proofs: no proof uses the option, and prove.py's ALLOWED_SOLVERS doesn't offer it. In the same diagnostic, the default solver gave PASS in 1,036 s, `--refine-arrays` VERIFICATION SUCCESSFUL in 984 s, and `--sat-solver cadical` ran out of memory after 30 s. None reaches K=8 within 600 s, so C-15's bound stays K=4, N=256 (Zach's rule).
+- **Status:** confirmed. A defect in CBMC, not reported upstream.
