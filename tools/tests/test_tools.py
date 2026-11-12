@@ -2059,14 +2059,15 @@ def main():
         # scan's aColl rule
         for name, change, ok, needle in (
                 ('the aColl store of a CollSeq', None, True, ''),
-                ('the aColl store of 0', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = 0;'), True, ''),
+                ('the aColl store of 0 (it fixes the entry as NULL; --malloc-may-fail already gives NULL or valid)',
+                 ('  c0 = malloc(sizeof(CollSeq));', '  c0 = 0;'), False, 'malloc(sizeof(CollSeq))'),
                 ('another member', ('  key->aColl[i0] = c0;', '  key->aSortFlags[i0] = c0;'), False, 'key->aSortFlags[i0] = c0'),
-                ('a data value', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = malloc(8);'), False, 'malloc(sizeof(CollSeq)) or 0'),
+                ('a data value', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = malloc(8);'), False, 'malloc(sizeof(CollSeq))'),
                 ('a literal on the right', ('  key->aColl[i0] = c0;', '  key->aColl[i0] = 0;'), False, 'key->aColl[i0] = 0'),
                 ('a shared right-hand side', ('  key->aColl[i0] = c0;', '  key->aColl[i0] = c0;\n  key->aColl[i0] = c0;'), False,
                  'stored into aColl 2 times'),
                 ('its right-hand side set twice', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = malloc(sizeof(CollSeq));\n  c0 = 0;'),
-                 False, 'malloc(sizeof(CollSeq)) or 0')):
+                 False, 'malloc(sizeof(CollSeq))')):
             rr = k_repo(t)
             if change:
                 edit(rr, 'proofs/C-96/harness.c', change[0], change[1])

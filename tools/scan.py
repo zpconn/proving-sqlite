@@ -39,7 +39,7 @@ Rejects:
      entry function (not a pointer, not static, no initializer), i a plain local declared there and used by no
      other snapshot loop, and neither appears in the call's statement or in SETUP; in SETUP,
      taking an address, `->` but in `p->field = value` and in a KeyInfo's collation pointer `p->aColl[k] = c` (k a
-     local, c a local set once to malloc(sizeof(CollSeq)) or 0 and stored nowhere else; C-17, Zach 2026-11-11), string literals, casts to pointer types but on malloc,
+     local, c a local set once to malloc(sizeof(CollSeq)) and stored nowhere else; C-17, Zach 2026-11-11), string literals, casts to pointer types but on malloc,
      naming a local array outside sizeof, and a data pointer assigned anything but a malloc result, pointer
      arithmetic on one, or 0; anywhere in a harness, any preprocessor directive but #include (so no macro hides a
      statement from these rules), line splices, digraphs and trigraphs, loop and function contract clauses
@@ -132,7 +132,7 @@ PTR_CAST_RX = re.compile(r'\(\s*(?:(?:const|volatile|struct|union|enum|unsigned|
                          r'(?:\s+[A-Za-z_]\w*)*[\s*]*\*[\s*]*\)')
 LHS_ARROW_RX = re.compile(r'[A-Za-z_]\w*\s*->\s*[A-Za-z_]\w*(?:\s*\.\s*[A-Za-z_]\w*)*')
 # C-17 (Zach, 2026-11-11): the one subscripted store SETUP allows, a KeyInfo's collation pointer, `p->aColl[k] = c`, with
-# k a local and c a local set once to malloc(sizeof(CollSeq)) or 0 and stored nowhere else (acoll_problems)
+# k a local and c a local set once to malloc(sizeof(CollSeq)), not 0 (the auditor), and stored nowhere else (acoll_problems)
 ACOLL_LHS_RX = re.compile(r'\s*([A-Za-z_]\w*)\s*->\s*aColl\s*\[\s*([A-Za-z_]\w*)\s*\]\s*')
 TOKEN_RX = re.compile(r'[A-Za-z_]\w*|0[xX][0-9a-fA-F]+\w*|\d+\w*|->|&&|\|\||\+\+|--|[<>=!]=|<<|>>|.', re.S)
 CARD_DIR_FILES = {'harness.c', 'Makefile', 'NOTES.md'}
@@ -1104,7 +1104,7 @@ def malloc_sizes(text):
 
 def acoll_problems(setup_stmts, local, ptrs):
     """[(statement, why)] for SETUP's `p->aColl[k] = c` stores: p a local pointer, k a local, c a local set exactly once
-    in SETUP to malloc(sizeof(CollSeq)) or 0, and the right-hand side of no other store."""
+    in SETUP to malloc(sizeof(CollSeq)), and the right-hand side of no other store."""
     sets, stores = {}, []
     for _, st in setup_stmts:
         a = top_assignment(st)
@@ -1123,9 +1123,10 @@ def acoll_problems(setup_stmts, local, ptrs):
             out.append((st, '%s is not a local pointer of the entry function' % p))
         elif k not in local:
             out.append((st, 'the index %s is not a local of the entry function' % k))
-        elif c not in local or len(sets.get(c, [])) != 1 or sets[c][0] not in ('malloc(sizeof(CollSeq))', '0'):
-            out.append((st, '%s must be a local set exactly once in SETUP to malloc(sizeof(CollSeq)) or 0 (it builds a '
-                            'pointer table entry, never data)' % c))
+        elif c not in local or len(sets.get(c, [])) != 1 or sets[c][0] != 'malloc(sizeof(CollSeq))':
+            out.append((st, '%s must be a local set exactly once in SETUP to malloc(sizeof(CollSeq)) (it builds a pointer '
+                            'table entry, never data; --malloc-may-fail already gives NULL or a valid CollSeq, and a 0 '
+                            'would fix the entry as NULL)' % c))
         elif used[c] != 1:
             out.append((st, '%s is stored into aColl %d times; each collation pointer may be stored once' % (c, used[c])))
     return out
