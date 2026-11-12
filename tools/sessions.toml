@@ -120,8 +120,8 @@ auth_failure_patterns = ["Please run /login", "(?i)login expired", "(?i)not logg
                          "(?i)failed to authenticate", "authentication_failed", "authentication_error", "(?i)invalid api key",
                          "(?i)login reached its time limit"]
 
-# Roles and tiers (GOAL.md §0.10). The vendor lines must match campaign.py's ROLE_VENDOR (builder and spec-review on
-# codex, reviewer and ledger on claude), which it uses whatever this file says, refusing a mismatch; and it refuses a
+# Roles and tiers (GOAL.md §0.10). The vendor lines must match campaign.py's ROLE_VENDOR (builder, spec-review and
+# finding-review on codex, reviewer and ledger on claude), which it uses whatever this file says, refusing a mismatch; and it refuses a
 # reviewer on the vendor that built the round it judges, re-reviews included. Each model and effort must be a plain
 # name, ^[A-Za-z0-9._-]+$ not starting with '-' (auditor recheck item 2): campaign.py refuses anything else.
 [roles.builder.high]
@@ -148,6 +148,12 @@ effort = "high"
 vendor = "claude"
 model = "claude-opus-5-5"
 effort = "high"
+
+# Finding drafts found on Claude, or reproduced by the auditor, get a Codex judgement (Zach, 2026-11-11).
+[roles.finding-review.high]
+vendor = "codex"
+model = "gpt-6-astra"
+effort = "xhigh"
 
 # The file-format spec is written by Claude (the setup session), so Astra reviews it.
 [roles.spec-review.standard]
