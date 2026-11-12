@@ -7,7 +7,8 @@
 - **Main:** f20fe36, lock PASS 60 files. Last full gate: RESULT gate all PASS 6030s 0 failed, at 01:13, on the C-17 package's land (J0118).
 - **Not started:** C-17's round 5, C-18 to C-20, the second ledger run (evidence/orchestrator/ledger-run-2.md) and §5.
 - **Tokens:** 855.8M of the milestone's 1B. This orchestrator session used 725.5M (evidence/orchestrator/tokens.csv), and the campaign's sessions 130.3M (evidence/tokens.csv).
-- **To resume:** `python3 ../proving-sqlite-wt/main/tools/campaign.py start` from the primary checkout (on orch). `tools/campaign.py finish` ends the campaign instead.
+- **To resume:** from the primary checkout (on orch), run `python3 ../proving-sqlite-wt/main/tools/campaign.py start --cards C-01,C-02,C-03,C-04,C-05,C-06,C-07,C-08,C-09,C-10,C-11,C-12,C-13,C-14,C-15,C-16,C-17,C-18,C-19,C-20`. Name every card, as HANDOFF.md's known issue 1 says. Then `retry C-17` once its cap allows.
+- **To end it instead:** `tools/campaign.py finish`.
 
 **B2 is on main** in two parts (LANDING.md): part A 69a1b4e, part B 2e2eeee. Part B's full gate: RESULT gate all PASS 3494s 0 failed; `lock.py check` on main: PASS, 58 files, which also repairs the stale lock of 00:19. Its land trailer names `tools/sessions.toml keys changed: vendors.claude.resume, vendors.claude.start`. From now on every Claude session runs with `--tools Bash,Read,Write,Edit,Glob,Grep,Monitor,TaskStop,ToolSearch`. The daemon was restarted on main's campaign.py at 15:55 (T-008).
 
@@ -18,8 +19,10 @@
    - **Held by:** its builder cap. 53.5M of 80M is used, so the 80% STUCK rule leaves about 10.5M, and round 4 alone used 45.3M. You decided: keep 80M and hold.
    - **To start it:** a higher cap (GOAL.md Appendix B and the card, a frozen change) or a new milestone budget, then `tools/campaign.py retry C-17`.
    - **Before round 5, the T-018 fix** (your decision (a), below), so its 15 legacy-unwind proofs get correct coverage.
-2. **C-18, C-19 and C-20: waiting on C-17.** campaign.py parks a card only from triage, so they show as waiting. Their question is C-17's.
-   - Their BOUNDS entries and labels (nField <= 8 through C-17's contract) are already on main.
+2. **C-18, C-19 and C-20: parked** (2026-11-12 08:10).
+   - **How:** campaign.py's `park` takes only a card in triage, so they were parked through its own `Campaign.set_state` under the state lock, with journal entries. That carries out your instruction to park every open card.
+   - **Their question is C-17's:** they depend on it. Retry them only after C-17 merges: `retry` makes a card ready, and doesn't wait for its dependencies again.
+   - **Already on main:** their BOUNDS entries and labels (nField <= 8 through C-17's contract).
 
 **Decided, not yet done:**
 - **T-018, option (a):** prove.py's coverage matches the unwound copies of each block on legacy-unwind proofs.
@@ -144,3 +147,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-11 22:55 Part 1 and part 2 landed (full gates PASS 4139 s and 3954 s), and the daemon was restarted on main's code. C-15 round 5 was approved and is merging; its planted bug was caught first. The finding-review session approved F-002 and F-001-b, and F-002 is in FINDINGS.md. The C-17 package is applied and queued to land.
 - 2026-11-12 00:30 C-15 merged (card gate PASS 2871 s). The C-17 package is landing (J0118, full gate). Item 7 measured: C-15 on legacy-unwind passes at K=4 on all three configurations, at most 104 s, with no nKey bound, and K=8 runs out of memory. T-018 found there: legacy-unwind coverage counts the last unwound copy's dead goals as uncovered (Open questions 1 and 2).
 - 2026-11-12 08:15 Zach: stop and hand off on the budget; keep C-17's cap and hold it; T-018 option (a); item 7 after T-018. The C-17 package and every queued land are on main (full gate PASS 6030 s). The daemon is stopped. Tokens 855.8M of 1B.
+- 2026-11-12 08:10 C-18 to C-20 parked for Zach: they depend on C-17, which is held. Every unmerged card is now parked, with its question under Open questions.
