@@ -86,20 +86,27 @@ FLOAT2INT_DIRECTIVE = '%float-to-int'
 LEGACY_CARDS = ('C-15', 'C-17')
 # Bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/): a proof named here proves its property only for
 # inputs within these bounds. {card: {proof: {'bounds': ((local, K, what), ...), 'exact': 'end' | 'start',
-# 'buffers': ((buffer, size, offset, extent), ...)}}}:
+# 'buffers': ((buffer, size, offset, extent, tails), ...)}}}:
 #   - bounds: the entry function's SETUP holds exactly `__CPROVER_assume(<local> <= K);` for each, where <local> is the
 #     harness variable that stands for `what`, the input as the function under proof names it;
 #   - buffers: a bounded proof allocates nothing but single objects (`sizeof(T)`) and these constant-size buffers,
-#     `<buffer> = malloc(<size>);`, each used only as `<buffer> + <offset>`. Its offset local is set once, to 0 when
-#     'exact' is 'start' (an underread fails), or to `(<size>) - (<extent>)` when it is 'end' (an overread fails),
-#     <extent> being the exact extent the contract requires there. A card proves both shapes, as two proofs.
+#     `<buffer> = malloc(<size>);`, each used only as `<buffer> + <offset>`, then only the tail terms named in
+#     `tails` (`+ t`, each a constant local of SETUP). Its offset local is set once, to 0 when 'exact' is 'start' (an
+#     underread fails), or to `(<size>) - (<extent>)` when it is 'end' (an overread fails), <extent> being the exact
+#     extent the contract requires there. A card proves both shapes, as two proofs.
+#   - Each buffer's size must equal the largest extent its bounds allow. Larger, the end-exact offset is never 0 and
+#     the start-exact pointer never ends at the buffer's end, so neither shape is exact for the largest inputs; and a
+#     constant shift of the pointer is caught only because some input uses the whole buffer: −1 then makes pointer
+#     arithmetic leave the buffer (the proof fails), and +1 leaves fewer bytes than the requires asks for every input
+#     (the proof passes vacuously, and coverage fails). Tool tests `-k bounds` show both.
 # tools/scan.py (rule 16) checks all of this, refuses any other constant upper bound on an input of the call under
 # proof, and requires the label in the card and PROPERTIES.md; tools/results.py prints the label in RESULTS.md and
 # results.csv; tools/native.py builds and runs the card's native tests past the bound (tests/bounded/<card>-<k>.c), a
 # step of every gate that runs the card. Fixed here, in a frozen file, so no card can add, widen or drop a bound.
 _C15_BOUNDS = (('capacity', 4, 'p->nField'), ('nKey', 256, 'nKey'))
-_C15_BUFFERS = (('bytes', '256 + 8', 'key_offset', '(size_t)(nKey > 0 ? nKey : 1) + 8'),
-                ('allocation', 'mem_offset + sizeof(Mem) * 4', 'record_offset', 'mem_offset + sizeof(Mem) * capacity'))
+_C15_BUFFERS = (('bytes', '256 + 8', 'key_offset', '(size_t)(nKey > 0 ? nKey : 1) + 8', ()),
+                ('allocation', 'mem_offset + sizeof(Mem) * 4', 'record_offset', 'mem_offset + sizeof(Mem) * capacity',
+                 ('mem_offset',)))
 BOUNDS = {
     'C-15': {'unpack': {'bounds': _C15_BOUNDS, 'exact': 'end', 'buffers': _C15_BUFFERS},
              'unpack_start': {'bounds': _C15_BOUNDS, 'exact': 'start', 'buffers': _C15_BUFFERS}},
@@ -107,8 +114,9 @@ BOUNDS = {
 # T-015 (Zach, 2026-11-11): the legacy engine checks a write inside a contracted loop against that loop's assigns only,
 # never the loop's frame against the function's. So a legacy build fails unless every assigns target of a loop in an
 # enforced function is a local or parameter of that function, or appears verbatim (spacing aside) among the targets of
-# its contract's assigns. A card named here argues the inclusion instead (its reviewer checks it), and RESULTS.md
-# labels its assigns "reviewed (T-015)", not proved.
+# its contract's assigns: a conditional one (`c: x`) only under the same condition, and only if the function's body
+# assigns none of the names the target or its condition uses. A card named here argues the inclusion instead (its
+# reviewer checks it), and RESULTS.md labels its assigns "reviewed (T-015)", not proved.
 LEGACY_FRAME_ARGUED = {'C-15': 'its function frame is whole Mem cells, aMem[0..nField), and the loop frame '
                                'object_from(pMem) lies inside them by the exact layout'}
 CONTRACT_CLAUSE_RX = re.compile(r'__CPROVER_(requires|ensures|assigns|frees)\b')
@@ -123,8 +131,9 @@ def bounds_label(card, proof):
 
 
 def assigns_clause_targets(text):
-    """The targets of every __CPROVER_assigns(...) in text, each with its spacing removed: a group's `cond:` prefix
-    dropped, groups split at ';' and targets at ',' outside parentheses and brackets."""
+    """(condition, target) for every target of every __CPROVER_assigns(...) in text, each with its spacing removed:
+    groups split at ';', a group's `cond:` prefix its condition ('' for none, and for the constant 1), targets split at
+    ',' outside parentheses and brackets."""
     out = []
     for m in re.finditer(r'__CPROVER_assigns\s*\(', text):
         depth, i = 1, m.end()
@@ -134,9 +143,24 @@ def assigns_clause_targets(text):
         body = text[m.end():i - 1]
         for group in _split_top(body, ';'):
             parts = _split_top(group, ':')
-            group = parts[-1] if len(parts) > 1 else group
-            out += [re.sub(r'\s+', '', t) for t in _split_top(group, ',') if t.strip()]
+            cond = re.sub(r'\s+', '', ':'.join(parts[:-1])) if len(parts) > 1 else ''
+            cond = '' if cond == '1' else cond
+            out += [(cond, re.sub(r'\s+', '', t)) for t in _split_top(parts[-1], ',') if t.strip()]
     return out
+
+
+_NOT_NAMES = {'sizeof', 'unsigned', 'signed', 'char', 'short', 'int', 'long', 'const', 'struct', 'union', 'void'}
+
+
+def named_identifiers(expr):
+    """The identifiers an assigns target or condition names: not members (after `.` or `->`), not __CPROVER_ names."""
+    return {n for n in re.findall(r'(?<![\w.>])(%s)' % IDENT, expr) if not n.startswith('__CPROVER') and n not in _NOT_NAMES}
+
+
+def assigned_in(body, name):
+    """Whether body assigns name: `name =` or a compound assignment, or `name++`, `++name` and the like."""
+    return re.search(r'(?<![\w.>])%s\s*(?:(?:[-+*/%%&|^]|<<|>>)?=(?!=)|\+\+|--)|(?:\+\+|--)\s*%s\b' % (
+        re.escape(name), re.escape(name)), body) is not None
 
 
 def _split_top(text, sep):
@@ -156,7 +180,8 @@ def _split_top(text, sep):
 def legacy_frame_problems(functions_json, overlay_text, fn, header_text):
     """T-015: each loop assigns target in fn's body, read from the overlay with its preprocessor lines removed (a PROOF
     span holds none: scan rule 7), must be a local or parameter of fn (from the goto program) or one of the targets of
-    contract_<fn>'s assigns."""
+    contract_<fn>'s assigns: under the same condition if the function's is conditional, and naming nothing fn's body
+    assigns."""
     d = json.loads(functions_json)
     locals_ = set()
     for item in d if isinstance(d, list) else []:
@@ -172,13 +197,26 @@ def legacy_frame_problems(functions_json, overlay_text, fn, header_text):
         return ['T-015 frame check: %s is not defined in the overlay' % fn]
     lines = overlay_text.split('\n')[rng[0] - 1:rng[1]]
     body = _strip_comments('\n'.join(ln for ln in lines if not ln.lstrip().startswith('#')))
-    allowed = set(assigns_clause_targets(contract_declaration(header_text, fn)[2]))
+    allowed = assigns_clause_targets(contract_declaration(header_text, fn)[2])
     probs = []
-    for t in assigns_clause_targets(body):
-        if t in allowed or t in locals_:
+    for cond, t in assigns_clause_targets(body):
+        if not cond and t in locals_:
             continue
-        probs.append('%s\'s loop assigns %s, which is neither a local of %s nor one of contract_%s\'s assigns targets '
-                     '(T-015: the legacy engine never checks a loop\'s frame against the function\'s)' % (fn, t, fn, fn))
+        # an unconditional function target covers the loop's under any condition; a conditional one (`c: x`) covers
+        # only a loop target under the same condition (follow-up 1, the auditor and Zach, 2026-11-11)
+        match = [(c, x) for c, x in allowed if x == t and (c == '' or c == cond)]
+        if not match:
+            probs.append('%s\'s loop assigns %s%s, which is neither a local of %s nor one of contract_%s\'s assigns targets%s '
+                         '(T-015: the legacy engine never checks a loop\'s frame against the function\'s)' % (
+                             fn, (cond + ': ') if cond else '', t, fn, fn,
+                             ' under the same condition' if any(x == t for _, x in allowed) else ''))
+            continue
+        # a target's meaning moves if the body assigns a name in it or in its condition (a parameter reassigned before
+        # the loop): then the verbatim match proves nothing
+        moved = sorted(n for n in named_identifiers(t) | named_identifiers(match[0][0] + ' ' + cond) if assigned_in(body, n))
+        if moved:
+            probs.append('%s\'s loop assigns %s, which matches contract_%s\'s target, but %s assigns %s, which it names '
+                         '(T-015: the match holds only if the names mean the same at the loop)' % (fn, t, fn, fn, ', '.join(moved)))
     return probs
 
 
