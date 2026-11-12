@@ -84,8 +84,106 @@ FLOAT2INT_DIRECTIVE = '%float-to-int'
 # Zach, 2026-11-10 (evidence/approvals/T-006-dfcc-loop-pointer/): CBMC's legacy contracts, opted into per proof, only
 # for the cards whose loops carry a pointer that DFCC can't encode (T-006). Every other proof stays on DFCC.
 LEGACY_CARDS = ('C-15', 'C-17')
+# Bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/): a proof named here proves its property only for
+# inputs within these bounds. {card: {proof: {'bounds': ((local, K, what), ...), 'exact': 'end' | 'start',
+# 'buffers': ((buffer, size, offset, extent), ...)}}}:
+#   - bounds: the entry function's SETUP holds exactly `__CPROVER_assume(<local> <= K);` for each, where <local> is the
+#     harness variable that stands for `what`, the input as the function under proof names it;
+#   - buffers: a bounded proof allocates nothing but single objects (`sizeof(T)`) and these constant-size buffers,
+#     `<buffer> = malloc(<size>);`, each used only as `<buffer> + <offset>`. Its offset local is set once, to 0 when
+#     'exact' is 'start' (an underread fails), or to `(<size>) - (<extent>)` when it is 'end' (an overread fails),
+#     <extent> being the exact extent the contract requires there. A card proves both shapes, as two proofs.
+# tools/scan.py (rule 16) checks all of this, refuses any other constant upper bound on an input of the call under
+# proof, and requires the label in the card and PROPERTIES.md; tools/results.py prints the label in RESULTS.md and
+# results.csv; tools/native.py builds and runs the card's native tests past the bound (tests/bounded/<card>-<k>.c), a
+# step of every gate that runs the card. Fixed here, in a frozen file, so no card can add, widen or drop a bound.
+_C15_BOUNDS = (('capacity', 4, 'p->nField'), ('nKey', 256, 'nKey'))
+_C15_BUFFERS = (('bytes', '256 + 8', 'key_offset', '(size_t)(nKey > 0 ? nKey : 1) + 8'),
+                ('allocation', 'mem_offset + sizeof(Mem) * 4', 'record_offset', 'mem_offset + sizeof(Mem) * capacity'))
+BOUNDS = {
+    'C-15': {'unpack': {'bounds': _C15_BOUNDS, 'exact': 'end', 'buffers': _C15_BUFFERS},
+             'unpack_start': {'bounds': _C15_BOUNDS, 'exact': 'start', 'buffers': _C15_BUFFERS}},
+}
+# T-015 (Zach, 2026-11-11): the legacy engine checks a write inside a contracted loop against that loop's assigns only,
+# never the loop's frame against the function's. So a legacy build fails unless every assigns target of a loop in an
+# enforced function is a local or parameter of that function, or appears verbatim (spacing aside) among the targets of
+# its contract's assigns. A card named here argues the inclusion instead (its reviewer checks it), and RESULTS.md
+# labels its assigns "reviewed (T-015)", not proved.
+LEGACY_FRAME_ARGUED = {'C-15': 'its function frame is whole Mem cells, aMem[0..nField), and the loop frame '
+                               'object_from(pMem) lies inside them by the exact layout'}
 CONTRACT_CLAUSE_RX = re.compile(r'__CPROVER_(requires|ensures|assigns|frees)\b')
 LEGACY_STATIC_ABORT = 'Expected an assignment of the form `symbol_exprt := side_effect_expr_nondett`'
+
+
+def bounds_label(card, proof):
+    """'bounded: <what> <= K, ...' for a proof in BOUNDS, else ''. The card file and PROPERTIES.md carry it as
+    '<card> <proof>: <label>' (scan.py rule 16)."""
+    b = BOUNDS.get(card, {}).get(proof)
+    return ('bounded: ' + ', '.join('%s <= %d' % (what, k) for _, k, what in b['bounds'])) if b else ''
+
+
+def assigns_clause_targets(text):
+    """The targets of every __CPROVER_assigns(...) in text, each with its spacing removed: a group's `cond:` prefix
+    dropped, groups split at ';' and targets at ',' outside parentheses and brackets."""
+    out = []
+    for m in re.finditer(r'__CPROVER_assigns\s*\(', text):
+        depth, i = 1, m.end()
+        while i < len(text) and depth:
+            depth += {'(': 1, ')': -1}.get(text[i], 0)
+            i += 1
+        body = text[m.end():i - 1]
+        for group in _split_top(body, ';'):
+            parts = _split_top(group, ':')
+            group = parts[-1] if len(parts) > 1 else group
+            out += [re.sub(r'\s+', '', t) for t in _split_top(group, ',') if t.strip()]
+    return out
+
+
+def _split_top(text, sep):
+    out, depth, start = [], 0, 0
+    for i, ch in enumerate(text):
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth -= 1
+        elif ch == sep and depth == 0:
+            out.append(text[start:i])
+            start = i + 1
+    out.append(text[start:])
+    return out
+
+
+def legacy_frame_problems(functions_json, overlay_text, fn, header_text):
+    """T-015: each loop assigns target in fn's body, read from the overlay with its preprocessor lines removed (a PROOF
+    span holds none: scan rule 7), must be a local or parameter of fn (from the goto program) or one of the targets of
+    contract_<fn>'s assigns."""
+    d = json.loads(functions_json)
+    locals_ = set()
+    for item in d if isinstance(d, list) else []:
+        for f in (item.get('functions') or []) if isinstance(item, dict) else []:
+            if f.get('name') == fn:
+                locals_ |= {x.rsplit('::', 1)[-1] for x in f.get('parameterIdentifiers') or []}
+                for ins in f.get('instructions') or []:
+                    m = re.search(r'\bDECL\s+%s::[0-9:]*::(%s)\b' % (re.escape(fn), IDENT), ins.get('instruction', ''))
+                    if m:
+                        locals_.add(m.group(1))
+    rng = ov.function_ranges(overlay_text.encode('latin-1'), [fn]).get(fn)
+    if not rng:
+        return ['T-015 frame check: %s is not defined in the overlay' % fn]
+    lines = overlay_text.split('\n')[rng[0] - 1:rng[1]]
+    body = _strip_comments('\n'.join(ln for ln in lines if not ln.lstrip().startswith('#')))
+    allowed = set(assigns_clause_targets(contract_declaration(header_text, fn)[2]))
+    probs = []
+    for t in assigns_clause_targets(body):
+        if t in allowed or t in locals_:
+            continue
+        probs.append('%s\'s loop assigns %s, which is neither a local of %s nor one of contract_%s\'s assigns targets '
+                     '(T-015: the legacy engine never checks a loop\'s frame against the function\'s)' % (fn, t, fn, fn))
+    return probs
+
+
+def bounds_line(card, proof):
+    return '%s %s: %s' % (card, proof, bounds_label(card, proof))
 
 IDENT = r'[A-Za-z_][A-Za-z0-9_]*'
 RE_PAIR = re.compile(r'^(%s)/contract_(%s)$' % (IDENT, IDENT))
@@ -580,10 +678,17 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
                 stdout_path=fj)
     if rc != 0:
         return None, 'goto-instrument --show-goto-functions failed (%s); see %s' % (rc, log + '.arg-types')
+    frame = []
     try:
-        probs = card_call_type_problems(open(fj, errors='replace').read(), proof.entry, card_functions(card_dir, proof),
-                                        proof.enforced)
-    except (ValueError, KeyError, IndexError, TypeError) as e:
+        ftext = open(fj, errors='replace').read()
+        probs = card_call_type_problems(ftext, proof.entry, card_functions(card_dir, proof), proof.enforced)
+        card_id = os.path.basename(os.path.normpath(card_dir))
+        if proof.uses_legacy() and proof.loops == 'contracts' and card_id not in LEGACY_FRAME_ARGUED:
+            otext = open(os.path.join(overlay_dir, 'sqlite3.c'), 'rb').read().decode('latin-1')
+            for fn in proof.enforced:
+                with open(os.path.join(ROOT, 'proofs', 'contracts', fn + '.h'), errors='replace') as f:
+                    frame += legacy_frame_problems(ftext, otext, fn, f.read())
+    except (ValueError, KeyError, IndexError, TypeError, OSError, CardError) as e:
         probs = ['could not read the goto program\'s calls: %s: %s' % (type(e).__name__, e)]
     finally:
         os.remove(fj)
@@ -591,6 +696,10 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
         with open(log + '.arg-types', 'a') as f:
             f.write('\n'.join(probs) + '\n')
         return None, 'card-call argument types: ' + '; '.join(probs)
+    if frame:
+        with open(log + '.legacy-frame', 'w') as f:
+            f.write('\n'.join(frame) + '\n')
+        return None, 'legacy loop frame (T-015): ' + '; '.join(frame)
     cur = p1
     if proof.uses_dfcc():
         p2 = os.path.join(bdir, proof.name + '.2.goto')
@@ -781,8 +890,10 @@ def cmd_prove(a):
 RE_COVER = re.compile(r'^\[([^\]]+)\] file (\S+) line (\d+) function (\S+) block (\d+) \(lines (.*)\): (SATISFIED|FAILED)$')
 
 
-def parse_cover(text, overlay_path):
-    """Return list of (function, set(overlay lines), satisfied) for blocks in overlay_path."""
+def parse_cover(text, overlay_path, only_fn=None):
+    """Return list of (function, set(overlay lines), satisfied) for blocks in overlay_path. With only_fn, a block's
+    lines come only from its source locations in function only_fn: the legacy engine inlines a kept callee's body
+    into the enforced one, and those lines are the callee's (T-006 follow-up, C-15 round 4)."""
     out = []
     base = os.path.basename(overlay_path)
     for line in text.split('\n'):
@@ -797,7 +908,7 @@ def parse_cover(text, overlay_path):
             fm = re.match(r'^(.*):([^:]*):([0-9,\- ]+)$', part)
             if not fm:
                 continue
-            if os.path.basename(fm.group(1)) != base:
+            if os.path.basename(fm.group(1)) != base or (only_fn is not None and fm.group(2) != only_fn):
                 continue
             for rng in fm.group(3).split(','):
                 rng = rng.strip()
@@ -830,8 +941,14 @@ def cover_one(card, card_dir, proof, cfg_name, cfg_flags, overlay_dir, build_roo
     lm = ov.LineMap(open(ovpath, 'rb').read())
     blocks = parse_cover(text, ovpath)
     for fn in proof.cover:
-        body = fn + '_wrapped_for_contract_checking' if fn in proof.enforced else fn
-        mine = [(l, s) for f, l, s in blocks if f == body]
+        if fn in proof.enforced and proof.uses_legacy():
+            # the legacy engine keeps the enforced body as __CPROVER_contracts_original_<fn>, with kept callees inlined
+            # into it (T-006 follow-up, reports/C-15-b4.md): count only fn's own source lines
+            body = '__CPROVER_contracts_original_' + fn
+            mine = [(l, s) for f, l, s in parse_cover(text, ovpath, only_fn=fn) if f == body]
+        else:
+            body = fn + '_wrapped_for_contract_checking' if fn in proof.enforced else fn
+            mine = [(l, s) for f, l, s in blocks if f == body]
         all_lines, unc = set(), set()
         for l, s in mine:
             all_lines |= l

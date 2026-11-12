@@ -3,13 +3,14 @@
 
 make gate CARD=C-NN runs, in order, stopping at nothing (every step reports):
   check_overlay; proof.lock; scan (with --card and, if given, --base); the configuration probe;
-  the includes, proofs, coverage and mutants of C-NN and of every card whose proofs call its functions
+  the includes, proofs, coverage (and, for a bounded card in tools/prove.py BOUNDS, native tests: tools/native.py)
+  and mutants of C-NN and of every card whose proofs call its functions
   (tools/cards.py callers_of), restricted to cards that have proofs/C-XX/Makefile. With --base, if
   proofs/include/preds.h differs from BASE, also every card whose preprocessed harness includes it.
 The includes step (tools/prove.py includes) preprocesses each harness on every configuration and fails if it
 pulls in any file but the overlay's sqlite3.c, proofs/{include,contracts,spec}/*.h and system headers.
 make gate (full) runs check_overlay; proof.lock; scan; probe; every proof dir's proofs and coverage on
-every configuration; every mutant in proofs/MUTANTS against every proof; and requires each function
+every configuration, and every bounded card's native tests; every mutant in proofs/MUTANTS against every proof; and requires each function
 named by a card with proofs to have at least two mutants.
 Mutants (checkpoint 1, D1): a mutant counts as killed only by its own card='s proofs (tools/mutate.py), so
 make gate CARD=C-NN fails unless C-NN's own proofs kill each of its mutants; callers' proofs still run, and don't
@@ -151,6 +152,8 @@ def main():
             step('includes %s' % c, [py, 'tools/prove.py', 'includes', '--card-dir', os.path.join('proofs', c)], results)
             step('prove %s' % c, prove_cmd(c, 'prove'), results)
             step('coverage %s' % c, prove_cmd(c, 'coverage'), results)
+            if c in prove.BOUNDS:          # a bounded card's native tests past its bounds (tools/native.py, scan rule 16)
+                step('native %s' % c, [py, 'tools/native.py', '--card', c], results)
         # mutants
         muts = mutate.read_mutants(os.path.join(ROOT, 'proofs', 'MUTANTS'))
         fns_with_proofs = set()
