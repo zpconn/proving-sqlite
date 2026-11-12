@@ -1,0 +1,3 @@
+  ERROR unpack lp64-le: no coverage goals found for sqlite3VdbeRecordUnpack (is it reached? is the name right?)
+  coverage unpack lp64-le sqlite3VdbeRecordUnpack: 0/0 lines; uncovered none
+RESULT coverage C-15 lp64-le FAIL 0/0 lines 0 uncovered 0 unexplained

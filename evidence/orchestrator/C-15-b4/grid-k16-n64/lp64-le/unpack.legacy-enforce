@@ -1,0 +1,13 @@
+$ goto-instrument --enforce-contract sqlite3VdbeRecordUnpack tmp/b4/grid-k16-n64/lp64-le/unpack.2b.goto tmp/b4/grid-k16-n64/lp64-le/unpack.2c.goto
+Reading GOTO program from 'tmp/b4/grid-k16-n64/lp64-le/unpack.2b.goto'
+Function Pointer Removal
+Virtual function removal
+Cleaning inline assembler statements
+Trying to force one backedge per target
+Enforcing contracts
+Found a `DEAD` variable sqlite3VdbeRecordUnpack::1::1::serial_type without corresponding `DECL`, at: file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 92154 function sqlite3VdbeRecordUnpack
+Ignored duplicate stack-allocated target 'tmp_nondet_contents' at file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 92134 function sqlite3VdbeRecordUnpack
+Found a `DEAD` variable sqlite3VdbeRecordUnpack::1::1::serial_type without corresponding `DECL`, at: file /home/zpconn/code/proving-sqlite-wt/C-15/overlay/sqlite3.c line 92154 function sqlite3VdbeRecordUnpack
+line 9 function __CPROVER_enforce_requires_is_fresh: function 'malloc' is not declared
+Adding nondeterministic initialization of static/global variables.
+Writing GOTO program to 'tmp/b4/grid-k16-n64/lp64-le/unpack.2c.goto'

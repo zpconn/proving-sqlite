@@ -1,0 +1,3 @@
+  FAILED unpack lp64-le [sqlite3GetVarint32.precondition.1] line 92131 Check requires clause of sqlite3GetVarint32 in sqlite3VdbeRecordUnpack
+RESULT prove C-15/unpack lp64-le FAIL 271s 1759 properties 1 failed
+RESULT prove C-15 lp64-le FAIL 271s 1759 properties 1 failed

@@ -167,7 +167,7 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Reduced:** the trigger is a replaced callee with a **static local** (sqlite3VdbeSerialGet's `static const u16 aFlag[]`, 92080) called inside a loop of the enforced function. The legacy replacement emits assigns-range bookkeeping for that static (`__car_lb := cast(address_of(…::aFlag))`), which the enforce pass's traversal doesn't accept. It doesn't depend on the contract's clauses: each of SerialGet's six clauses can be dropped, or all replaced by `requires(1) ensures(1) assigns()`, and it still aborts. A synthetic callee with the same signature and no static local passes. Adding `static const u16 tbl[] = {…}` to it aborts. Without the loop, it passes.
 - **Repro:** evidence/orchestrator/tool-issues/T-012/: k-static-local.c (minimal), walk.c (SerialGet's own contract), m-own-same-sig.c (the control that passes) and run.sh, every step capped at 24 GB. The C-15 probe is c15-gen.py and c15-run.sh, with results in c15-results/.
 - **Effect:** C-15's proof can't replace sqlite3VdbeSerialGet under the legacy engine.
-- **Workaround:** keep the callee's body. It changes no SQLite code and weakens no check; the body is SQLite's own code, checked in place. With SerialGet's body kept and the other three callees replaced, the legacy engine takes C-15's real function through every pass. CBMC then gave a verdict in 141 s with 5.1 GB peak, on the builder's unfinished round-2 contract. On the toy, the same workaround proves: 0 of 88 failed. There is no goto-instrument option that spares static locals.
+- **Workaround:** keep the callee's body. It changes no SQLite code and weakens no check; the body is SQLite's own code, checked in place. With SerialGet's body kept and the other three callees replaced, the legacy engine takes C-15's real function through every pass. CBMC then gave a verdict in 141 s with 5.1 GB peak, on the builder's unfinished round-2 contract. **Bounds (correction, 2026-11-11):** that run used round 1's harness, bounded to 64 record bytes and at most 4 fields, with separate allocations that weren't exact (`extent <= 64`, `capacity <= 4`). It shows the workaround gets through the passes; it shows nothing about the full domain, where C-15 gets no verdict (T-014). On the toy, the same workaround proves: 0 of 88 failed. There is no goto-instrument option that spares static locals.
 
 ## T-013 tools/campaign.py (frozen): a change to the land rules is judged by the old rules
 
@@ -188,3 +188,33 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Repro:** evidence/orchestrator/tool-issues/T-014/legacy-slice.c with FRAME set as above; the commands are in C-15-b3.md. The builder's runs; not yet rerun by me.
 - **Effect:** C-15's frame uses the workaround. Even so, its full-domain runs give no verdict (memory, VERIFICATION ERROR or a timeout), while a bounded diagnostic proves (64 bytes, at most 4 fields: 2,017 properties, 0 failed, 128 s). Per Zach's decision in advance, C-15 moves to a bounded P1.
 - **Workaround:** frame from the loop-carried local pointer (`object_from(p)`), not from a dereferenced base and length.
+
+## T-015 CBMC 6.11.0 legacy contracts: a loop's frame isn't checked against the function's assigns (confirmed)
+
+- **Tool:** CBMC 6.11.0, goto-instrument `--apply-loop-contracts` then `--enforce-contract f`, without `--dfcc`: prove.py's legacy path (T-006).
+- **What happened:** C-15's round-4 builder (2026-11-11, reports/C-15-b4.md) found that under legacy contracts, a write inside a contracted loop is checked against the loop's assigns only. Nothing checks that the loop's frame lies inside the function's assigns.
+  - The toy: `f` may assign only `cells[i].a`, the loop's frame is `object_from(p)` and the body writes `p->b`. Legacy gives VERIFICATION SUCCESSFUL with 0 failed.
+  - On C-15's real proof, dropping `p->aMem[i].enc` from the function's assigns still passes on ilp32-le (1,755 properties, 0 failed), though the body stores `pMem->enc` at 92138.
+- **Reproduced by me** (evidence/orchestrator/tool-issues/T-015/: toy.c, run.sh, run.out, orders.sh, orders.out; every step capped at 24 GB):
+  - legacy, bad variant: SUCCESSFUL, 0 failed; legacy, good variant: SUCCESSFUL.
+  - DFCC (`--dfcc entry --enforce-contract f --apply-loop-contracts`): both variants FAIL "Check assigns clause inclusion for loop f.0". DFCC checks the inclusion, and the wide frame fails it even when the body writes only `a`.
+  - Other legacy pass orders don't help: enforce then loops ends in "Numeric exception : 0" (rc 6), and both in one run aborts (rc 134).
+- **Effect:** under legacy, a function's assigns clause is not checked for writes made inside a contracted loop. Every write is still checked for memory safety, so P1's no-UB checks are unaffected. The gap is in the frame a caller relies on when it REPLACEs the function with its contract.
+  - C-15: no in-scope caller replaces sqlite3VdbeRecordUnpack.
+  - C-17: its contract is what C-18 to C-20 replace, so its loop's frame matters.
+  - **My error:** T-006's validation toys (tools/tests/legacy/) had no case of a loop frame wider than the function's. The callee-frame and alias toys check writes against the loop's frame only.
+- **Status:** confirmed. It is a property of the legacy engine at this version, not of SQLite. Options go to Zach with C-15's round-4 decision.
+
+## T-016 CBMC 6.11.0: `--arrays-uf-always` crashes on C-15's program (confirmed)
+
+- **Tool:** cbmc 6.11.0 with `--arrays-uf-always`, on C-15's legacy-instrumented goto program (K=8, N=256, lp64-le), under a 12 GB cap.
+- **What happened:** in Zach's encoding diagnostic (2026-11-11), CBMC stopped after 1 s with "Invariant check failed, File: ../src/solvers/flattening/arrays.cpp:211 function: collect_arrays, Reason: unexpected array expression: member with 'struct'", and dumped core. It gave no verdict.
+- **Repro:** the local branch wip/c15-encoding, `diag/run.sh` (diag/arrays-uf-always.cbmc; the command in diag/base-command.txt plus the option).
+- **Effect:** none on the proofs: no proof uses the option, and prove.py's ALLOWED_SOLVERS doesn't offer it. In the same diagnostic, the default solver gave PASS in 1,036 s, `--refine-arrays` VERIFICATION SUCCESSFUL in 984 s, and `--sat-solver cadical` ran out of memory after 30 s. None reaches K=8 within 600 s, so C-15's bound stays K=4, N=256 (Zach's rule).
+- **Status:** confirmed. A defect in CBMC, not reported upstream.
+
+## T-017 tools/campaign.py (frozen): proofs/HOWTO.md can't be landed
+
+- **What happened:** the C-15-bounded land (2026-11-11) was refused: "a land may touch only cards/, tests/repro/, evidence/approvals/, evidence/orchestrator/, PROGRESS.md, LEDGER.md, FINDINGS.md, tools/sessions.toml; this one touches proofs/HOWTO.md". proofs/HOWTO.md is neither frozen (lock.py FROZEN) nor on LAND_ALLOWED, so no land can change it, with or without an approval record.
+- **Effect:** the "Bounded proofs" section approved in patch.diff lives at evidence/approvals/C-15-bounded/HOWTO-bounded-proofs.md, and C-15's card points there. The rest of patch.diff landed as approved.
+- **Fix, for Zach:** add proofs/HOWTO.md to LAND_ALLOWED in campaign.py (a frozen change). Like T-007, a land that changes the land rules is judged by the old ones (T-013), so the section would follow in a second land.
