@@ -37,6 +37,8 @@
    - **Later:** once the legacy-unwind pass exists, C-15 is measured once on it, at K = 4 and 8, with exact symbolic-size allocations and no nKey bound. If that fits 600 s on all configurations, it replaces N = 256 in a later frozen change.
 
 Answered on 2026-11-11:
+- **F-002 and F-001-b, judged by Codex:** the one-off finding-review session (J0117, gpt-6-astra) gave APPROVE on both (reviews/finding-r1.md). It rebuilt and ran F-002's repro and its clean control, and all six F-001-b runs, and they matched campaign.py's and my runs. F-002 is in FINDINGS.md, with tests/repro/F-002.c.
+- **C-15's planted bug:** `tools/mutate.py --adhoc "sqlite3VdbeRecordUnpack 92146 'pMem++' 'pMem+=2'"`, run on the approved commit (card/C-15 5e1f5db) before the merge gate finished, was KILLED by C-15/unpack on lp64-le ("Check that loop invariant is preserved"; evidence/orchestrator/C-15-adhoc/). With M-050, M-051 and M-063 killed and the reviewer's T-012 check, Zach's merge conditions for C-15 are met.
 - **The auditor on part 2:** OK, with one prompt change, now made: the finding-review session rebuilds and runs F-002's repro and its clean control itself, in $TMPDIR in the foreground, and compares them with campaign.py's runs. If Codex's content filter stops it (T-005), it is parked for Zach, with no fallback to Claude, the finders' vendor.
 - **The auditor on the C-17 package:** OK to land after part 2, with three cheap fixes, now in the package:
   - the aColl rule allows only malloc(sizeof(CollSeq)), and `c = 0` is refused;
@@ -136,3 +138,4 @@ Answered on 2026-11-10: C-11 (option 1 with the contract addition), T-003 (TRUST
 - 2026-11-11 18:37 Zach's C-15 decisions applied on wip/bounds. Diagnostic done: none reaches K=8 within 600 s, so K=4, N=256. The start-exact shape passes on all three configurations. T-016 is the `--arrays-uf-always` crash. The approval request (C-15-bounded) waits for the auditor's OK; tool tests 311/311, selftest 110/110.
 - 2026-11-11 19:08 C-15's bounded package approved and queued to land (full gate). F-001-b added and reproduced. C-17's fallback recorded. The follow-ups are on wip/t015-followup.
 - 2026-11-11 20:04 C-17 round 4 NEEDS-DECISION: B1 holds under legacy. Measured: K = 16 on legacy-unwind (a tools change), K = 5 on DFCC, L = none; F-001 fails inside every bounded run. C-17 parked (Open questions 2).
+- 2026-11-11 22:55 Part 1 and part 2 landed (full gates PASS 4139 s and 3954 s), and the daemon was restarted on main's code. C-15 round 5 was approved and is merging; its planted bug was caught first. The finding-review session approved F-002 and F-001-b, and F-002 is in FINDINGS.md. The C-17 package is applied and queued to land.

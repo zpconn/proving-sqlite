@@ -1,0 +1,2 @@
+MUTANT M-adhoc sqlite3VdbeRecordUnpack:92146 'pMem++'->'pMem+=2' KILLED by C-15/unpack lp64-le: 1 failed: [sqlite3VdbeRecordUnpack.3] file tmp/adhoc/M-adhoc/sqlite3.c line 92134 Check that loop invariant is preserved
+RESULT mutate C-15 PASS 1/1 killed 0 equivalent

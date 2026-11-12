@@ -24,6 +24,8 @@ evidence/approvals/T-006-dfcc-loop-pointer/) uses CBMC's legacy contracts instea
                                                   the clauses of its proofs/contracts/<fn>.h, generated at every build)
   link, remove-bodies, drop-unused and the argument-type check as above
   goto-instrument --replace-call-with-contract g ...   then   --apply-loop-contracts   then   --enforce-contract f
+(With <name>_LOOPS := unwind, legacy-unwind, `--unwindset <UNWINDSET> --unwinding-assertions`, replaces
+--apply-loop-contracts: the legacy engine enforces only loop-free functions. Zach, 2026-11-11, for C-17.)
 That order is required: with loop contracts applied before the replacement, a replaced callee whose body is removed
 can write outside the loop's assigns unchecked (evidence/approvals/T-006-dfcc-loop-pointer/, the callee-frame toy).
 The legacy engine reads clauses only from a function's own declaration (it can't use contract_<fn>), so each one is
@@ -107,9 +109,29 @@ _C15_BOUNDS = (('capacity', 4, 'p->nField'), ('nKey', 256, 'nKey'))
 _C15_BUFFERS = (('bytes', '256 + 8', 'key_offset', '(size_t)(nKey > 0 ? nKey : 1) + 8', ()),
                 ('allocation', 'mem_offset + sizeof(Mem) * 4', 'record_offset', 'mem_offset + sizeof(Mem) * capacity',
                  ('mem_offset',)))
+# C-17 (Zach, 2026-11-11, evidence/approvals/C-17-bounded/): K = 8, as one proof per (bSkip, nField) on the legacy-unwind
+# pass, each input fixed by `fixed`: SETUP holds exactly `<local> = <value>;` once. Its allocations are exact at
+# symbolic sizes, so it has no buffers. A card-wide `_label` is what the card and PROPERTIES.md carry, as
+# `<card>: <label>`. C-18 to C-20 replace sqlite3VdbeRecordCompareWithSkip with C-17's contract, so every proof of
+# theirs ('*') carries its bound, `via` C-17.
+_C17_PROOFS = {'b%dn%d' % (b, n): {'fixed': (('nField', n, 'pPKey2->nField'), ('bSkip', b, 'bSkip'))}
+               for b in (0, 1) for n in range(1 + b, 9)}
+_C17_VIA = {'*': {'bounds': (('nField', 8, 'pPKey2->nField'),), 'via': 'C-17'},
+            '_label': "bounded: pPKey2->nField <= 8 (through C-17's contract)"}
 BOUNDS = {
     'C-15': {'unpack': {'bounds': _C15_BOUNDS, 'exact': 'end', 'buffers': _C15_BUFFERS},
              'unpack_start': {'bounds': _C15_BOUNDS, 'exact': 'start', 'buffers': _C15_BUFFERS}},
+    'C-17': dict(_C17_PROOFS, _label='bounded: pPKey2->nField <= 8, one proof for each nField and for bSkip 0 and 1'),
+    'C-18': dict(_C17_VIA), 'C-19': dict(_C17_VIA), 'C-20': dict(_C17_VIA),
+}
+# F-001 (Zach, 2026-11-11): every bounded proof of C-17 fails the signed-overflow check on `-rc` at 92793, through
+# A-003's unbounded collation result, which is F-001 (FINDINGS.md). That failure, and only that one, is excepted: matched
+# by function (its legacy and DFCC names aside), upstream line, check and expression, so every unrolled copy counts.
+# A proof passes when its only failures are excepted. A configuration fails if no proof of the card has an excepted
+# failure there, since then the table no longer matches. mutate.py counts a mutant killed only by another failure.
+EXCEPTED_FAILURES = {
+    'C-17': ({'finding': 'F-001', 'label': 'proved except F-001 at 92793', 'function': 'sqlite3VdbeRecordCompareWithSkip',
+              'line': 92793, 'check': 'overflow', 'desc': r'^arithmetic overflow on signed unary minus in -rc$'},),
 }
 # T-015 (Zach, 2026-11-11): the legacy engine checks a write inside a contracted loop against that loop's assigns only,
 # never the loop's frame against the function's. So a legacy build fails unless every assigns target of a loop in an
@@ -123,11 +145,33 @@ CONTRACT_CLAUSE_RX = re.compile(r'__CPROVER_(requires|ensures|assigns|frees)\b')
 LEGACY_STATIC_ABORT = 'Expected an assignment of the form `symbol_exprt := side_effect_expr_nondett`'
 
 
+def bounds_spec(card, proof):
+    """A proof's BOUNDS entry: its own, else its card's '*'; None if it has neither."""
+    c = BOUNDS.get(card, {})
+    return c.get(proof) if proof in c and not proof.startswith('_') else c.get('*')
+
+
 def bounds_label(card, proof):
-    """'bounded: <what> <= K, ...' for a proof in BOUNDS, else ''. The card file and PROPERTIES.md carry it as
-    '<card> <proof>: <label>' (scan.py rule 16)."""
-    b = BOUNDS.get(card, {}).get(proof)
-    return ('bounded: ' + ', '.join('%s <= %d' % (what, k) for _, k, what in b['bounds'])) if b else ''
+    """'bounded: <what> <= K, <what> = V, ...' for a proof in BOUNDS, else ''. The card file and PROPERTIES.md carry
+    it as '<card> <proof>: <label>', or the card's `_label` as '<card>: <label>' (scan.py rule 16)."""
+    b = bounds_spec(card, proof)
+    if not b:
+        return ''
+    parts = ['%s <= %d' % (what, k) for _, k, what in b.get('bounds', ())] + \
+            ['%s = %d' % (what, v) for _, v, what in b.get('fixed', ())]
+    return 'bounded: ' + ', '.join(parts) + (" (through %s's contract)" % b['via'] if b.get('via') else '')
+
+
+def excepted(card, failure, linemap):
+    """The EXCEPTED_FAILURES entry a failure matches, or None. linemap maps the overlay's lines to upstream's."""
+    for e in EXCEPTED_FAILURES.get(card, ()):
+        fid = failure.get('id') or ''
+        fn = re.sub(r'^__CPROVER_contracts_original_|_wrapped_for_contract_checking$', '', fid.split('.')[0])
+        line = failure.get('line')
+        if (fn == e['function'] and line is not None and linemap.upstream_line(line) == e['line']
+                and '.%s.' % e['check'] in fid and re.search(e['desc'], failure.get('desc') or '')):
+            return e
+    return None
 
 
 def assigns_clause_targets(text):
@@ -223,6 +267,12 @@ def legacy_frame_problems(functions_json, overlay_text, fn, header_text):
 def bounds_line(card, proof):
     return '%s %s: %s' % (card, proof, bounds_label(card, proof))
 
+
+def card_bounds_line(card):
+    """'<card>: <label>' when the card's BOUNDS has a card-wide `_label`, else None."""
+    lab = BOUNDS.get(card, {}).get('_label')
+    return '%s: %s' % (card, lab) if lab else None
+
 IDENT = r'[A-Za-z_][A-Za-z0-9_]*'
 RE_PAIR = re.compile(r'^(%s)/contract_(%s)$' % (IDENT, IDENT))
 RE_UNWIND = re.compile(r'^%s\.[0-9]+:[0-9]+$' % IDENT)
@@ -316,6 +366,10 @@ class Proof:
                 raise CardError('%s: %r must be <fn>/contract_<fn>' % (name, p))
         if self.contracts not in ('dfcc', 'legacy'):
             raise CardError('%s_CONTRACTS must be dfcc or legacy' % name)
+        if self.contracts == 'legacy' and self.loops == 'unwind' and not self.unwindset:
+            # Zach, 2026-11-11: the legacy-unwind pass always unwinds with --unwinding-assertions and its --unwindset
+            raise CardError('%s: a legacy proof with LOOPS := unwind needs %s_UNWINDSET (prove.py unwinds it before '
+                            'enforcement, with --unwinding-assertions)' % (name, name))
         if self.loops not in ('contracts', 'unwind', 'none'):
             raise CardError('%s_LOOPS must be contracts, unwind or none' % name)
         if self.unwindset:
@@ -753,11 +807,14 @@ def build_proof(card_dir, proof, cfg_name, cfg_flags, overlay_dir, bdir, log):
         cur = p2
     elif proof.uses_legacy():
         # replace, then loops, then enforce: the order the callee-frame toy requires (T-006)
+        # legacy-unwind (Zach, 2026-11-11): with LOOPS := unwind, the loops are unwound before enforcement, which the
+        # legacy engine applies only to loop-free functions; always with --unwinding-assertions (C-17 round 4)
         passes = [('legacy-replace', sum([['--replace-call-with-contract', r.split('/')[0]] for r in proof.replace], [])),
+                  ('legacy-unwind', ['--unwindset', proof.unwindset, '--unwinding-assertions'] if proof.loops == 'unwind' else []),
                   ('legacy-loops', ['--apply-loop-contracts'] if proof.loops == 'contracts' else []),
                   ('legacy-enforce', sum([['--enforce-contract', e.split('/')[0]] for e in proof.enforce], []))]
         for k, (tag, opts) in enumerate(p for p in passes if p[1]):
-            nxt = os.path.join(bdir, proof.name + '.2%s.goto' % 'abc'[k])
+            nxt = os.path.join(bdir, proof.name + '.2%s.goto' % 'abcd'[k])
             steps.append((['goto-instrument'] + opts + [cur, nxt], tag))
             cur = nxt
     p3 = os.path.join(bdir, proof.name + '.goto')
@@ -796,7 +853,7 @@ def _mtimes(card_dir, overlay_dir):
 
 def cbmc_base(proof, goto, checks, drop_unwinding_assertions=False):
     cmd = ['cbmc', goto] + [c for c in checks if not (drop_unwinding_assertions and c == '--unwinding-assertions')]
-    if proof.unwindset:
+    if proof.unwindset and not (proof.uses_legacy() and proof.loops == 'unwind'):   # legacy-unwind did it already
         cmd += ['--unwindset', proof.unwindset]
     if proof.solver:
         cmd += proof.solver.split()
@@ -860,10 +917,15 @@ def prove_one(card, card_dir, proof, cfg_name, cfg_flags, overlay_dir, build_roo
             res['failures'] += [p for p in p2 if p['status'] != 'SUCCESS']
             if rc3 == 'timeout' or v2 not in ('SUCCESSFUL', 'FAILED'):
                 res['error'] = 'float-to-int pass gave no verdict (%s); see %s' % (rc3, log + '.f2i')
+    res['excepted'] = []
+    if card in EXCEPTED_FAILURES and res['failures']:
+        lm = ov.LineMap(open(os.path.join(overlay_dir, 'sqlite3.c'), 'rb').read())
+        res['excepted'] = [f for f in res['failures'] if excepted(card, f, lm)]
+        res['failures'] = [f for f in res['failures'] if not excepted(card, f, lm)]
     res['failed'] = len(res['failures'])
     res['seconds'] = round(time.time() - t0)
     res['cbmc_seconds'] = round(secs)
-    if not res['error'] and res['failed'] == 0 and verdict == 'SUCCESSFUL':
+    if not res['error'] and res['failed'] == 0 and (verdict == 'SUCCESSFUL' or (verdict == 'FAILED' and res['excepted'])):
         res['status'] = 'PASS'
     with open(log + '.json', 'w') as f:
         json.dump(res, f, indent=1)
@@ -902,6 +964,9 @@ def cmd_prove(a):
                 print('  FAILED %s %s [%s] line %s %s' % (proof.name, cname, fl['id'], fl['line'], fl['desc']))
             if r['error']:
                 print('  ERROR %s %s: %s' % (proof.name, cname, r['error']))
+            if r.get('excepted'):
+                print('  EXCEPTED %s %s: %d failure(s) are %s (tools/prove.py EXCEPTED_FAILURES)' % (
+                    proof.name, cname, len(r['excepted']), EXCEPTED_FAILURES[card][0]['finding']))
             print('RESULT prove %s/%s %s %s %ds %d properties %d failed' % (
                 card, proof.name, cname, r['status'], r['seconds'], r['properties'], r['failed']))
             sys.stdout.flush()
@@ -909,6 +974,12 @@ def cmd_prove(a):
             cs['p'] += r['properties']
             cs['f'] += r['failed']
             cs['ok'] = cs['ok'] and r['status'] == 'PASS'
+            cs['excepted'] = cs.get('excepted', 0) + len(r.get('excepted') or [])
+        if card in EXCEPTED_FAILURES and not cs.get('excepted'):
+            # strict (Zach, 2026-11-11): the excepted failure must occur, or the table no longer matches the code
+            print('  ERROR %s %s: no proof failed the excepted %s check, so tools/prove.py EXCEPTED_FAILURES no longer '
+                  'matches' % (card, cname, EXCEPTED_FAILURES[card][0]['finding']))
+            cs['ok'] = False
         if len(cfgs) > 1:
             print('RESULT prove %s %s %s %ds %d properties %d failed' % (
                 card, cname, 'PASS' if cs['ok'] else 'FAIL', cs['s'], cs['p'], cs['f']))

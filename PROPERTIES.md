@@ -53,3 +53,14 @@ That reference is written from the serial type table of SQLite's file format doc
    - `C-15 unpack_start: bounded: p->nField <= 4, nKey <= 256`: start-exact, with each buffer starting at the pointer, so an underread fails.
 
    Past the bounds, P1 there is *tested*: tests/bounded/C-15-*.c, natively under ASan and UBSan, in every gate that runs C-15 (tools/native.py). tools/prove.py's BOUNDS fixes the bounds and the two shapes, scan rule 16 checks them, and RESULTS.md labels the rows. The contract's frame is *reviewed* (T-015; TRUSTED.md).
+9. **P1 for sqlite3VdbeRecordCompareWithSkip is bounded, and so are the proofs that use its contract** (Zach, 2026-11-11, evidence/approvals/C-17-bounded/). CBMC 6.11 can't state its per-field obligations for an unbounded nField (B1, reports/C-17-b4.md). So C-17 proves P1 for records of at most 8 compared fields, as one proof per nField and bSkip on the legacy engine with the loop unwound (TRUSTED.md). String and blob lengths are unbounded.
+   - `C-17: bounded: pPKey2->nField <= 8, one proof for each nField and for bSkip 0 and 1`
+   - Every one of those proofs fails F-001's signed overflow at 92793. tools/prove.py's EXCEPTED_FAILURES excepts that failure and only that one, so C-17 is *proved except F-001 at 92793*.
+
+   C-18, C-19 and C-20 replace that function with C-17's contract, so their proofs hold for the same inputs:
+   - `C-18: bounded: pPKey2->nField <= 8 (through C-17's contract)`
+   - `C-19: bounded: pPKey2->nField <= 8 (through C-17's contract)`
+   - `C-20: bounded: pPKey2->nField <= 8 (through C-17's contract)`
+
+   Past the bounds, each is *tested* by its tests/bounded/<card>-*.c, in every gate that runs it.
+

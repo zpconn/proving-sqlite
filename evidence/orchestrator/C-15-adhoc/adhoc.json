@@ -1,0 +1,16 @@
+[
+ {
+  "mutant": {
+   "id": "M-adhoc",
+   "function": "sqlite3VdbeRecordUnpack",
+   "line": 92146,
+   "from": "pMem++",
+   "to": "pMem+=2",
+   "equivalent": null,
+   "review": null,
+   "card": "C-15"
+  },
+  "verdict": "KILLED",
+  "detail": "by C-15/unpack lp64-le: 1 failed: [sqlite3VdbeRecordUnpack.3] file tmp/adhoc/M-adhoc/sqlite3.c line 92134 Check that loop invariant is preserved"
+ }
+]
