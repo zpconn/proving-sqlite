@@ -1,0 +1,7 @@
+# Approved: T-015's follow-ups, rule 16's tail terms, proofs/HOWTO.md frozen (2026-11-11)
+
+- **The auditor**, relayed by Zach: "T-015 follow-up OK to land as patch.diff stands at wip/t015-followup de5bbda. Verified: patch == branch diff; lock PASS 60, scan PASS, -k bounds 53/53, -k legacy 21/21. Land it in the two parts you described, after J0108."
+- **Applied:** `patch.diff` on orch after J0108 had landed C-15's package. It is byte for byte the diff of wip/t015-followup de5bbda against its merge base e9fca2c, and `git apply` was clean. The applied tools equal the branch's.
+- **proof.lock:** rewritten after the commit, 60 files with proofs/HOWTO.md (`RESULT lock PASS 60 files`), identical to the branch's.
+- **Part 2** lands after this has landed and the daemon has restarted: HOWTO's "Bounded proofs" section, as a frozen change with its own approval record (evidence/approvals/HOWTO-finding-review/).
+- **The auditor's wording addition**, for part 2 or the next TRUSTED.md change: the T-015 check is textual. It refuses a match when the body assigns a named variable, but not when the body writes through a member or an address the target depends on (`p->a = x` before a loop with `p->a[0].x`, or `g(&p)`). The legacy proof's reviewer checks those. It doesn't arise in C-17, whose body writes only pPKey2->errCode and ->eqSeen and takes no parameter's address. It's in part 2's patch (TRUSTED.md) and in C-17's card.
