@@ -12,7 +12,7 @@ index 327a417..525023c 100644
      - **Validated on toys** (tool tests `-k legacy`, tools/tests/legacy/), each failing by the expected check:
        - a replaced call forgets what its contract assigns;
 diff --git a/proof.lock b/proof.lock
-index db5e73a..9405a0b 100644
+index db5e73a..81b0b3f 100644
 --- a/proof.lock
 +++ b/proof.lock
 @@ -4,7 +4,7 @@ ffa51ed87799d432f31f08b2df5ca05e2b6a9856b88cdb76eafe7fa685f06910  CLAUDE.md
@@ -38,7 +38,7 @@ index db5e73a..9405a0b 100644
  2fe70b351a95fd093eeb525fad7ee9d522ff213077c8183d5f90b19b860677c9  proofs/include/proof.h
  573d52372d88b23ee74ac0cdd9442b434d8f19c5de78737dcd1d67dd70e6873f  proofs/spec/record_format.h
 -5b16c866d7e1d9951cefa01dd4656a15210c066ae25bc9037e23a653b5e6396e  tools/campaign.py
-+3dd3ada86f103bf44a400965220d01635ebcd768454bd69fb1217f9f35cfcaa8  tools/campaign.py
++d001613c96c5c6ce4bc2d4e179175aa6569ef964e42a6f5ee78a7fdd02d40e1e  tools/campaign.py
  d28062752b6b77219f3b5c9ffb0fa3dfbd31a6008ecb80212174bb9ae53eed37  tools/cards.py
  053d3824b5e518643b62f4601ae55a0ba0260321ceb8f10a5d2ee8add0fbb73d  tools/check_overlay.py
  512451e43bee5b77fe0c739eed41ccfbe547e3374b48d1e12a2678c586d54c05  tools/fakecli/claude
@@ -47,7 +47,7 @@ index db5e73a..9405a0b 100644
  12f5fb25fb2b29a5f58c8b17ceff4aac33891a52faaff1a52fce513b4e5479ea  tools/tests/legacy/heads/two.h
  3a77111d017b5e004129c10635b9d67fa6575c3fd6fdffa5177680fe49270c6b  tools/tests/legacy/toys.c
 -b762bfa8695d78b7e98177e7241be6c2fe925f952d72fc7ca5ad33565fefdcbd  tools/tests/test_tools.py
-+998c4e84fe48fdd27b22fae6d1b6abbf4682b445d57887c942a1c09f0a0567d7  tools/tests/test_tools.py
++976ad99556adcbafd3ba3fa76bdf30e86db75efba64aca12a7e7277397ff541f  tools/tests/test_tools.py
  d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b  upstream/sqlite-src-3530400.zip
  b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189  upstream/sqlite3.c
  919e7f2e8ed1d8f56ac17b412b8971c76aa5d1a879752cc6058f75e7d5910e1d  upstream/sqlite3.h
@@ -74,7 +74,7 @@ index 0e84e73..8a0672c 100644
  
  - `tools/prove.py prove --card-dir proofs/C-NN [--config lp64-le|ilp32-le|lp64-be]`, `tools/prove.py coverage --card-dir proofs/C-NN [--config ...]`, `tools/mutate.py --card C-NN`, `tools/check_overlay.py`, `tools/scan.py --card C-NN --base main`. Without `--config` they run every configuration.
 diff --git a/tools/campaign.py b/tools/campaign.py
-index 48959a2..e4174d1 100755
+index 48959a2..1613429 100755
 --- a/tools/campaign.py
 +++ b/tools/campaign.py
 @@ -13,7 +13,7 @@ Commands
@@ -103,7 +103,7 @@ index 48959a2..e4174d1 100755
  # The one exception (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): C-17's builder runs on Claude and
  # its reviewer on Codex, because the Codex service's content filter stops a Codex builder on it (T-005). A reviewer is
  # still never on its round's builder vendor. The models are those sessions.toml gives the vendor's own role at the
-@@ -1309,6 +1313,23 @@ def prompt_oneoff(role, n):
+@@ -1309,6 +1313,27 @@ def prompt_oneoff(role, n):
                  '60 lines with each case citing its row. Do not modify any tracked file. Write your verdict to '
                  'reviews/spec-r%d.md: first line APPROVE or REJECT, then numbered issues with severity, evidence and '
                  'the fix.\n' % n)
@@ -115,7 +115,11 @@ index 48959a2..e4174d1 100755
 +                'A-001\'s caller paths 1 and 2. campaign.py\'s sandboxed run of its repro and the clean control are in '
 +                'evidence/orchestrator/F-002/. Judge whether it fails as claimed on unmodified upstream, whether it is '
 +                'reachable through the public API with SQLITE_ENABLE_PREUPDATE_HOOK, and whether it is A-001\'s caller '
-+                'obligation unmet (a finding) rather than a proof\'s issue.\n'
++                'obligation unmet (a finding) rather than a proof\'s issue. Rebuild and run its repro and its clean control '
++                'yourself (evidence/orchestrator/F-002/README.md), in the foreground: `cc -std=gnu11 -g -O1 '
++                '-fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined -I upstream -o '
++                '$TMPDIR/f002 evidence/orchestrator/F-002/repro.c -lm -lpthread -ldl`, then `$TMPDIR/f002` and '
++                '`$TMPDIR/f002 clean`. Compare with evidence/orchestrator/F-002/campaign-run.txt and campaign-control.txt.\n'
 +                '2. F-001\'s second repro, tests/repro/F-001-b.c (FINDINGS.md F-001). Reproduce it: build and run it as '
 +                'FINDINGS.md says, at -O2 and -O0, controls included, in $TMPDIR, which is tmp/ in your worktree (/tmp is '
 +                'not writable). Run each command in the foreground and wait for it. Compare with '
@@ -156,10 +160,10 @@ index cbe05f8..09312a3 100644
  [roles.spec-review.standard]
  vendor = "codex"
 diff --git a/tools/tests/test_tools.py b/tools/tests/test_tools.py
-index 073fb27..0400c83 100755
+index 073fb27..a9e24d0 100755
 --- a/tools/tests/test_tools.py
 +++ b/tools/tests/test_tools.py
-@@ -1930,6 +1930,22 @@ def main():
+@@ -1930,6 +1930,23 @@ def main():
          t.expect('bounds shift: a constant +1 shift fails coverage (every input lacks a byte the requires asks for, so the '
                   'proof passes vacuously)', prc == 0 and 'PASS' in pres and crc != 0 and 'FAIL' in cres, pout[-600:] + cout[-800:])
  
@@ -171,7 +175,8 @@ index 073fb27..0400c83 100755
 +                'print("PATHS", C.ROLE_PATHS["finding-review"])\n'
 +                'pr = C.prompt_oneoff("finding-review", 1)\n'
 +                'print("PROMPT", all(x in pr for x in ("F-002", "tests/repro/F-001-b.c", "evidence/orchestrator/F-002/", '
-+                '"evidence/orchestrator/F-001-b/run.txt", "reviews/finding-r1.md", "Do not modify any tracked file")))\n')
++                '"evidence/orchestrator/F-001-b/run.txt", "reviews/finding-r1.md", "Do not modify any tracked file", '
++                '"campaign-control.txt", "Rebuild and run its repro and its clean control")))\n')
 +        r = t.fresh()
 +        shutil.copy(os.path.join(REPO, 'tools', 'sessions.toml'), os.path.join(r, 'tools', 'sessions.toml'))
 +        rc, out, res = t.run(r, [py, '-c', code])

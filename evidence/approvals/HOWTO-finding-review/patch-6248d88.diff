@@ -1,0 +1,184 @@
+diff --git a/TRUSTED.md b/TRUSTED.md
+index 327a417..525023c 100644
+--- a/TRUSTED.md
++++ b/TRUSTED.md
+@@ -20,7 +20,7 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
+     - **Contract text:** the legacy engine reads clauses only from a function's own declaration. So each legacy contract is its proofs/contracts/<fn>.h `contract_<fn>` declaration with only the name changed, generated at every build, with no stored copy.
+     - **Static locals:** a replaced callee with a static local, called in a loop, aborts the enforce pass (T-012). Such a callee keeps its body, and prove.py says so. For C-15 that is sqlite3VdbeSerialGet.
+     - **Kept callee bodies:** loop frames are checked against kept callee bodies too. A callee called in the loop with its body kept, writing outside the loop's assigns, fails by "Check that … is assignable" inside the callee (tool tests `-k b2`).
+-    - **Loop frames against the function's (T-015; Zach, 2026-11-11, evidence/approvals/C-15-bounded/):** the legacy engine checks a write inside a contracted loop against that loop's assigns only. It never checks the loop's frame against the function's assigns; DFCC does ("Check assigns clause inclusion for loop"). A loop whose frame is wider than the function's could therefore write outside the function's frame unchecked: the T-015 toy, evidence/orchestrator/tool-issues/T-015/. So prove.py fails a legacy build unless every assigns target of a loop in an enforced function is a local or parameter of that function, or appears verbatim among the targets of its contract's assigns. Within that frame, CBMC's own check catches a write outside it (tool tests `-k bounds`, T-015). A card in prove.py's LEGACY_FRAME_ARGUED argues the inclusion instead, checked by its reviewer: C-15, whose frame is whole Mem cells (below, Reviewed, not proved). RESULTS.md's Assigns column then reads "reviewed (T-015)". A pin test keeps the engine's present behaviour on record, so a CBMC that closes the gap shows up.
++    - **Loop frames against the function's (T-015; Zach, 2026-11-11, evidence/approvals/C-15-bounded/):** the legacy engine checks a write inside a contracted loop against that loop's assigns only. It never checks the loop's frame against the function's assigns; DFCC does ("Check assigns clause inclusion for loop"). A loop whose frame is wider than the function's could therefore write outside the function's frame unchecked: the T-015 toy, evidence/orchestrator/tool-issues/T-015/. So prove.py fails a legacy build unless every assigns target of a loop in an enforced function is a local or parameter of that function, or appears verbatim among the targets of its contract's assigns. A conditional target there (`c: x`) matches only a loop target under the same condition, and a match is refused if the function's body assigns a variable the target or its condition names (T-015 follow-up). The check is textual: it doesn't see the body write through a member or an address the target depends on, such as `p->a = x` before a loop whose target is `p->a[0].x`, or `g(&p)`. The legacy proof's reviewer checks those. In C-17 it doesn't arise: the body writes only pPKey2->errCode and pPKey2->eqSeen, and takes no parameter's address (the auditor, 2026-11-11). Within that frame, CBMC's own check catches a write outside it (tool tests `-k bounds`, T-015). A card in prove.py's LEGACY_FRAME_ARGUED argues the inclusion instead, checked by its reviewer: C-15, whose frame is whole Mem cells (below, Reviewed, not proved). RESULTS.md's Assigns column then reads "reviewed (T-015)". A pin test keeps the engine's present behaviour on record, so a CBMC that closes the gap shows up.
+     - **Clause placement:** contract clauses count only on a proofs/contracts/<fn>.h `contract_<fn>` declaration. prove.py fails any build whose proofs/include/ headers carry a clause, or whose contracts headers put one on another name, and scan.py rejects such headers (B2). prove.py's textual check misses a clause hidden in a one-line `#define`; scan.py's rule 15 (no #define in shared headers but the include guard) is the guard for that form, and DFCC ignores such a clause.
+     - **Validated on toys** (tool tests `-k legacy`, tools/tests/legacy/), each failing by the expected check:
+       - a replaced call forgets what its contract assigns;
+diff --git a/proof.lock b/proof.lock
+index db5e73a..9405a0b 100644
+--- a/proof.lock
++++ b/proof.lock
+@@ -4,7 +4,7 @@ ffa51ed87799d432f31f08b2df5ca05e2b6a9856b88cdb76eafe7fa685f06910  CLAUDE.md
+ 87b822b4a3da3e8c91adaab36fad6c189eda41942c8cbc2ddd07a3a7b4a19987  GOAL.md
+ fae960f9a882576ce2d9d9181c5a48a68edcf03d080fe30b1897a7091a4bbc5f  Makefile
+ 2800f37246cbf6ebf176ac0b00dbac589cd0a4ee1a46e1723d0a301fc97ac8d0  PROPERTIES.md
+-6a9afc8bd7be8ed6465ec8e2996284fbdfc844a9bc4f748632ebcafea2a1d1b1  TRUSTED.md
++ac4374671b58858951a408c58ccd7309f101087eb912707b35f08402dd8b640c  TRUSTED.md
+ d4b8a329811768e57bfda0578d8e95d3518df17bd7135fad8a50d1778d95dd39  UB-CLASSES.md
+ e0c275b9768ec45c7e0ad2c5661e74ff185b4fd0729a32d4d9296e06f3bfe3b3  agents/builder/GOAL.md
+ 0766329592d310d2d711c69ce2ce2e6c54511a521257150ad2f3dda8ddcae296  agents/ledger/GOAL.md
+@@ -12,7 +12,7 @@ e0c275b9768ec45c7e0ad2c5661e74ff185b4fd0729a32d4d9296e06f3bfe3b3  agents/builder
+ 44b9b26bcff2ff0ff1a12c83169e6e3087b1d9ab4b8de23afc8f57e46fcb04d4  pin.txt
+ 34bf42060964afbbf52b2ff2d30c77061133f9b9d19c0692ef3cc1a317189920  proofs/CHECKS
+ 6ad9d5924a3c11c36b11a33c5dbd32c637a0decba0c53ffcc94fd08054692399  proofs/CONFIGS
+-69c2abc85b585e759bad9a4335c0ca32ea025a61ff41af65e8d3dd1c202678f9  proofs/HOWTO.md
++87603cfe4be41ac6ef5370c0035fe0669197151b2192b2659699ab653aa2709f  proofs/HOWTO.md
+ 9cf75306a48da7d2829baca095af30c87d9338f57561f042b0bf2652cc3a850c  proofs/MUTANTS
+ 3d900297e0883eeaed9ab452aa9dfbce911b0781e38e29d5670157c873aac56b  proofs/Makefile.common
+ ecf22912bd99a291fb9b7979d2855a0b971815bfeb12b4029f56f7f3ce3a7c26  proofs/contracts/memcmp.h
+@@ -21,7 +21,7 @@ ecf22912bd99a291fb9b7979d2855a0b971815bfeb12b4029f56f7f3ce3a7c26  proofs/contrac
+ 3e4de50aa1d6eb4f210039b66f511af4f5f4d9ce5efaaa64afd45b316d4622a7  proofs/contracts/vdbeCompareMemString.h
+ 2fe70b351a95fd093eeb525fad7ee9d522ff213077c8183d5f90b19b860677c9  proofs/include/proof.h
+ 573d52372d88b23ee74ac0cdd9442b434d8f19c5de78737dcd1d67dd70e6873f  proofs/spec/record_format.h
+-5b16c866d7e1d9951cefa01dd4656a15210c066ae25bc9037e23a653b5e6396e  tools/campaign.py
++3dd3ada86f103bf44a400965220d01635ebcd768454bd69fb1217f9f35cfcaa8  tools/campaign.py
+ d28062752b6b77219f3b5c9ffb0fa3dfbd31a6008ecb80212174bb9ae53eed37  tools/cards.py
+ 053d3824b5e518643b62f4601ae55a0ba0260321ceb8f10a5d2ee8add0fbb73d  tools/check_overlay.py
+ 512451e43bee5b77fe0c739eed41ccfbe547e3374b48d1e12a2678c586d54c05  tools/fakecli/claude
+@@ -55,7 +55,7 @@ fa0e01827ff186be3de18907d8b98e291bedf194fe7364cfd2cf34d262075a22  tools/tests/le
+ 8252ec564fdc5cb31fb9e14c17354a8caf57664040e5b953fde11761d237989e  tools/tests/legacy/heads/t_static.h
+ 12f5fb25fb2b29a5f58c8b17ceff4aac33891a52faaff1a52fce513b4e5479ea  tools/tests/legacy/heads/two.h
+ 3a77111d017b5e004129c10635b9d67fa6575c3fd6fdffa5177680fe49270c6b  tools/tests/legacy/toys.c
+-b762bfa8695d78b7e98177e7241be6c2fe925f952d72fc7ca5ad33565fefdcbd  tools/tests/test_tools.py
++998c4e84fe48fdd27b22fae6d1b6abbf4682b445d57887c942a1c09f0a0567d7  tools/tests/test_tools.py
+ d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b  upstream/sqlite-src-3530400.zip
+ b1dd5d74ec7f29055a6684fa06fb3c2f6821c87dd38f9a458dfd2e8a1db28189  upstream/sqlite3.c
+ 919e7f2e8ed1d8f56ac17b412b8971c76aa5d1a879752cc6058f75e7d5910e1d  upstream/sqlite3.h
+diff --git a/proofs/HOWTO.md b/proofs/HOWTO.md
+index 0e84e73..8a0672c 100644
+--- a/proofs/HOWTO.md
++++ b/proofs/HOWTO.md
+@@ -46,6 +46,17 @@ Shared headers (contracts, `proofs/include/preds.h`, `proofs/spec/`) #define not
+ - **do-while loops:** between `do` and the body: `do PROOF(...){ ... }while( c );`. In CBMC 6.11, clauses after a do-while's condition do not parse (GOAL.md §1.3 and builder §2.6 now say so). A do-while invariant is checked before the first iteration, so it must hold at the top of every iteration.
+ - A loop bounded by construction at 16 iterations or fewer may be unwound instead (`<p>_LOOPS := unwind` and `<p>_UNWINDSET`).
+ 
++## Bounded proofs
++
++Only Zach makes a proof bounded, through tools/prove.py's `BOUNDS`, a frozen file (evidence/approvals/C-15-bounded/ and T-015-followup/). A bounded proof proves its property only within the bounds given there, and tests the functions past them natively. scan.py rule 16 checks the mechanics:
++- **Any other constant upper bound on an input fails scan, in every proof.** An input is a local passed whole to the call under proof (`id`, `&id`, or `x` in `x + y`), a value assigned to a field of an input object, a local an input is assigned from, or a pointer that aliases an input. Examples are `__CPROVER_assume(n <= 64)`, `!(n > 64)` and `n == 4`. Lower bounds such as `n >= 0` are fine. So are bounds on an allocation's size or a pointer's offset in an unbounded proof (C-01's `extent <= 16`): the reviewer judges whether those narrow anything.
++- **In a bounded proof:**
++  - SETUP holds each of its bounds as exactly `__CPROVER_assume(<local> <= K);`, once.
++  - An allocation's size counts as an input, so it can't carry a constant bound.
++  - It allocates only single objects (`sizeof(T)`) and the constant-size buffers BOUNDS names, each as large as the largest extent its bounds allow. A buffer is used only as `<buffer> + <offset>`, then only the tail terms BOUNDS names. Its offset is set once, in one of two shapes, each its own proof: 0 (start-exact, so an underread fails), or `(<size>) - (<extent>)` (end-exact, so an overread fails), where `<extent>` is the exact extent the contract requires.
++- **The label:** `<card> <proof>: bounded: <what> <= K, ...` appears word for word in the card and in PROPERTIES.md, and RESULTS.md prints it in its Bounds column.
++- **Native tests past the bound:** `tests/bounded/<card>-<k>.c` (k 1 to 9) `#include "sqlite3.c"` from unmodified upstream and test the card's functions past the bounds. tools/native.py builds and runs them with campaign.py's repro command (ASan and UBSan) in its sandbox, as a step of every gate that runs the card. A test passes if it exits 0 with no sanitizer report. Sessions don't run the gate, and inside one the sandbox can't start. Compile and run a test yourself to develop it.
++
+ ## Running
+ 
+ - `tools/prove.py prove --card-dir proofs/C-NN [--config lp64-le|ilp32-le|lp64-be]`, `tools/prove.py coverage --card-dir proofs/C-NN [--config ...]`, `tools/mutate.py --card C-NN`, `tools/check_overlay.py`, `tools/scan.py --card C-NN --base main`. Without `--config` they run every configuration.
+diff --git a/tools/campaign.py b/tools/campaign.py
+index 48959a2..e4174d1 100755
+--- a/tools/campaign.py
++++ b/tools/campaign.py
+@@ -13,7 +13,7 @@ Commands
+   retry C-NN | park C-NN | reopen C-NN --for C-MM
+   resume-vendor <codex|claude>            after Zach signs in again: lift the pause a failed login caused
+   land                                    merge main into orch, check the paths, queue orch for main
+-  session <spec-review|ledger>            a one-off session, started the same way
++  session <spec-review|ledger|finding-review>  a one-off session, started the same way
+   selftest                                rerun the coordinator tests in a scratch directory of its own
+ Internal: daemon, _job <dir>, _merge <dir>
+ 
+@@ -68,10 +68,14 @@ LAND_ALLOWED = ['cards/', 'tests/repro/', 'evidence/approvals/', 'evidence/orche
+                 # T-007: not frozen (GOAL.md §0.3), and its command lines must equal SESSION_COMMANDS, so a land
+                 # can change only its models, efforts and patterns; land names the keys it changes in its trailer
+                 'tools/sessions.toml']
+-ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evidence/ledger/', 'reports/ledger-']}
++ROLE_PATHS = {'spec-review': ['reviews/spec-'], 'ledger': ['validation/', 'evidence/ledger/', 'reports/ledger-'],
++              'finding-review': ['reviews/finding-']}
+ # GOAL.md §0.10, hard-coded (checkpoint 0, decision C5): sessions.toml supplies models and command lines, never vendors.
+ # The spec was written by Claude, so its reviewer runs on Codex.
+-ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'spec-review': 'codex'}
++ROLE_VENDOR = {'builder': 'codex', 'reviewer': 'claude', 'ledger': 'claude', 'spec-review': 'codex',
++               'finding-review': 'codex'}
++# finding-review (Zach, 2026-11-11): a one-off Codex judgement of finding drafts found on Claude (F-002, by the ledger
++# agent) or reproduced by the auditor (F-001's second repro), when no Codex card reviewer will judge them in time.
+ # The one exception (Zach, 2026-11-10, evidence/approvals/C-17-vendor-exception/): C-17's builder runs on Claude and
+ # its reviewer on Codex, because the Codex service's content filter stops a Codex builder on it (T-005). A reviewer is
+ # still never on its round's builder vendor. The models are those sessions.toml gives the vendor's own role at the
+@@ -1309,6 +1313,23 @@ def prompt_oneoff(role, n):
+                 '60 lines with each case citing its row. Do not modify any tracked file. Write your verdict to '
+                 'reviews/spec-r%d.md: first line APPROVE or REJECT, then numbered issues with severity, evidence and '
+                 'the fix.\n' % n)
++    if role == 'finding-review':
++        return ('You are a reviewer session in the proving-sqlite project, on the vendor that did not find what you '
++                'judge. The rules every role obeys are in AGENTS.md; agents/reviewer/GOAL.md\'s rules on evidence and '
++                'reruns apply. Judge two items, each as its own numbered issue:\n'
++                '1. F-002, the ledger agent\'s finding draft: reports/ledger-2026-11-10.md section 4, and LEDGER.md '
++                'A-001\'s caller paths 1 and 2. campaign.py\'s sandboxed run of its repro and the clean control are in '
++                'evidence/orchestrator/F-002/. Judge whether it fails as claimed on unmodified upstream, whether it is '
++                'reachable through the public API with SQLITE_ENABLE_PREUPDATE_HOOK, and whether it is A-001\'s caller '
++                'obligation unmet (a finding) rather than a proof\'s issue.\n'
++                '2. F-001\'s second repro, tests/repro/F-001-b.c (FINDINGS.md F-001). Reproduce it: build and run it as '
++                'FINDINGS.md says, at -O2 and -O0, controls included, in $TMPDIR, which is tmp/ in your worktree (/tmp is '
++                'not writable). Run each command in the foreground and wait for it. Compare with '
++                'evidence/orchestrator/F-001-b/run.txt, and judge whether the stated impact holds: wrong query results '
++                'and integrity_check failures on a DESC index with a legal collation.\n'
++                'Do not modify any tracked file and do not run git commands that write. Write your verdict to '
++                'reviews/finding-r%d.md: first line APPROVE if both hold, else REJECT, then the numbered issues with '
++                'severity, evidence and the fix.\n' % n)
+     if role == 'ledger':
+         return ('You are the ledger agent in the proving-sqlite project. Your instructions are agents/ledger/GOAL.md; '
+                 'read it first and follow it. The rules every role obeys are in AGENTS.md. Write only under '
+diff --git a/tools/sessions.toml b/tools/sessions.toml
+index cbe05f8..09312a3 100644
+--- a/tools/sessions.toml
++++ b/tools/sessions.toml
+@@ -120,8 +120,8 @@ auth_failure_patterns = ["Please run /login", "(?i)login expired", "(?i)not logg
+                          "(?i)failed to authenticate", "authentication_failed", "authentication_error", "(?i)invalid api key",
+                          "(?i)login reached its time limit"]
+ 
+-# Roles and tiers (GOAL.md §0.10). The vendor lines must match campaign.py's ROLE_VENDOR (builder and spec-review on
+-# codex, reviewer and ledger on claude), which it uses whatever this file says, refusing a mismatch; and it refuses a
++# Roles and tiers (GOAL.md §0.10). The vendor lines must match campaign.py's ROLE_VENDOR (builder, spec-review and
++# finding-review on codex, reviewer and ledger on claude), which it uses whatever this file says, refusing a mismatch; and it refuses a
+ # reviewer on the vendor that built the round it judges, re-reviews included. Each model and effort must be a plain
+ # name, ^[A-Za-z0-9._-]+$ not starting with '-' (auditor recheck item 2): campaign.py refuses anything else.
+ [roles.builder.high]
+@@ -149,6 +149,12 @@ vendor = "claude"
+ model = "claude-opus-5-5"
+ effort = "high"
+ 
++# Finding drafts found on Claude, or reproduced by the auditor, get a Codex judgement (Zach, 2026-11-11).
++[roles.finding-review.high]
++vendor = "codex"
++model = "gpt-6-astra"
++effort = "xhigh"
++
+ # The file-format spec is written by Claude (the setup session), so Astra reviews it.
+ [roles.spec-review.standard]
+ vendor = "codex"
+diff --git a/tools/tests/test_tools.py b/tools/tests/test_tools.py
+index 073fb27..0400c83 100755
+--- a/tools/tests/test_tools.py
++++ b/tools/tests/test_tools.py
+@@ -1930,6 +1930,22 @@ def main():
+         t.expect('bounds shift: a constant +1 shift fails coverage (every input lacks a byte the requires asks for, so the '
+                  'proof passes vacuously)', prc == 0 and 'PASS' in pres and crc != 0 and 'FAIL' in cres, pout[-600:] + cout[-800:])
+ 
++    # ---- finding-review (Zach, 2026-11-11): a one-off Codex judgement of F-002 and F-001's second repro
++    if want('finding'):
++        code = ('import sys; sys.path.insert(0, "tools"); import campaign as C\n'
++                's = C.load_sessions(".")\n'
++                'print("CFG", C.role_config(s, "finding-review", "high")[:3])\n'
++                'print("PATHS", C.ROLE_PATHS["finding-review"])\n'
++                'pr = C.prompt_oneoff("finding-review", 1)\n'
++                'print("PROMPT", all(x in pr for x in ("F-002", "tests/repro/F-001-b.c", "evidence/orchestrator/F-002/", '
++                '"evidence/orchestrator/F-001-b/run.txt", "reviews/finding-r1.md", "Do not modify any tracked file")))\n')
++        r = t.fresh()
++        shutil.copy(os.path.join(REPO, 'tools', 'sessions.toml'), os.path.join(r, 'tools', 'sessions.toml'))
++        rc, out, res = t.run(r, [py, '-c', code])
++        t.expect('finding-review: a one-off role on Codex (gpt-6-astra, xhigh) that writes only reviews/finding-, and its '
++                 'prompt names F-002, F-001-b, their evidence and its verdict file',
++                 "CFG ('codex', 'gpt-6-astra', 'xhigh')" in out and "PATHS ['reviews/finding-']" in out and 'PROMPT True' in out, out)
++
+     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
+     if want('probe'):
+         r = t.fresh()
