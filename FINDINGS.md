@@ -36,5 +36,31 @@ Counterexamples that reproduce (GOAL.md §3.5, Appendix C). Each `tests/repro/F-
 - **Status:** reproduced.
   - Found by C-17's builder in round 3, on Claude (reports/C-17-b3.md).
   - Approved by C-17's Codex reviewer from campaign.py's run of the repro (reviews/C-17-r3.md). The reviewer also checked upstream's hash against pin.txt.
-  - Its impact was raised from "UB" to wrong query results and integrity_check failures (Zach, 2026-11-11), on the auditor's second repro. C-17's round-4 Codex reviewer reproduces that repro, together with F-002.
+  - Its impact was raised from "UB" to wrong query results and integrity_check failures (Zach, 2026-11-11), on the auditor's second repro.
+  - That repro was judged by a one-off Codex session instead of C-17's reviewer (J0117, reviews/finding-r1.md: APPROVE, 2026-11-11). It ran all six builds and runs, and their output matched evidence/orchestrator/F-001-b/run.txt exactly. Its suggested fix: reverse the comparison's sign without negating an arbitrary int, e.g. `rc = rc < 0 ? 1 : -1` inside the existing `rc != 0` branch.
 - **Related, not a finding:** memcmp's result reaches the same negation at 92739–92740 and 92767–92768. C11 7.24.4.1 fixes only its sign, and both CBMC's model and glibc return a byte difference in [−255, 255], so no overflow arises there today (C-17-b3.md, *tested* with glibc).
+
+## F-002 sqlite3_preupdate_old decodes a corrupt stored record from an exact-size buffer
+- **Function, line, failing check, configuration:** serialGet, upstream/sqlite3.c:91950, reading past the record. The path is sqlite3VdbeSerialGet 92064 ← sqlite3VdbeRecordUnpack 92143 ← vdbeUnpackRecord 95888 ← sqlite3_preupdate_old 95944.
+  - ASan reports a heap-buffer-overflow, READ of size 1, at the first byte past the allocation. The record's last field asks for 8 bytes at offset 1999 of a 2000-byte record, so 7 bytes are past it.
+  - It is *tested* natively on x86-64, the lp64-le platform. It is not shown by CBMC: C-15's proof assumes A-001, max(nKey, 1) + 8 readable bytes, and is bounded to records of at most 256 bytes. This caller doesn't provide that slack.
+- **Counterexample (arguments and bytes):**
+  - A table row's stored record of 2000 bytes, with header {04, 9f 22, 01}: a 1995-byte blob, then a 1-byte integer. Its last serial type is changed from 1 to 6, an 8-byte integer, in the database image.
+  - sqlite3_preupdate_old copies the payload into `sqlite3DbMallocRaw(db, nRec)`, exactly nRec = 2000 bytes (95938–95944), and unpacks it with no padding.
+  - The decoder checks `d<=nKey` before the read (92134) and notices the excessive length only afterwards (92148–92153).
+- **Repro:** tests/repro/F-002.c, the ledger agent's repro, adapted so campaign.py's fixed command builds it: it defines SQLITE_ENABLE_PREUPDATE_HOOK and includes unmodified upstream sqlite3.c first.
+  - Command: `cc -std=gnu11 -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined -I upstream -o f002 tests/repro/F-002.c -lm -lpthread -ldl`. Then `ASAN_OPTIONS=detect_leaks=0 ./f002`, which exits 1 with the ASan report, and `./f002 clean`, the control, which exits 0 with no report.
+  - campaign.py's run in its sandbox (no network, no $HOME, an empty environment), and its control: evidence/orchestrator/F-002/.
+- **Reachable from SQL or the public API?** Yes, in a build with SQLITE_ENABLE_PREUPDATE_HOOK:
+  - deserialize the corrupted database (sqlite3_deserialize is available by default);
+  - register a pre-update hook;
+  - `DELETE FROM t WHERE rowid=1`, with the hook calling `sqlite3_preupdate_old(db, 1, ...)` as sqlite3.h:10864–10871 allows.
+
+  sqlite3_preupdate_new on an INSERT can carry a corrupt stored record too, by source reading: xferOptimization's OP_RowData (142204–142207) feeds the register it unpacks (96086–96094), with no eight-byte slack guaranteed (87090–87093, 87119–87125). That route is not tested yet; the ledger agent's second run tries it (evidence/orchestrator/ledger-run-2.md).
+- **Ledger:** A-001 is violated at callers. Its clause stays as C-15's assumption, and this is its unmet caller obligation (LEDGER.md A-001, caller paths 1 and 2).
+- **Status:** reproduced.
+  - Found by the ledger agent on Claude (J0079, 2026-11-10; reports/ledger-2026-11-10.md §4). That report calls preupdate_new's route the UPDATE path; the source has it on INSERT, as LEDGER.md says.
+  - Reproduced by the auditor natively, and by campaign.py's sandboxed runner with its control clean.
+  - Judged by a one-off Codex session (J0117, reviews/finding-r1.md: APPROVE, 2026-11-11). It rebuilt and reran the repro and its control, and they matched campaign.py's runs.
+  - Its suggested fix: give both pre-update decoding paths the full worst-case readable extent, padded and zeroed as saveCursorKey does (73950–73961, +9+8), or check each read's extent before decoding.
+
