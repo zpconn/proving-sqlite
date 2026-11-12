@@ -128,3 +128,24 @@ Lines are upstream/sqlite3.c's.
 - Who must make it true: the C library SQLite is linked with. glibc returns the byte difference (C-17 round 3, *tested* on 65-byte buffers differing by 0x00/0xff at byte 40: −255 and 255), and so does CBMC's own model. A C library returning other magnitudes would bring the memcmp paths to F-001's overflow too.
 - Evidence: none yet (the ledger agent's second run tests it).
 - Status: draft (approved by Zach, 2026-11-10, as C-17's B2)
+
+## A-007 C-15's output record: one block, a positive capacity, separate from its inputs
+- Function(s): sqlite3VdbeRecordUnpack (C-15).
+- Clause, as CBMC states it (C-15's requires, besides A-001's):
+  ~~~
+  __CPROVER_requires(p->aMem == (Mem *)((unsigned char *)p + ((sizeof(UnpackedRecord) + 7) / 8) * 8))
+  __CPROVER_requires(!__CPROVER_same_object(p, pKey) && !__CPROVER_same_object(p, p->pKeyInfo))
+  __CPROVER_requires(p->nField > 0)
+  __CPROVER_requires(((size_t)p->aMem % 8) == 0)
+  ~~~
+- Plain English:
+  - the UnpackedRecord and its Mem cells are one block, with the cells at the record's size rounded up to 8;
+  - the cells are 8-byte aligned;
+  - the record has at least one cell;
+  - neither the input bytes nor the KeyInfo lie in that block.
+  - The KeyInfo stays live through `db`. A caller that lowers nField afterwards, as the sorter may, keeps it positive.
+- Why the proof needs it: C-15's harness models the record and cells as one object, as sqlite3VdbeAllocUnpackedRecord makes them (92102–92108). C-14's contract states their extents and count but not this geometry, so stating it here keeps it from being a hidden assumption.
+- Who must make it true: callers in milestone 2: the b-tree layer, the VDBE and the sorter (btreeMoveto 74098–74100, vdbeUnpackRecord 95885–95888, OP_Found 102013–102015, sqlite3VdbeSorterCompare 109307–109314), through sqlite3VdbeAllocUnpackedRecord. Alignment is the allocator's, A-002.
+- Evidence: none yet. C-15's round-4 native prototype (1,414 cases, ASan and UBSan; evidence/orchestrator/C-15-b4/native.c) calls SQLite's own allocator, so it holds there. No caller audit has been run.
+- Status: draft (the builder's proposal, reports/C-15-b4.md; Zach, 2026-11-11, as part of C-15's bounded P1)
+
