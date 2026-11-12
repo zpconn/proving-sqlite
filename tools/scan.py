@@ -1245,7 +1245,9 @@ def check_bounded_cards(s, card_proofs):
     for cid, pm in sorted(prove.BOUNDS.items()):
         names = [p.name for p in card_proofs.get(cid) or []]
         cpath = os.path.join(s.root, 'cards', cid + '.md')
-        ctext = open(cpath, errors='replace').read() if os.path.exists(cpath) else ''
+        if not os.path.exists(cpath):
+            continue                                   # a tree without the card has nothing to label
+        ctext = open(cpath, errors='replace').read()
         merged = os.path.exists(os.path.join(s.root, 'proofs', cid, 'Makefile'))
         for proof in sorted(pm):
             if merged and proof not in names:

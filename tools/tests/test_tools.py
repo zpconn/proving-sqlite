@@ -925,6 +925,7 @@ def main():
             shutil.copytree(os.path.join(REPO, d), os.path.join(real, d),
                             ignore=shutil.ignore_patterns('__pycache__', 'tests', 'fakecli', 'build'))
         shutil.copy(os.path.join(REPO, 'pin.txt'), os.path.join(real, 'pin.txt'))
+        shutil.copy(os.path.join(REPO, 'PROPERTIES.md'), os.path.join(real, 'PROPERTIES.md'))   # rule 16's labels
         subprocess.run(['git', 'init', '-q', '-b', 'main', real], check=True)
         rc, out, res = t.run(real, [py, 'tools/scan.py'])
         t.expect('scan (card calls): a copy of the repo passes', rc == 0 and 'RESULT scan PASS' in res, out)
