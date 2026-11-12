@@ -212,3 +212,9 @@ Defects or surprising behaviour in a tool or library, hit by the orchestrator, a
 - **Repro:** the local branch wip/c15-encoding, `diag/run.sh` (diag/arrays-uf-always.cbmc; the command in diag/base-command.txt plus the option).
 - **Effect:** none on the proofs: no proof uses the option, and prove.py's ALLOWED_SOLVERS doesn't offer it. In the same diagnostic, the default solver gave PASS in 1,036 s, `--refine-arrays` VERIFICATION SUCCESSFUL in 984 s, and `--sat-solver cadical` ran out of memory after 30 s. None reaches K=8 within 600 s, so C-15's bound stays K=4, N=256 (Zach's rule).
 - **Status:** confirmed. A defect in CBMC, not reported upstream.
+
+## T-017 tools/campaign.py (frozen): proofs/HOWTO.md can't be landed
+
+- **What happened:** the C-15-bounded land (2026-11-11) was refused: "a land may touch only cards/, tests/repro/, evidence/approvals/, evidence/orchestrator/, PROGRESS.md, LEDGER.md, FINDINGS.md, tools/sessions.toml; this one touches proofs/HOWTO.md". proofs/HOWTO.md is neither frozen (lock.py FROZEN) nor on LAND_ALLOWED, so no land can change it, with or without an approval record.
+- **Effect:** the "Bounded proofs" section approved in patch.diff lives at evidence/approvals/C-15-bounded/HOWTO-bounded-proofs.md, and C-15's card points there. The rest of patch.diff landed as approved.
+- **Fix, for Zach:** add proofs/HOWTO.md to LAND_ALLOWED in campaign.py (a frozen change). Like T-007, a land that changes the land rules is judged by the old ones (T-013), so the section would follow in a second land.
