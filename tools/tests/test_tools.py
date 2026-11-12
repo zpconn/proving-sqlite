@@ -459,9 +459,9 @@ UNB_MK = ('CARD := C-92\nPROOFS := sum rec\nsum_ENTRY := harness_toySum\nsum_LOO
           'sum_COVER := toySum\n' + REC_MK + 'include ../Makefile.common\n')
 
 
-def bspec(k=64, size='64', extent='n'):
-    one = lambda exact: "{'bounds': (('n', %d, 'n'),), 'exact': '%s', 'buffers': (('buf', '%s', 'off', '%s'),)}" % (  # noqa: E731
-        k, exact, size, extent)
+def bspec(k=64, size='64', extent='n', tails='()'):
+    one = lambda exact: "{'bounds': (('n', %d, 'n'),), 'exact': '%s', 'buffers': (('buf', '%s', 'off', '%s', %s),)}" % (  # noqa: E731
+        k, exact, size, extent, tails)
     return "{'sum': %s, 'sum_start': %s}" % (one('end'), one('start'))
 
 
@@ -521,7 +521,7 @@ def peek_repo(t):
     for d, pre in (('upstream', ''), ('overlay', ''), ('overlay-under', '#define PLANT_UNDER\n'), ('overlay-over', '#define PLANT_OVER\n')):
         t.write(r, d + '/sqlite3.c', pre + BOUNDS_TOY)
     t.write(r, 'pin.txt', 'upstream/sqlite3.c: %s\n' % hashlib.sha256(BOUNDS_TOY.encode()).hexdigest())
-    one = lambda exact: "{'bounds': (('n', 8, 'n'),), 'exact': '%s', 'buffers': (('buf', '8', 'off', 'n'),)}" % exact  # noqa: E731
+    one = lambda exact: "{'bounds': (('n', 8, 'n'),), 'exact': '%s', 'buffers': (('buf', '8', 'off', 'n', ()),)}" % exact  # noqa: E731
     set_bounds(t, r, "{'C-93': {'peek': %s, 'peek_start': %s}}" % (one('end'), one('start')))
     lines = ['C-93 peek: bounded: n <= 8', 'C-93 peek_start: bounded: n <= 8']
     t.write(r, 'cards/C-93.md', card_md('C-93', ['toyPeek'], src=BOUNDS_TOY).replace('- Notes: toy\n', '- Notes: toy. %s\n' % '; '.join(lines)))
@@ -529,6 +529,28 @@ def peek_repo(t):
     t.write(r, 'proofs/C-93/harness.c', PEEK_HARNESS)
     t.write(r, 'proofs/C-93/Makefile', PEEK_MK)
     t.write(r, 'tests/bounded/C-93-1.c', BOUNDS_NATIVE.replace('toySum', 'toyPeek'))
+    return r
+
+
+# Follow-up 2 (the auditor and Zach, 2026-11-11): a buffer as large as the largest extent its bounds allow makes a
+# constant shift of the pointer visible. toySum is enforced against a contract that requires exactly n readable bytes.
+SHIFT_HEAD = ('int contract_toySum(const u8 *p, int n)\n'
+              '  __CPROVER_requires(n >= 1 && n <= 8 && __CPROVER_r_ok(p, n))\n'
+              '  __CPROVER_assigns();\n')
+SHIFT_HARNESS = ('#include "sqlite3.c"\n#include "contracts/toySum.h"\n#include <stdlib.h>\n'
+                 'void harness_shift(void) {\n  int n;\n  size_t off;\n  u8 *buf, *p;\n  /* SETUP */\n'
+                 '  __CPROVER_assume(n >= 1);\n  __CPROVER_assume(n <= 8);\n  off = (8) - (n);\n  buf = malloc(8);\n'
+                 '  __CPROVER_assume(buf != 0);\n  p = buf + off SHIFT;\n  /* END SETUP */\n  toySum(p, n);\n}\n')
+
+
+def shift_repo(t, shift):
+    r = t.fresh()
+    t.write(r, 'proofs/contracts/toySum.h', SHIFT_HEAD)
+    t.write(r, 'cards/C-94.md', card_md('C-94', ['toySum'], extra_may='proofs/contracts/toySum.h, '))
+    t.write(r, 'proofs/C-94/harness.c', SHIFT_HARNESS.replace(' SHIFT', shift))
+    t.write(r, 'proofs/C-94/Makefile', 'CARD := C-94\nPROOFS := shift\nshift_ENTRY := harness_shift\n'
+            'shift_ENFORCE := toySum/contract_toySum\nshift_LOOPS := unwind\nshift_UNWINDSET := toySum_wrapped_for_contract_checking.0:9\n'
+            'include ../Makefile.common\n')
     return r
 
 
@@ -540,7 +562,7 @@ typedef struct { unsigned a, b; } Cell;
 void f(Cell *cells, unsigned n) {
   unsigned i=0;
   Cell *p=cells;
-  while(i<n)
+PRE  while(i<n)
     __CPROVER_assigns(i, p, FRAME)
     __CPROVER_loop_invariant(i<=n && p==cells+i)
     __CPROVER_decreases(n-i)
@@ -555,12 +577,12 @@ T015_HARNESS = ('#include "sqlite3.c"\n#include "contracts/f.h"\n#include <stdli
                 '  c = malloc(sizeof(Cell) * n);\n  __CPROVER_assume(c != 0);\n  /* END SETUP */\n  f(c, n);\n}\n')
 
 
-def t015_repo(t, card, frame, write):
+def t015_repo(t, card, frame, write, pre='', head=None):
     r = t.fresh()
-    src = T015_TOY.replace('FRAME', frame).replace('WRITE', write)
+    src = T015_TOY.replace('FRAME', frame).replace('WRITE', write).replace('PRE', pre)
     for d in ('upstream', 'overlay'):
         t.write(r, d + '/sqlite3.c', src)
-    t.write(r, 'proofs/contracts/f.h', T015_HEAD)
+    t.write(r, 'proofs/contracts/f.h', head or T015_HEAD)
     t.write(r, 'cards/%s.md' % card, card_md(card, ['f'], src=src))
     t.write(r, 'proofs/%s/harness.c' % card, T015_HARNESS)
     t.write(r, 'proofs/%s/Makefile' % card, 'CARD := %s\nPROOFS := f\nf_ENTRY := h_f\nf_ENFORCE := f/contract_f\n'
@@ -1675,6 +1697,14 @@ def main():
                  "KEYS ['roles.builder.high.model', 'vendors.codex.usage_limit_patterns']" in out2, out2)
         t.expect('b2: memcmp.h is frozen and lands only with an approval record and proof.lock; tools/sessions.toml may land (T-007)',
                  'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out and 'TOML []' in out, out)
+        # T-017 (Zach, 2026-11-11): proofs/HOWTO.md is frozen; it lands only with an approval record and proof.lock
+        code = ('import sys; sys.path.insert(0, "tools"); import lock, campaign\n'
+                'print("FROZEN", "proofs/HOWTO.md" in lock.FROZEN)\n'
+                'print("BARE", campaign.land_paths_problems(["proofs/HOWTO.md"], [])[0])\n'
+                'print("OK", campaign.land_paths_problems(["proofs/HOWTO.md", "proof.lock", "evidence/approvals/x/APPROVED.md"], ["evidence/approvals/x/APPROVED.md"])[0])\n')
+        rc, out, res = t.run(t.fresh(), [py, '-c', code])
+        t.expect('T-017: proofs/HOWTO.md is frozen, and lands only with an approval record and proof.lock',
+                 'FROZEN True' in out and "BARE ['frozen" in out and 'OK []' in out, out)
 
     # ---- bounded proofs (Zach, 2026-11-11, evidence/approvals/C-15-bounded/): scan rule 16, results, native, gate
     if want('bounds'):
@@ -1839,8 +1869,8 @@ def main():
         t.expect('bounds: make gate CARD=C-92 runs its native tests as a step (native C-92 PASS)',
                  re.search(r'^  native C-92\s+PASS', out, re.M) is not None, out)
         # T-015: prove.py's legacy frame check, on T-015's toy
-        def t015(card, frame, write):
-            rr = t015_repo(t, card, frame, write)
+        def t015(card, frame, write, pre='', head=None):
+            rr = t015_repo(t, card, frame, write, pre, head)
             rc_, out_, res_ = t.run(rr, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + card, '--config', 'lp64-le',
                                          '--build-dir', 'proofs/%s/build' % card])
             return rc_, out_, res_, legacy_failures(rr, card, 'f')
@@ -1858,6 +1888,47 @@ def main():
         t.expect('T-015 pin: for a card that argues its frame (C-15, LEGACY_FRAME_ARGUED), the legacy engine still passes a '
                  'write outside the function\'s assigns inside a wider loop frame; a CBMC that catches it fails this test',
                  rc == 0 and 'PASS' in res, out[-1200:])
+        # follow-up 1: a conditional target matches only under the same condition; a name the body reassigns refuses a match
+        HC = T015_HEAD.replace('__CPROVER_assigns(cells[0].a, cells[n-1].a)', '__CPROVER_assigns(cells[0].a; n > 1: cells[1].a)')
+        rc, out, res, _ = t015('C-17', 'cells[0].a, cells[1].a', 'a', head=HC)
+        t.expect('T-015 follow-up: a loop target matching a conditional function target (`n > 1: cells[1].a`) without '
+                 'its condition fails the build', rc != 0 and 'legacy loop frame (T-015)' in out
+                 and 'under the same condition' in out, out[-1200:])
+        rc, out, res, _ = t015('C-17', 'cells[0].a; n > 1: cells[1].a', 'a', head=HC)
+        t.expect('T-015 follow-up: the same target under the same condition passes the check',
+                 'legacy loop frame (T-015)' not in out, out[-1200:])
+        rc, out, res, _ = t015('C-17', 'cells[0].a, cells[n-1].a', 'a', pre='  if( n>1 ) n = 1;\n')
+        t.expect('T-015 follow-up: a verbatim match fails the build when the body reassigns a name it uses '
+                 '(the parameter n, before the loop)', rc != 0 and 'legacy loop frame (T-015)' in out
+                 and 'assigns n, which it names' in out, out[-1200:])
+        # follow-up 2: named tail terms, and why each buffer is exactly as large as the largest extent
+        rr = bounds_repo(t)
+        edit(rr, H, '  p = buf + off;', '  size_t z0;\n  z0 = 0;\n  p = buf + off + z0;')
+        rc, out, res = bscan(rr)
+        t.expect('T-015 follow-up: a tail term after buffer + offset that BOUNDS doesn\'t name fails scan, even a constant',
+                 rc != 0 and 'then the tail terms BOUNDS names (none)' in out, out)
+        rr = bounds_repo(t, "{'C-92': %s}" % bspec(tails="('z0',)"))
+        edit(rr, H, '  p = buf + off;', '  size_t z0;\n  z0 = 0;\n  p = buf + off + z0;')
+        edit(rr, H, '  p = buf + off;', '  size_t z0;\n  z0 = 0;\n  p = buf + off + z0;')
+        rc, out, res = bscan(rr)
+        t.expect('T-015 follow-up: a tail term BOUNDS names, a constant local, passes scan', rc == 0 and 'PASS' in res, out)
+
+        def shift_run(shift):
+            rr = shift_repo(t, shift)
+            pr = t.run(rr, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/C-94', '--config', 'lp64-le',
+                            '--build-dir', 'proofs/C-94/build'])
+            cv = t.run(rr, [py, 'tools/prove.py', 'coverage', '--card-dir', 'proofs/C-94', '--config', 'lp64-le',
+                            '--build-dir', 'proofs/C-94/build'])
+            return pr, cv
+        (prc, pout, pres), (crc, cout, cres) = shift_run('')
+        t.expect('bounds shift control: the end-exact pointer with no shift proves and covers every line',
+                 prc == 0 and 'PASS' in pres and crc == 0 and 'PASS' in cres, pout[-600:] + cout[-600:])
+        (prc, pout, pres), (crc, cout, cres) = shift_run(' - 1')
+        t.expect('bounds shift: a constant -1 shift fails the proof (at the largest n the pointer leaves the buffer)',
+                 prc != 0 and 'FAIL' in pres, pout[-800:])
+        (prc, pout, pres), (crc, cout, cres) = shift_run(' + 1')
+        t.expect('bounds shift: a constant +1 shift fails coverage (every input lacks a byte the requires asks for, so the '
+                 'proof passes vacuously)', prc == 0 and 'PASS' in pres and crc != 0 and 'FAIL' in cres, pout[-600:] + cout[-800:])
 
     # ---- probe (checkpoint 0, decision B): lp64-be's plain char is unsigned, as on PowerPC
     if want('probe'):

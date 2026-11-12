@@ -25,7 +25,9 @@ FROZEN = ['pin.txt', 'upstream/', 'GOAL.md', 'AGENTS.md', 'CLAUDE.md', 'agents/'
           'proofs/contracts/sqlite3DbMallocRaw.h', 'proofs/contracts/vdbeCompareMemString.h',
           'proofs/contracts/sqlite3CorruptError.h',
           # B2 (Zach, 2026-11-10): memcmp's boundary contract, LEDGER.md A-006 word for word
-          'proofs/contracts/memcmp.h']
+          'proofs/contracts/memcmp.h',
+          # T-017 (Zach, 2026-11-11): builder guidance the prompts point to, so a change carries an approval record
+          'proofs/HOWTO.md']
 EXEMPT = {'tools/sessions.toml'}
 
 
