@@ -10,6 +10,18 @@ This project tries it on SQLite, which may be the most widely deployed software 
 - **Bugs found in SQLite:** two, each with a reproducing test against unmodified SQLite 3.53.4.
 - **Problems found in the verifier:** several in CBMC itself, including two places where it silently checked less than it appeared to.
 
+**Built by a fleet of agents.** A plain, deterministic Python scheduler, with no AI model anywhere in its loop, ran the engineering as an autonomous campaign: **56 agent sessions over 81 hours** (8 to 11 November 2026), up to four at once, each in its own isolated git worktree.
+- **Codex agents on GPT-6 Astra** wrote the proofs.
+- **Claude agents on Sonnet 5.5 and Opus 5.5** reviewed each one in a fresh session that saw only the artifacts, never the builder's reasoning.
+- **An Opus 5.5 orchestrator** triaged failures, ran measurements and drafted changes to the rules.
+- **One human** made the calls no agent is allowed to: every rule change, every bound and every finding.
+
+No proof reached `main` without passing a gate that re-ran the checker on it.
+
+| 56 | 3 | 81 h | ~856M | 0 |
+|:-:|:-:|:-:|:-:|:-:|
+| agent sessions | models, from 2 vendors | start to finish | tokens | bytes of SQLite changed |
+
 ---
 
 ## Contents
