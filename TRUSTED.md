@@ -17,6 +17,7 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
       - `--apply-loop-contracts` checks each invariant on entry and after each iteration, its decreases, and that the loop writes only what its assigns lists, callees' contracts included;
       - `--enforce-contract f` checks f's ensures and assigns under its requires.
     - **Pass order:** prove.py runs them in that order, replace, then loops, then enforce. With loops applied before the replacement, a replaced callee whose body is removed can write outside the loop's assigns unchecked, which the callee-frame toy shows.
+    - **Unwinding instead of a loop contract** (legacy-unwind; Zach, 2026-11-11, for C-17): with `<name>_LOOPS := unwind`, prove.py runs `goto-instrument --unwindset <UNWINDSET> --unwinding-assertions` after the replacement and before enforcement. The legacy engine enforces only loop-free functions; it reports "Loops remain in function" otherwise. It refuses such a proof without an UNWINDSET. The unwinding assertion is what keeps a harness bound on the loop's count honest: a harness allowing one more iteration fails by it. Every write in the unwound body is checked against the function's assigns, so T-015 doesn't arise (tool tests `-k c17`).
     - **Contract text:** the legacy engine reads clauses only from a function's own declaration. So each legacy contract is its proofs/contracts/<fn>.h `contract_<fn>` declaration with only the name changed, generated at every build, with no stored copy.
     - **Static locals:** a replaced callee with a static local, called in a loop, aborts the enforce pass (T-012). Such a callee keeps its body, and prove.py says so. For C-15 that is sqlite3VdbeSerialGet.
     - **Kept callee bodies:** loop frames are checked against kept callee bodies too. A callee called in the loop with its body kept, writing outside the loop's assigns, fails by "Check that … is assignable" inside the callee (tool tests `-k b2`).
@@ -49,6 +50,8 @@ What milestone 1's *proved* claims rest on without proving it (AGENTS.md §4). I
   - `malloc` and `free`, under `--malloc-may-fail --malloc-fail-null`: harnesses only.
 
   Under `--pointer-check`, each model checks that its arguments are accessible for the length it is given. It also checks that memcpy's source and destination don't overlap (UB-CLASSES.md).
+
+- **A known failure, excepted** (F-001; Zach, 2026-11-11; PROPERTIES.md change 9): every bounded proof of C-17 fails CBMC's signed-overflow check on `-rc` at 92793, through A-003's unbounded collation result, which is F-001 (FINDINGS.md). tools/prove.py's EXCEPTED_FAILURES excepts that failure and no other. It matches by function (legacy and DFCC names aside), upstream line, check and expression, so every unrolled copy counts. A proof passes when its only failures are excepted. A configuration fails if no proof of the card has one, since the table then no longer matches. mutate.py counts a mutant killed only by another failure, which an unchanged mutant shows (tool tests `-k c17`). RESULTS.md and the card say "proved except F-001 at 92793".
 
 ## The preprocessor and headers
 

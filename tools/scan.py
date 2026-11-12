@@ -38,7 +38,8 @@ Rejects:
      `for(i = <const>; i < <const>; ++i)` as `S[i] = X[i]`, no braces, where S is an array declared once in the
      entry function (not a pointer, not static, no initializer), i a plain local declared there and used by no
      other snapshot loop, and neither appears in the call's statement or in SETUP; in SETUP,
-     taking an address, `->` but in `p->field = value`, string literals, casts to pointer types but on malloc,
+     taking an address, `->` but in `p->field = value` and in a KeyInfo's collation pointer `p->aColl[k] = c` (k a
+     local, c a local set once to malloc(sizeof(CollSeq)) or 0 and stored nowhere else; C-17, Zach 2026-11-11), string literals, casts to pointer types but on malloc,
      naming a local array outside sizeof, and a data pointer assigned anything but a malloc result, pointer
      arithmetic on one, or 0; anywhere in a harness, any preprocessor directive but #include (so no macro hides a
      statement from these rules), line splices, digraphs and trigraphs, loop and function contract clauses
@@ -73,6 +74,13 @@ Rejects:
      names, its offset set once to 0 (start-exact) or to `(<size>) - (<extent>)` (end-exact); cards/<card>.md and PROPERTIES.md
      carry `<card> <proof>: bounded: <what> <= K, ...`; and, once proofs/<card>/ exists, tests/bounded/ holds at
      least one `<card>-<k>.c` (k 1 to 9), regular files only, which tools/native.py builds and runs.
+     A bounded proof may also allocate exactly at a symbolic size, `malloc(<local>)` or `malloc(sizeof(T) * <local>)`,
+     the local an input that only BOUNDS bounds or fixes (C-17). BOUNDS may fix an input instead of bounding it: SETUP
+     then holds exactly `<local> = <value>;` once; and in every proof, a constant value given to an input (a local
+     or a field of an input object, but not a pointer set to 0) is refused unless BOUNDS fixes it, since it bounds
+     as surely as an assume. A card's BOUNDS may give a `*` entry for every proof, and a `_label`, which the card
+     and PROPERTIES.md carry as `<card>: <label>` instead of a line per proof. A card in prove.py's
+     EXCEPTED_FAILURES says its exception's label (`proved except F-001 at 92793`) word for word.
      This rule is a mechanical floor, not a complete one: an input narrowed some other way (a non-constant bound,
      arithmetic that hides the comparison) is the reviewer's to find, as before.
 
@@ -123,6 +131,9 @@ CONTRACT_CLAUSE_RX = re.compile(r'\b(__CPROVER_(?:loop_invariant|decreases|assig
 PTR_CAST_RX = re.compile(r'\(\s*(?:(?:const|volatile|struct|union|enum|unsigned|signed)\s+)*[A-Za-z_]\w*'
                          r'(?:\s+[A-Za-z_]\w*)*[\s*]*\*[\s*]*\)')
 LHS_ARROW_RX = re.compile(r'[A-Za-z_]\w*\s*->\s*[A-Za-z_]\w*(?:\s*\.\s*[A-Za-z_]\w*)*')
+# C-17 (Zach, 2026-11-11): the one subscripted store SETUP allows, a KeyInfo's collation pointer, `p->aColl[k] = c`, with
+# k a local and c a local set once to malloc(sizeof(CollSeq)) or 0 and stored nowhere else (acoll_problems)
+ACOLL_LHS_RX = re.compile(r'\s*([A-Za-z_]\w*)\s*->\s*aColl\s*\[\s*([A-Za-z_]\w*)\s*\]\s*')
 TOKEN_RX = re.compile(r'[A-Za-z_]\w*|0[xX][0-9a-fA-F]+\w*|\d+\w*|->|&&|\|\||\+\+|--|[<>=!]=|<<|>>|.', re.S)
 CARD_DIR_FILES = {'harness.c', 'Makefile', 'NOTES.md'}
 ALLOWED_DIRECTIVES = {'include', 'define', 'undef', 'if', 'ifdef', 'ifndef', 'elif', 'else', 'endif', 'error', 'pragma'}
@@ -593,6 +604,9 @@ def setup_statement_problem(stmt, ptrs=frozenset(), arrays=frozenset()):
         return 'a SETUP block holds straight-line statements only'
     if bad_calls:
         return 'a SETUP block may call only malloc and CPROVER primitives (calls %s)' % ', '.join(sorted(set(bad_calls)))
+    a0 = top_assignment(t)
+    if a0 and ACOLL_LHS_RX.fullmatch(a0[0]) and re.fullmatch(r'\s*[A-Za-z_]\w*\s*', a0[1]):
+        return None                                    # its context: acoll_problems
     # checkpoint 0 follow-up 2
     if '"' in t:
         return 'a SETUP block may not hold string literals (they fix data bytes)'
@@ -756,6 +770,8 @@ def check_entries(s, where, raw, code, proofs, card, macros=frozenset()):
             if why:
                 s.bad(where, 'line %d: %s: %s' % (code.count('\n', 0, off + len(st) - len(st.lstrip())) + 1, why,
                                                     ' '.join(st.split())[:80]))
+        for st, why in acoll_problems(setup_stmts, local, ptrs):
+            s.bad(where, 'a SETUP store into aColl: %s: %s' % (why, ' '.join(st.split())[:80]))
         targets = proof.enforced or (card.functions if card else [])
         if not targets:
             continue
@@ -1086,6 +1102,35 @@ def malloc_sizes(text):
     return out
 
 
+def acoll_problems(setup_stmts, local, ptrs):
+    """[(statement, why)] for SETUP's `p->aColl[k] = c` stores: p a local pointer, k a local, c a local set exactly once
+    in SETUP to malloc(sizeof(CollSeq)) or 0, and the right-hand side of no other store."""
+    sets, stores = {}, []
+    for _, st in setup_stmts:
+        a = top_assignment(st)
+        if not a:
+            continue
+        m = ACOLL_LHS_RX.fullmatch(a[0])
+        if m:
+            stores.append((st, m.group(1), m.group(2), a[1].strip()))
+        elif '->' not in a[0] and '[' not in a[0]:
+            sets.setdefault((re.findall(_ID, a[0]) or [''])[-1], []).append(re.sub(r'\s+', '', a[1]))
+    out, used = [], {}
+    for st, p, k, c in stores:
+        used[c] = used.get(c, 0) + 1
+    for st, p, k, c in stores:
+        if p not in local or p not in ptrs:
+            out.append((st, '%s is not a local pointer of the entry function' % p))
+        elif k not in local:
+            out.append((st, 'the index %s is not a local of the entry function' % k))
+        elif c not in local or len(sets.get(c, [])) != 1 or sets[c][0] not in ('malloc(sizeof(CollSeq))', '0'):
+            out.append((st, '%s must be a local set exactly once in SETUP to malloc(sizeof(CollSeq)) or 0 (it builds a '
+                            'pointer table entry, never data)' % c))
+        elif used[c] != 1:
+            out.append((st, '%s is stored into aColl %d times; each collation pointer may be stored once' % (c, used[c])))
+    return out
+
+
 def check_bounds(s, where, raw, code, proofs, card, cid):
     """Rule 16, for each proof's ENTRY function."""
     defs = {name: (b, e) for name, _, b, e in top_level_functions(code)}
@@ -1197,14 +1242,14 @@ def check_bounds(s, where, raw, code, proofs, card, cid):
                     s.bad(where, 'line %d: a constant value for %s, an input of the call under proof, that tools/prove.py '
                                  'BOUNDS does not fix: %s' % (ln, lhs, ' '.join(t.split())[:80]))
         if spec:
-            check_bounded_allocations(s, where, code, setup, proof.name, spec, inputs, value_inputs)
+            check_bounded_allocations(s, where, code, setup, proof.name, spec, inputs, {x[0] for x in fixed})
 
 
 def _nospace(x):
     return re.sub(r'\s+', '', x)
 
 
-def check_bounded_allocations(s, where, code, setup, pname, spec, inputs, value_inputs=frozenset()):
+def check_bounded_allocations(s, where, code, setup, pname, spec, inputs, fixed_names=frozenset()):
     """Rule 16: a bounded proof allocates single objects (`sizeof(T)`) and its BOUNDS buffers only, each used only as
     `<buffer> + <offset>` then the tail terms BOUNDS names, its offset set once to 0 ('start': an underread fails) or `(<size>) - (<extent>)` ('end': an
     overread fails)."""
@@ -1230,8 +1275,8 @@ def check_bounded_allocations(s, where, code, setup, pname, spec, inputs, value_
             # exact at a symbolic size (Zach, 2026-11-11): `malloc(<local>)` or `malloc(sizeof(T) * <local>)`, the local an
             # input whose only constant bounds are BOUNDS's
             m = re.fullmatch(r'\s*(?:sizeof\s*\(\s*[A-Za-z_][\w\s]*\)\s*\*\s*)?(%s)\s*' % _ID, size)
-            if m and m.group(1) in inputs and m.group(1) not in const:
-                continue
+            if m and m.group(1) in inputs and (m.group(1) not in const or m.group(1) in fixed_names):
+                continue                              # a constant local is a fixed buffer, unless BOUNDS fixes the input
             s.bad(where, 'line %d: a bounded proof allocates only single objects (sizeof(T)), exact symbolic sizes '
                          '(malloc(<local>), malloc(sizeof(T) * <local>), the local an input) and its BOUNDS buffers '
                          '(tools/prove.py): malloc(%s)' % (line(off, st), ' '.join(size.split())[:60]))

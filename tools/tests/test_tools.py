@@ -589,6 +589,97 @@ def t015_repo(t, card, frame, write, pre='', head=None):
             'f_LOOPS := contracts\nf_CONTRACTS := legacy\ninclude ../Makefile.common\n' % card)
     return r
 
+# C-17's package (Zach, 2026-11-11, evidence/approvals/C-17-bounded/): the legacy-unwind pass, the aColl SETUP rule,
+# exact symbolic allocations and fixed inputs in rule 16, card-wide labels, and the strict F-001 exception table
+C17_TOY = TOY + r'''typedef struct Cell { unsigned a, b; } Cell;
+void g(Cell *cells, unsigned n) {
+  unsigned i = 0;
+  Cell *p = cells;
+  while( i<n ){ p->a = 0; i++; p++; }
+}
+typedef struct CollSeq { int x; } CollSeq;
+typedef struct KI { int n; void *aColl[2]; unsigned char aSortFlags[2]; } KI;
+static int toyK(KI *k){ return k->aColl[0] != 0; }
+static int toyNeg(int rc){
+  return -rc;
+}
+'''
+G_HEAD = ('void contract_g(Cell *cells, unsigned n)\n'
+          '  __CPROVER_requires(n > 0 && __CPROVER_w_ok(cells, sizeof(Cell) * n))\n'
+          '  __CPROVER_assigns(FRAME);\n')
+G_HARNESS = ('#include "sqlite3.c"\n#include "contracts/g.h"\n#include <stdlib.h>\n'
+             'void h_g(void) {\n  unsigned n;\n  Cell *c;\n  /* SETUP */\n  __CPROVER_assume(n > 0 && n <= NMAX);\n'
+             '  c = malloc(sizeof(Cell) * n);\n  __CPROVER_assume(c != 0);\n  /* END SETUP */\n  g(c, n);\n}\n')
+
+
+def unwind_repo(t, nmax=2, frame='__CPROVER_object_whole(cells)', unwindset='g.0:2'):
+    r = t.fresh()
+    for d in ('upstream', 'overlay'):
+        t.write(r, d + '/sqlite3.c', C17_TOY)
+    t.write(r, 'proofs/contracts/g.h', G_HEAD.replace('FRAME', frame))
+    t.write(r, 'cards/C-17.md', card_md('C-17', ['g'], src=C17_TOY))
+    t.write(r, 'proofs/C-17/harness.c', G_HARNESS.replace('NMAX', str(nmax)))
+    t.write(r, 'proofs/C-17/Makefile', 'CARD := C-17\nPROOFS := u\nu_ENTRY := h_g\nu_ENFORCE := g/contract_g\n'
+            'u_LOOPS := unwind\nu_CONTRACTS := legacy\n' + ('u_UNWINDSET := %s\n' % unwindset if unwindset else '')
+            + 'include ../Makefile.common\n')
+    return r
+
+
+K_HARNESS = r'''#include "sqlite3.c"
+#include <stdlib.h>
+void harness_toyK(void) {
+  KI *key;
+  size_t i0;
+  CollSeq *c0;
+  /* SETUP */
+  key = malloc(sizeof(KI));
+  __CPROVER_assume(key != 0);
+  i0 = 0;
+  c0 = malloc(sizeof(CollSeq));
+  key->aColl[i0] = c0;
+  /* END SETUP */
+  toyK(key);
+}
+'''
+
+
+def k_repo(t, harness=K_HARNESS):
+    r = t.fresh()
+    for d in ('upstream', 'overlay'):
+        t.write(r, d + '/sqlite3.c', C17_TOY)
+    t.write(r, 'pin.txt', 'upstream/sqlite3.c: %s\n' % hashlib.sha256(C17_TOY.encode()).hexdigest())
+    t.write(r, 'cards/C-96.md', card_md('C-96', ['toyK'], src=C17_TOY))
+    t.write(r, 'proofs/C-96/harness.c', harness)
+    t.write(r, 'proofs/C-96/Makefile', 'CARD := C-96\nPROOFS := k\nk_ENTRY := harness_toyK\nk_COVER := toyK\ninclude ../Makefile.common\n')
+    return r
+
+
+NEG_HARNESS = ('#include "sqlite3.c"\n#include <stdlib.h>\nvoid harness_toyNeg(void) {\n  int rc;\n  /* SETUP */\n'
+               'PRE  /* END SETUP */\n  toyNeg(rc);\nPOST}\n')
+
+
+def set_table(t, r, name, value):
+    pp = os.path.join(r, 'tools', 'prove.py')
+    text = open(pp).read()
+    new, k = re.subn(r'\n%s = (?:\{\}|\{.*?\n\})\n' % name, '\n%s = %s\n' % (name, value.replace('\\', '\\\\')), text, count=1, flags=re.S)
+    assert k == 1, name
+    t.write(r, 'tools/prove.py', new)
+
+
+def neg_repo(t, pre='', post=''):
+    r = t.fresh()
+    for d in ('upstream', 'overlay'):
+        t.write(r, d + '/sqlite3.c', C17_TOY)
+    line = line_of(C17_TOY, '  return -rc;')
+    set_table(t, r, 'EXCEPTED_FAILURES', "{'C-97': ({'finding': 'F-T', 'label': 'proved except F-T at %d', 'function': 'toyNeg', "
+              "'line': %d, 'check': 'overflow', 'desc': r'^arithmetic overflow on signed unary minus in -rc$'},)}" % (line, line))
+    t.write(r, 'cards/C-97.md', card_md('C-97', ['toyNeg'], src=C17_TOY).replace('- Notes: toy\n', '- Notes: toy. proved except F-T at %d\n' % line))
+    t.write(r, 'proofs/C-97/harness.c', NEG_HARNESS.replace('PRE', pre).replace('POST', post))
+    t.write(r, 'proofs/C-97/Makefile', 'CARD := C-97\nPROOFS := neg\nneg_ENTRY := harness_toyNeg\nneg_COVER := toyNeg\ninclude ../Makefile.common\n')
+    t.write(r, 'proofs/MUTANTS', "M-901 toyNeg %d 'return -rc' 'return  -rc' card=C-97\n"
+                                 "M-902 toyNeg %d 'return -rc' 'return -rc + rc' card=C-97\n" % (line, line))
+    return r
+
 class T:
     def __init__(self, keep):
         self.base = tempfile.mkdtemp(prefix='tooltests-')
@@ -612,6 +703,8 @@ class T:
         self.write(root, 'upstream/sqlite3.c', TOY)
         self.write(root, 'overlay/sqlite3.c', TOY)
         self.write(root, 'pin.txt', 'upstream/sqlite3.c: %s\n' % hashlib.sha256(TOY.encode()).hexdigest())
+        # a scratch repo has none of the real cards' excepted failures (C-17's F-001); tests that need one set it
+        set_table(self, root, 'EXCEPTED_FAILURES', '{}')
         subprocess.run(['git', 'init', '-q', '-b', 'main', root], check=True)
         return root
 
@@ -1929,6 +2022,131 @@ def main():
         (prc, pout, pres), (crc, cout, cres) = shift_run(' + 1')
         t.expect('bounds shift: a constant +1 shift fails coverage (every input lacks a byte the requires asks for, so the '
                  'proof passes vacuously)', prc == 0 and 'PASS' in pres and crc != 0 and 'FAIL' in cres, pout[-600:] + cout[-800:])
+
+    # ---- C-17's package (Zach, 2026-11-11, evidence/approvals/C-17-bounded/)
+    if want('c17'):
+        import json as _json
+
+        def prv(rr, card):
+            return t.run(rr, [py, 'tools/prove.py', 'prove', '--card-dir', 'proofs/' + card, '--config', 'lp64-le',
+                              '--build-dir', 'proofs/%s/build' % card])
+
+        def edit(rr, rel, old, new):
+            text = open(os.path.join(rr, rel)).read()
+            assert old in text, (rel, old)
+            t.write(rr, rel, text.replace(old, new, 1))
+        # the legacy-unwind pass
+        r = unwind_repo(t)
+        rc, out, res = prv(r, 'C-17')
+        t.expect('legacy-unwind: a legacy proof with LOOPS := unwind is unwound (with --unwinding-assertions) before '
+                 'enforcement, and proves', rc == 0 and 'PASS' in res
+                 and os.path.exists(os.path.join(r, 'proofs', 'C-17', 'build', 'lp64-le', 'u.legacy-unwind')), out[-1200:])
+        r = unwind_repo(t, nmax=3)
+        rc, out, res = prv(r, 'C-17')
+        fs = legacy_failures(r, 'C-17', 'u')
+        t.expect('legacy-unwind: a harness allowing n = K+1 fails by the unwinding assertion',
+                 rc != 0 and any('unwinding assertion' in f for f in fs), out[-1000:] + str(fs))
+        r = unwind_repo(t, unwindset=None)
+        rc, out, res = prv(r, 'C-17')
+        t.expect('legacy-unwind: a legacy LOOPS := unwind proof without an UNWINDSET is refused',
+                 rc != 0 and 'needs u_UNWINDSET' in out, out[-800:])
+        r = unwind_repo(t, frame='cells[0].a')
+        rc, out, res = prv(r, 'C-17')
+        fs = legacy_failures(r, 'C-17', 'u')
+        t.expect('legacy-unwind: with the loop unwound, a write outside the function\'s assigns fails enforcement',
+                 rc != 0 and any('assignable' in f for f in fs), out[-1000:] + str(fs))
+        # scan's aColl rule
+        for name, change, ok, needle in (
+                ('the aColl store of a CollSeq', None, True, ''),
+                ('the aColl store of 0', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = 0;'), True, ''),
+                ('another member', ('  key->aColl[i0] = c0;', '  key->aSortFlags[i0] = c0;'), False, 'key->aSortFlags[i0] = c0'),
+                ('a data value', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = malloc(8);'), False, 'malloc(sizeof(CollSeq)) or 0'),
+                ('a literal on the right', ('  key->aColl[i0] = c0;', '  key->aColl[i0] = 0;'), False, 'key->aColl[i0] = 0'),
+                ('a shared right-hand side', ('  key->aColl[i0] = c0;', '  key->aColl[i0] = c0;\n  key->aColl[i0] = c0;'), False,
+                 'stored into aColl 2 times'),
+                ('its right-hand side set twice', ('  c0 = malloc(sizeof(CollSeq));', '  c0 = malloc(sizeof(CollSeq));\n  c0 = 0;'),
+                 False, 'malloc(sizeof(CollSeq)) or 0')):
+            rr = k_repo(t)
+            if change:
+                edit(rr, 'proofs/C-96/harness.c', change[0], change[1])
+            rc, out, res = t.run(rr, [py, 'tools/scan.py'])
+            t.expect('scan aColl: %s %s' % ('passes' if ok else 'rejects', name),
+                     (rc == 0 and 'PASS' in res) if ok else (rc != 0 and needle in out), out)
+        # rule 16: exact symbolic allocations, fixed inputs, card-wide and '*' labels
+        def b16(spec, harness, lines=None, card_label=None):
+            rr = bounds_repo(t, "{'C-92': %s}" % spec, harness, UNB_MK)
+            os.remove(os.path.join(rr, 'tests', 'bounded', 'C-92-1.c'))
+            t.write(rr, 'tests/bounded/C-92-1.c', BOUNDS_NATIVE)
+            ls = lines if lines is not None else []
+            t.write(rr, 'cards/C-92.md', card_md('C-92', ['toySum', 'toyRec'], src=BOUNDS_TOY).replace(
+                '- Notes: toy\n', '- Notes: toy. %s\n' % '; '.join(ls)))
+            t.write(rr, 'PROPERTIES.md', '# PROPERTIES\n\n' + ''.join('- %s\n' % x for x in ls))
+            return t.run(rr, [py, 'tools/scan.py'])
+        BH = UNB_HARNESS.replace('  __CPROVER_assume(n >= 0);', '  __CPROVER_assume(n >= 0);\n  __CPROVER_assume(n <= 64);')
+        SP = "{'sum': {'bounds': (('n', 64, 'n'),)}, 'rec': {'bounds': (('m', 9, 'm'),)}}"
+        BH2 = BH.replace('  __CPROVER_assume(m >= 0);', '  __CPROVER_assume(m >= 0);\n  __CPROVER_assume(m <= 9);')
+        L2 = ['C-92 rec: bounded: m <= 9', 'C-92 sum: bounded: n <= 64']
+        rc, out, res = b16(SP, BH2, L2)
+        t.expect('rule 16: a bounded proof may allocate exactly at a symbolic size, malloc(<input local>)', rc == 0 and 'PASS' in res, out)
+        rc, out, res = b16(SP, BH2.replace('  p = malloc(n);', '  p = malloc(sizeof(u8) * n);'), L2)
+        t.expect('rule 16: ... and malloc(sizeof(T) * <input local>)', rc == 0 and 'PASS' in res, out)
+        rc, out, res = b16(SP, BH2.replace('  p = malloc(n);', '  p = malloc(n + 1);'), L2)
+        t.expect('rule 16: a bounded proof\'s inexact symbolic allocation, malloc(n + 1), is refused',
+                 rc != 0 and 'exact symbolic sizes' in out, out)
+        FX = "{'sum': {'fixed': (('n', 5, 'n'),)}, 'rec': {'bounds': (('m', 9, 'm'),)}}"
+        LF = ['C-92 rec: bounded: m <= 9', 'C-92 sum: bounded: n = 5']
+        rc, out, res = b16(FX, BH2.replace('  __CPROVER_assume(n <= 64);', '  n = 5;'), LF)
+        t.expect('rule 16: an input fixed as BOUNDS gives it (`n = 5;`) passes', rc == 0 and 'PASS' in res, out)
+        rc, out, res = b16(FX, BH2.replace('  __CPROVER_assume(n <= 64);', '  n = 6;'), LF)
+        t.expect('rule 16: an input fixed to another value fails', rc != 0 and 'exactly once (found 0)' in out
+                 and 'a constant value for n' in out, out)
+        r = bounds_repo(t, '{}', UNB_HARNESS.replace('  __CPROVER_assume(n >= 0);', '  n = 5;'), UNB_MK)
+        os.remove(os.path.join(r, 'tests', 'bounded', 'C-92-1.c'))
+        rc, out, res = t.run(r, [py, 'tools/scan.py'])
+        t.expect('rule 16: in an unbounded proof, a constant value for an input fails, as a bound would',
+                 rc != 0 and 'a constant value for n' in out, out)
+        CW = SP[:-1] + ", '_label': 'bounded: n <= 64 and m <= 9'}"
+        rc, out, res = b16(CW, BH2, L2)
+        t.expect('rule 16: a card-wide _label replaces the per-proof lines, which then do not do',
+                 rc != 0 and 'C-92: bounded: n <= 64 and m <= 9' in out, out)
+        rc, out, res = b16(CW, BH2, ['C-92: bounded: n <= 64 and m <= 9'])
+        t.expect('rule 16: ... and with the card-wide line, scan passes', rc == 0 and 'PASS' in res, out)
+        ST = "{'*': {'bounds': (('n', 64, 'n'),), 'via': 'C-17'}, '_label': \"bounded: n <= 64 (through C-17's contract)\"}"
+        rc, out, res = b16(ST, BH, ["C-92: bounded: n <= 64 (through C-17's contract)"])
+        t.expect('rule 16: a card\'s \'*\' entry binds every proof of it (rec lacks n <= 64)',
+                 rc != 0 and 'rec: tools/prove.py BOUNDS gives n <= 64' in out, out)
+        # the F-001 exception table, on a toy
+        r = neg_repo(t)
+        rc, out, res = prv(r, 'C-97')
+        j = os.path.join(r, 'proofs', 'C-97', 'build', 'lp64-le', 'neg.json')
+        jj = _json.load(open(j)) if os.path.exists(j) else {}
+        t.expect('exception: a proof whose only failure is the excepted one passes, and records it',
+                 rc == 0 and 'PASS' in res and 'EXCEPTED neg' in out and len(jj.get('excepted') or []) >= 1 and jj.get('failed') == 0, out[-1000:])
+        r = neg_repo(t, post='  int y = rc + 1;\n  (void)y;\n')
+        rc, out, res = prv(r, 'C-97')
+        t.expect('exception: any other failure fails the proof', rc != 0 and 'FAIL' in res, out[-800:])
+        r = neg_repo(t, pre='  __CPROVER_assume(rc != -2147483647 - 1);\n')
+        rc, out, res = prv(r, 'C-97')
+        t.expect('exception: a configuration where no proof fails the excepted check fails (the table no longer matches)',
+                 rc != 0 and 'no proof failed the excepted F-T check' in out, out[-800:])
+        r = neg_repo(t)
+        mj = os.path.join(r, 'm.json')
+        rc, out, res = t.run(r, [py, 'tools/mutate.py', '--card', 'C-97', '--config', 'lp64-le', '--json', mj], timeout=1800)
+        mv = {x['mutant']['id']: x['verdict'] for x in _json.load(open(mj))} if os.path.exists(mj) else {}
+        t.expect('exception in mutate.py: an unchanged mutant (whitespace) is not killed by the excepted failure; a mutant '
+                 'adding another failure is killed', mv.get('M-901') == 'SURVIVED' and mv.get('M-902') == 'KILLED', out[-1200:] + str(mv))
+        rr = neg_repo(t)
+        rec = {'prove_summary': [{'proof': 'neg', 'config': 'lp64-le', 'status': 'PASS', 'cbmc_seconds': 1, 'properties': 9,
+                                  'failed': 0, 'excepted': [{'id': 'toyNeg.overflow.1'}]}], 'coverage_summary': [], 'mutants': [], 'provenance': {}}
+        t.write(rr, 'evidence/results/C-97.json', _json.dumps(rec))
+        rc, out, res = t.run(rr, [py, 'tools/results.py', '--root', rr])
+        mdt = open(os.path.join(rr, 'RESULTS.md')).read() if os.path.exists(os.path.join(rr, 'RESULTS.md')) else ''
+        t.expect('exception in results.py: the row reads "PASS (proved except F-T at <line>)"',
+                 rc == 0 and '| PASS (proved except F-T at %d) |' % line_of(C17_TOY, '  return -rc;') in mdt, out + mdt)
+        rr = neg_repo(t)
+        edit(rr, 'cards/C-97.md', ' proved except F-T at', ' proved but F-T at')
+        rc, out, res = t.run(rr, [py, 'tools/scan.py'])
+        t.expect('exception in scan: the card must say "proved except F-T at <line>"', rc != 0 and 'a card with an excepted failure says so' in out, out)
 
     # ---- finding-review (Zach, 2026-11-11): a one-off Codex judgement of F-002 and F-001's second repro
     if want('finding'):

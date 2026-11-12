@@ -24,6 +24,8 @@ evidence/approvals/T-006-dfcc-loop-pointer/) uses CBMC's legacy contracts instea
                                                   the clauses of its proofs/contracts/<fn>.h, generated at every build)
   link, remove-bodies, drop-unused and the argument-type check as above
   goto-instrument --replace-call-with-contract g ...   then   --apply-loop-contracts   then   --enforce-contract f
+(With <name>_LOOPS := unwind, legacy-unwind, `--unwindset <UNWINDSET> --unwinding-assertions`, replaces
+--apply-loop-contracts: the legacy engine enforces only loop-free functions. Zach, 2026-11-11, for C-17.)
 That order is required: with loop contracts applied before the replacement, a replaced callee whose body is removed
 can write outside the loop's assigns unchecked (evidence/approvals/T-006-dfcc-loop-pointer/, the callee-frame toy).
 The legacy engine reads clauses only from a function's own declaration (it can't use contract_<fn>), so each one is
