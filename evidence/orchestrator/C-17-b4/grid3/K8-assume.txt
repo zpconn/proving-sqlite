@@ -1,0 +1,10 @@
+K8-lp64-le-b0n1 lp64-le b=0 n=1 rc=10 wall=0:10.03 rss_kb=397240 | ** 1 of 2114 failed (2 iterations) |       1 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b0n2 lp64-le b=0 n=2 rc=10 wall=0:10.38 rss_kb=461540 | ** 2 of 2689 failed (3 iterations) |       2 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b0n3 lp64-le b=0 n=3 rc=10 wall=0:11.97 rss_kb=516256 | ** 3 of 3264 failed (4 iterations) |       3 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b0n4 lp64-le b=0 n=4 rc=10 wall=0:12.96 rss_kb=590344 | ** 4 of 3839 failed (5 iterations) |       4 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b0n5 lp64-le b=0 n=5 rc=10 wall=0:19.44 rss_kb=668164 | ** 5 of 4414 failed (6 iterations) |       5 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b0n6 lp64-le b=0 n=6 rc=10 wall=0:19.17 rss_kb=769368 | ** 6 of 4989 failed (7 iterations) |       6 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b0n7 lp64-le b=0 n=7 rc=10 wall=0:26.37 rss_kb=891364 | ** 7 of 5564 failed (8 iterations) |       7 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b0n8 lp64-le b=0 n=8 rc=10 wall=0:24.65 rss_kb=1053656 | ** 8 of 6139 failed (9 iterations) |       8 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b1n2 lp64-le b=1 n=2 rc=10 wall=2:04.99 rss_kb=8565420 | ** 1 of 2689 failed (2 iterations) |       1 sqlite3VdbeRecordCompareWithSkip.overflow@92797;
+K8-lp64-le-b1n3 lp64-le b=1 n=3 rc=10 wall=7:14.03 rss_kb=20783048 | ** 2 of 3264 failed (3 iterations) |       2 sqlite3VdbeRecordCompareWithSkip.overflow@92797;

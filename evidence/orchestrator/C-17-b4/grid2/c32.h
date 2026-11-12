@@ -1,0 +1,175 @@
+#ifndef CONTRACT_SQLITE3VDBERECORDCOMPAREWITHSKIP_H
+#define CONTRACT_SQLITE3VDBERECORDCOMPAREWITHSKIP_H
+/* C-17, round 4: a BOUNDED measurement contract (nField <= 32), pending Zach's decision on the bound. */
+int contract_sqlite3VdbeRecordCompareWithSkip(int nKey1, const void *pKey1, UnpackedRecord *pPKey2, int bSkip)
+  __CPROVER_requires(nKey1 >= 0
+    && __CPROVER_r_ok(pKey1, (size_t)(nKey1 > 10 + (bSkip != 0) ? nKey1 : 10 + (bSkip != 0)) + 8))
+  __CPROVER_requires(__CPROVER_rw_ok(pPKey2, sizeof(UnpackedRecord)))
+  __CPROVER_requires(pPKey2->nField >= 1 + (bSkip != 0) && pPKey2->nField <= 32)
+  __CPROVER_requires(__CPROVER_r_ok(pPKey2->aMem, sizeof(Mem) * pPKey2->nField))
+  __CPROVER_requires(__CPROVER_r_ok(pPKey2->pKeyInfo, SZ_KEYINFO(0)) && pPKey2->pKeyInfo->nAllField >= 1
+    && __CPROVER_r_ok(pPKey2->pKeyInfo, SZ_KEYINFO(pPKey2->nField < pPKey2->pKeyInfo->nAllField
+                                                  ? pPKey2->nField : pPKey2->pKeyInfo->nAllField)))
+  __CPROVER_requires(__CPROVER_r_ok(pPKey2->pKeyInfo->aSortFlags, pPKey2->nField))
+  __CPROVER_requires(pPKey2->nField <= 0 || (((pPKey2->aMem[0].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[0].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[0].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[0].u.nZero >= 0
+        : (pPKey2->aMem[0].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[0].z, pPKey2->aMem[0].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 0 || pPKey2->pKeyInfo->aColl[0] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[0], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 1 || (((pPKey2->aMem[1].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[1].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[1].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[1].u.nZero >= 0
+        : (pPKey2->aMem[1].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[1].z, pPKey2->aMem[1].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 1 || pPKey2->pKeyInfo->aColl[1] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[1], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 2 || (((pPKey2->aMem[2].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[2].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[2].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[2].u.nZero >= 0
+        : (pPKey2->aMem[2].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[2].z, pPKey2->aMem[2].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 2 || pPKey2->pKeyInfo->aColl[2] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[2], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 3 || (((pPKey2->aMem[3].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[3].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[3].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[3].u.nZero >= 0
+        : (pPKey2->aMem[3].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[3].z, pPKey2->aMem[3].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 3 || pPKey2->pKeyInfo->aColl[3] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[3], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 4 || (((pPKey2->aMem[4].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[4].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[4].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[4].u.nZero >= 0
+        : (pPKey2->aMem[4].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[4].z, pPKey2->aMem[4].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 4 || pPKey2->pKeyInfo->aColl[4] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[4], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 5 || (((pPKey2->aMem[5].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[5].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[5].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[5].u.nZero >= 0
+        : (pPKey2->aMem[5].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[5].z, pPKey2->aMem[5].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 5 || pPKey2->pKeyInfo->aColl[5] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[5], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 6 || (((pPKey2->aMem[6].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[6].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[6].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[6].u.nZero >= 0
+        : (pPKey2->aMem[6].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[6].z, pPKey2->aMem[6].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 6 || pPKey2->pKeyInfo->aColl[6] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[6], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 7 || (((pPKey2->aMem[7].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[7].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[7].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[7].u.nZero >= 0
+        : (pPKey2->aMem[7].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[7].z, pPKey2->aMem[7].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 7 || pPKey2->pKeyInfo->aColl[7] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[7], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 8 || (((pPKey2->aMem[8].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[8].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[8].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[8].u.nZero >= 0
+        : (pPKey2->aMem[8].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[8].z, pPKey2->aMem[8].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 8 || pPKey2->pKeyInfo->aColl[8] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[8], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 9 || (((pPKey2->aMem[9].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[9].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[9].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[9].u.nZero >= 0
+        : (pPKey2->aMem[9].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[9].z, pPKey2->aMem[9].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 9 || pPKey2->pKeyInfo->aColl[9] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[9], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 10 || (((pPKey2->aMem[10].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[10].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[10].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[10].u.nZero >= 0
+        : (pPKey2->aMem[10].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[10].z, pPKey2->aMem[10].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 10 || pPKey2->pKeyInfo->aColl[10] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[10], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 11 || (((pPKey2->aMem[11].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[11].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[11].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[11].u.nZero >= 0
+        : (pPKey2->aMem[11].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[11].z, pPKey2->aMem[11].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 11 || pPKey2->pKeyInfo->aColl[11] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[11], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 12 || (((pPKey2->aMem[12].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[12].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[12].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[12].u.nZero >= 0
+        : (pPKey2->aMem[12].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[12].z, pPKey2->aMem[12].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 12 || pPKey2->pKeyInfo->aColl[12] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[12], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 13 || (((pPKey2->aMem[13].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[13].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[13].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[13].u.nZero >= 0
+        : (pPKey2->aMem[13].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[13].z, pPKey2->aMem[13].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 13 || pPKey2->pKeyInfo->aColl[13] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[13], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 14 || (((pPKey2->aMem[14].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[14].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[14].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[14].u.nZero >= 0
+        : (pPKey2->aMem[14].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[14].z, pPKey2->aMem[14].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 14 || pPKey2->pKeyInfo->aColl[14] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[14], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 15 || (((pPKey2->aMem[15].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[15].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[15].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[15].u.nZero >= 0
+        : (pPKey2->aMem[15].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[15].z, pPKey2->aMem[15].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 15 || pPKey2->pKeyInfo->aColl[15] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[15], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 16 || (((pPKey2->aMem[16].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[16].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[16].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[16].u.nZero >= 0
+        : (pPKey2->aMem[16].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[16].z, pPKey2->aMem[16].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 16 || pPKey2->pKeyInfo->aColl[16] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[16], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 17 || (((pPKey2->aMem[17].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[17].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[17].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[17].u.nZero >= 0
+        : (pPKey2->aMem[17].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[17].z, pPKey2->aMem[17].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 17 || pPKey2->pKeyInfo->aColl[17] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[17], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 18 || (((pPKey2->aMem[18].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[18].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[18].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[18].u.nZero >= 0
+        : (pPKey2->aMem[18].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[18].z, pPKey2->aMem[18].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 18 || pPKey2->pKeyInfo->aColl[18] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[18], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 19 || (((pPKey2->aMem[19].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[19].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[19].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[19].u.nZero >= 0
+        : (pPKey2->aMem[19].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[19].z, pPKey2->aMem[19].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 19 || pPKey2->pKeyInfo->aColl[19] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[19], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 20 || (((pPKey2->aMem[20].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[20].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[20].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[20].u.nZero >= 0
+        : (pPKey2->aMem[20].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[20].z, pPKey2->aMem[20].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 20 || pPKey2->pKeyInfo->aColl[20] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[20], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 21 || (((pPKey2->aMem[21].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[21].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[21].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[21].u.nZero >= 0
+        : (pPKey2->aMem[21].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[21].z, pPKey2->aMem[21].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 21 || pPKey2->pKeyInfo->aColl[21] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[21], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 22 || (((pPKey2->aMem[22].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[22].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[22].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[22].u.nZero >= 0
+        : (pPKey2->aMem[22].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[22].z, pPKey2->aMem[22].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 22 || pPKey2->pKeyInfo->aColl[22] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[22], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 23 || (((pPKey2->aMem[23].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[23].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[23].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[23].u.nZero >= 0
+        : (pPKey2->aMem[23].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[23].z, pPKey2->aMem[23].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 23 || pPKey2->pKeyInfo->aColl[23] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[23], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 24 || (((pPKey2->aMem[24].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[24].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[24].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[24].u.nZero >= 0
+        : (pPKey2->aMem[24].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[24].z, pPKey2->aMem[24].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 24 || pPKey2->pKeyInfo->aColl[24] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[24], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 25 || (((pPKey2->aMem[25].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[25].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[25].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[25].u.nZero >= 0
+        : (pPKey2->aMem[25].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[25].z, pPKey2->aMem[25].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 25 || pPKey2->pKeyInfo->aColl[25] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[25], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 26 || (((pPKey2->aMem[26].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[26].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[26].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[26].u.nZero >= 0
+        : (pPKey2->aMem[26].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[26].z, pPKey2->aMem[26].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 26 || pPKey2->pKeyInfo->aColl[26] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[26], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 27 || (((pPKey2->aMem[27].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[27].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[27].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[27].u.nZero >= 0
+        : (pPKey2->aMem[27].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[27].z, pPKey2->aMem[27].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 27 || pPKey2->pKeyInfo->aColl[27] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[27], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 28 || (((pPKey2->aMem[28].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[28].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[28].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[28].u.nZero >= 0
+        : (pPKey2->aMem[28].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[28].z, pPKey2->aMem[28].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 28 || pPKey2->pKeyInfo->aColl[28] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[28], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 29 || (((pPKey2->aMem[29].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[29].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[29].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[29].u.nZero >= 0
+        : (pPKey2->aMem[29].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[29].z, pPKey2->aMem[29].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 29 || pPKey2->pKeyInfo->aColl[29] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[29], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 30 || (((pPKey2->aMem[30].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[30].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[30].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[30].u.nZero >= 0
+        : (pPKey2->aMem[30].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[30].z, pPKey2->aMem[30].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 30 || pPKey2->pKeyInfo->aColl[30] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[30], sizeof(CollSeq)))))
+  __CPROVER_requires(pPKey2->nField <= 31 || (((pPKey2->aMem[31].flags & (MEM_Int|MEM_IntReal|MEM_Real)) != 0 || (pPKey2->aMem[31].flags & (MEM_Str|MEM_Blob)) == 0
+        || ((pPKey2->aMem[31].flags & (MEM_Str|MEM_Zero)) == MEM_Zero ? pPKey2->aMem[31].u.nZero >= 0
+        : (pPKey2->aMem[31].n >= 0 && __CPROVER_r_ok(pPKey2->aMem[31].z, pPKey2->aMem[31].n))))
+      && (pPKey2->pKeyInfo->nAllField <= 31 || pPKey2->pKeyInfo->aColl[31] == 0
+        || __CPROVER_r_ok(pPKey2->pKeyInfo->aColl[31], sizeof(CollSeq)))))
+  __CPROVER_assigns(pPKey2->errCode, pPKey2->eqSeen);
+#endif

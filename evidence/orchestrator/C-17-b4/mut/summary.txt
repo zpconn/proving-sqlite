@@ -1,0 +1,63 @@
+== base
+RESULT prove C-17/b0n2 lp64-le FAIL 58s 1395 properties 1 failed
+RESULT prove C-17/b1n2 lp64-le FAIL 58s 1395 properties 1 failed
+RESULT prove C-17 lp64-le FAIL 116s 2790 properties 2 failed
+      2 sqlite3VdbeRecordCompareWithSkip.overflow.6 line 92797 arithmetic overflow on signed unary minus in -rc
+== M-054
+RESULT prove C-17/b0n2 lp64-le FAIL 56s 1395 properties 3 failed
+RESULT prove C-17/b1n2 lp64-le FAIL 56s 1395 properties 3 failed
+RESULT prove C-17 lp64-le FAIL 112s 2790 properties 6 failed
+      2 contract_isAllZero.precondition.1 line 4 Check requires clause of contract contract
+      2 contract_memcmp.precondition.1 line 6 Check requires clause of contract contract
+      2 sqlite3VdbeRecordCompareWithSkip.overflow.6 line 92797 arithmetic overflow on signed unary minus in -rc
+== M-055
+RESULT prove C-17/b0n2 lp64-le FAIL 52s 1395 properties 2 failed
+RESULT prove C-17/b1n2 lp64-le FAIL 55s 1395 properties 627 failed
+RESULT prove C-17 lp64-le FAIL 107s 2790 properties 629 failed
+      1 contract_memcmp.pointer_primitives.5 line 6 pointer invalid in R_OK(s2_wrapper, n_wrapper)
+      1 contract_memcmp.pointer_primitives.6 line 6 deallocated dynamic object in R_OK(s2_wrapper, n_wrapper)
+      1 contract_memcmp.pointer_primitives.7 line 6 dead object in R_OK(s2_wrapper, n_wrapper)
+      1 contract_memcmp.pointer_primitives.8 line 6 pointer outside object bounds in R_OK(s2_wrapper, n_wrapper)
+      1 contract_memcmp.precondition.1 line 6 Check requires clause of contract contract
+      1 contract_vdbeCompareMemString.pointer_dereference.29 line 8 dereference failure
+      1 contract_vdbeCompareMemString.pointer_dereference.35 line 8 dereference failure
+      1 contract_vdbeCompareMemString.pointer_dereference.41 line 8 dereference failure
+      1 contract_vdbeCompareMemString.pointer_primitives.17 line 8 pointer invalid in R_OK(pMem2_wrapper->z, (unsigned long int)pMem2_wrapper->n)
+      1 contract_vdbeCompareMemString.pointer_primitives.18 line 8 deallocated dynamic object in R_OK(pMem2_wrapper->z, (unsigned long int)pMem2_wrapper->n)
+      1 contract_vdbeCompareMemString.pointer_primitives.19 line 8 dead object in R_OK(pMem2_wrapper->z, (unsigned long int)pMem2_wrapper->n)
+      1 contract_vdbeCompareMemString.pointer_primitives.20 line 8 pointer outside object bounds in R_OK(pMem2_wrapper->z, (unsigned long int)pMem2_wrapper->n
+      1 contract_vdbeCompareMemString.precondition.1 line 6 Check requires clause of contract contract
+      1 contract_vdbeCompareMemString.precondition.2 line 8 Check requires clause of contract contract
+      1 sqlite3VdbeRecordCompareWithSkip.array_bounds.1 line 92733 array.aColl dynamic object upper bound in pKeyInfo->aColl[(signed long int)i]
+      1 sqlite3VdbeRecordCompareWithSkip.overflow.3 line 92744 arithmetic overflow on signed - in mem1.n - pRhs->n
+      1 sqlite3VdbeRecordCompareWithSkip.overflow.4 line 92767 arithmetic overflow on signed - in nStr - byte_extract_little_endian(pRhs->u, 0l, signed int)
+      1 sqlite3VdbeRecordCompareWithSkip.overflow.5 line 92772 arithmetic overflow on signed - in nStr - pRhs->n
+      2 sqlite3VdbeRecordCompareWithSkip.overflow.6 line 92797 arithmetic overflow on signed unary minus in -rc
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.137 line 92742 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.143 line 92742 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.149 line 92743 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.155 line 92744 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.161 line 92750 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.179 line 92763 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.185 line 92767 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.191 line 92770 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.197 line 92770 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.203 line 92771 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.209 line 92772 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.233 line 92791 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.239 line 92795 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.35 line 92664 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.47 line 92675 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.53 line 92678 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.59 line 92688 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.71 line 92702 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.77 line 92704 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.83 line 92711 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.pointer_dereference.89 line 92717 dereference failure
+      1 sqlite3VdbeRecordCompareWithSkip.unwind.0 line 92660 unwinding assertion loop 0
+== M-056
+RESULT prove C-17/b0n2 lp64-le FAIL 53s 1395 properties 2 failed
+RESULT prove C-17/b1n2 lp64-le FAIL 51s 1395 properties 2 failed
+RESULT prove C-17 lp64-le FAIL 104s 2790 properties 4 failed
+      2 contract_memcmp.precondition.1 line 6 Check requires clause of contract contract
+      2 sqlite3VdbeRecordCompareWithSkip.overflow.6 line 92797 arithmetic overflow on signed unary minus in -rc
